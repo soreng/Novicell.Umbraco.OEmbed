@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+    <UmbracoVersion>17.1</UmbracoVersion>
+  </PropertyGroup>
+  <!-- Global packages (private, build-time packages for all projects) -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.3" />
+    <PackageVersion Include="Umbraco.Cms.Core" Version="17.1.0" />
+    <PackageVersion Include="Umbraco.Cms.Web.Website" Version="17.1.0" />
+    <PackageVersion Include="Umbraco.Cms.Web.Common" Version="17.1.0" />
+    <PackageVersion Include="Umbraco.Cms.Api.Common" Version="17.1.0" />
+    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="17.1.0" />
+  </ItemGroup>
+</Project>

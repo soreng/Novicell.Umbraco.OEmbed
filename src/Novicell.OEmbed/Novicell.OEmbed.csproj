@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <Title>Novicell OEmbed</Title>
+        <Description>Novicell OEmbed</Description>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+        <IncludeSymbols>false</IncludeSymbols>
+        <IncludeReferencedProjects>true</IncludeReferencedProjects>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Novicell.OEmbed.Startup\Novicell.OEmbed.Startup.csproj" />
+        <ProjectReference Include="..\Novicell.OEmbed.Web.StaticAssets\Novicell.OEmbed.Web.StaticAssets.csproj" />
+    </ItemGroup>
+
+</Project>

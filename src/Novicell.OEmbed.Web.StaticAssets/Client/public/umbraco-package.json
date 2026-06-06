@@ -1,0 +1,25 @@
+{
+  "id": "Novicell.OEmbed",
+  "name": "Novicell.OEmbed",
+  "version": "0.0.0",
+  "allowTelemetry": true,
+  "extensions": [
+    {
+      "name": "Novicell OEmbed",
+      "alias": "Novicell.OEmbed.Bundle",
+      "type": "bundle",
+      "js": "/App_Plugins/novicell-oembed/novicell-oembed-manifests.js"
+    },
+    {
+      "type": "backofficeEntryPoint",
+      "name": "Novicell OEmbed Backoffice Entry Point",
+      "alias": "Novicell.OEmbed.BackofficeEntryPoint",
+      "js": "/App_Plugins/novicell-oembed/novicell-oembed-app.js"
+    }
+  ],
+  "importmap": {
+    "imports": {
+      "@novicell-oembed/core": "/App_Plugins/novicell-oembed/novicell-oembed-app.js"
+    }
+  }
+}

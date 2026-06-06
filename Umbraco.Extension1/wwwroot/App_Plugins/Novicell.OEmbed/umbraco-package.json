@@ -1,0 +1,14 @@
+{
+  "id": "Umbraco.Extension1",
+  "name": "Umbraco.Extension1",
+  "version": "0.0.0",
+  "allowTelemetry": true,
+  "extensions": [
+    {
+      "name": "Umbraco Extension 1Bundle",
+      "alias": "Umbraco.Extension1.Bundle",
+      "type": "bundle",
+      "js": "/App_Plugins/Novicell.OEmbed/novicell-oembed-1.js"
+    }
+  ]
+}

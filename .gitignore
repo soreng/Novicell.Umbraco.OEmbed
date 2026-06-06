@@ -1,0 +1,45 @@
+# Build output
+**/bin/
+**/obj/
+artifacts/
+
+# NuGet packages and symbols
+*.nupkg
+*.snupkg
+
+# IDE and user-specific files
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+
+# Logs
+*.log
+
+# Node and frontend build artifacts
+**/node_modules/
+**/dist/
+**/coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local secrets and machine-specific settings
+**/appsettings.*.local.json
+**/secrets.json
+
+# Umbraco runtime/generated content for local host projects
+UmbracoProject1/umbraco/Data/
+UmbracoProject1/umbraco/Logs/
+UmbracoProject1/umbraco/Temp/
+UmbracoProject1/umbraco/Smidge/
+UmbracoProject1/wwwroot/media/
+UmbracoProject1/wwwroot/cache/
