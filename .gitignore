@@ -37,9 +37,9 @@ Thumbs.db
 **/secrets.json
 
 # Umbraco runtime/generated content for local host projects
-demo/UmbracoProject1/umbraco/Data/
-demo/UmbracoProject1/umbraco/Logs/
-demo/UmbracoProject1/umbraco/Temp/
-demo/UmbracoProject1/umbraco/Smidge/
-demo/UmbracoProject1/wwwroot/media/
-demo/UmbracoProject1/wwwroot/cache/
+demo/OEmbed.Testsite/umbraco/Data/
+demo/OEmbed.Testsite/umbraco/Logs/
+demo/OEmbed.Testsite/umbraco/Temp/
+demo/OEmbed.Testsite/umbraco/Smidge/
+demo/OEmbed.Testsite/wwwroot/media/
+demo/OEmbed.Testsite/wwwroot/cache/
