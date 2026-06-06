@@ -15,7 +15,7 @@ public class OEmbedApiOperationIdHandler(IOptions<ApiVersioningOptions> apiVersi
         ControllerActionDescriptor controllerActionDescriptor)
     {
         return controllerActionDescriptor.ControllerTypeInfo.Namespace?.StartsWith(
-            "Umbraco.Extension1.Controllers",
+            "Novicell.OEmbed.Web.Api.Management",
             comparisonType: StringComparison.InvariantCultureIgnoreCase) is true;
     }
 

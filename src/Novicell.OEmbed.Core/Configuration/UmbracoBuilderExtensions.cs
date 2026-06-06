@@ -2,8 +2,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Novicell.OEmbed.Configuration;
 using Novicell.OEmbed.Core.OEmbed;
 using Umbraco.Cms.Core.DependencyInjection;
-using Umbraco.Extension1.Controllers;
-using Umbraco.Extension1.Services;
 
 namespace Novicell.OEmbed.Core.Configuration;
 

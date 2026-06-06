@@ -1,6 +1,6 @@
 using Novicell.OEmbed.Core.Models;
 
-namespace Umbraco.Extension1.Services;
+namespace Novicell.OEmbed.Core.OEmbed;
 
 public interface IOEmbedApiEndpointProvider
 {

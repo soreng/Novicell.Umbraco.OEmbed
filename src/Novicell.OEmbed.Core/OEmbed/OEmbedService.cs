@@ -7,7 +7,6 @@ using Newtonsoft.Json;
 using Novicell.OEmbed.Configuration;
 using Novicell.OEmbed.Core.Models;
 using Umbraco.Cms.Core;
-using Umbraco.Extension1.Services;
 
 namespace Novicell.OEmbed.Core.OEmbed;
 

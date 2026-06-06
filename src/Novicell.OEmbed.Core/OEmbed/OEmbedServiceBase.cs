@@ -1,6 +1,6 @@
 using System.Net.Mime;
 
-namespace Umbraco.Extension1.Services;
+namespace Novicell.OEmbed.Core.OEmbed;
 
 internal abstract class OEmbedServiceBase
 {

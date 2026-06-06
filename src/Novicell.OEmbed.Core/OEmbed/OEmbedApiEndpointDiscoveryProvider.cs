@@ -3,7 +3,7 @@ using System.Web;
 using Microsoft.Extensions.Logging;
 using Novicell.OEmbed.Core.Models;
 
-namespace Umbraco.Extension1.Services;
+namespace Novicell.OEmbed.Core.OEmbed;
 
 internal class OEmbedApiEndpointDiscoveryProvider(
     IHttpClientFactory httpClientFactory,

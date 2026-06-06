@@ -5,9 +5,8 @@ using Novicell.OEmbed.Core.Models;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Media;
 using Umbraco.Cms.Core.Media.EmbedProviders;
-using Umbraco.Extension1.Services;
 
-namespace Umbraco.Extension1.Controllers;
+namespace Novicell.OEmbed.Core.OEmbed;
 
 internal class OEmbedApiEndpointProvider(EmbedProvidersCollection providers) : IOEmbedApiEndpointProvider
 {
