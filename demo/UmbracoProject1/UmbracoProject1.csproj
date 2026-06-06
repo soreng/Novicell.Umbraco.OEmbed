@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Novicell.OEmbed\Novicell.OEmbed.csproj" />
+    <ProjectReference Include="..\..\src\Novicell.OEmbed\Novicell.OEmbed.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
