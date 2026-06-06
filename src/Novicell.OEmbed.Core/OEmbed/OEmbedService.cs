@@ -116,7 +116,7 @@ internal class OEmbedService(
         HttpResponseMessage response, CancellationToken cancellationToken)
     {
         Func<string?, int> i = (string? s) => s is not null && int.TryParse(s, out var n) ? n : 0;
-        Func<string?, Uri> u = (string? s) => Uri.TryCreate(s, UriKind.RelativeOrAbsolute, out Uri? r) ? r : null;
+        Func<string?, Uri?> u = (string? s) => Uri.TryCreate(s, UriKind.RelativeOrAbsolute, out Uri? r) ? r : null;
 
         try
         {
