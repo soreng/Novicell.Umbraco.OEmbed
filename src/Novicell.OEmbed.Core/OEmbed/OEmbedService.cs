@@ -6,11 +6,10 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Novicell.OEmbed.Configuration;
 using Novicell.OEmbed.Core.Models;
-using Novicell.OEmbed.Core.OEmbed;
 using Umbraco.Cms.Core;
 using Umbraco.Extension1.Services;
 
-namespace Umbraco.Extension1.Controllers;
+namespace Novicell.OEmbed.Core.OEmbed;
 
 internal class OEmbedService(
     IOEmbedApiEndpointProvider endpointProvider,

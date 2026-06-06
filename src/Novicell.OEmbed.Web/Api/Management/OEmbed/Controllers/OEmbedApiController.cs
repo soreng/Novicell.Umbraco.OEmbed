@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Novicell.OEmbed.Core;
 using Novicell.OEmbed.Core.Models;
+using Novicell.OEmbed.Core.OEmbed;
 using Novicell.OEmbed.Web.Api.Management.OEmbed.Models;
-using Umbraco.Extension1.Controllers;
 
 namespace Novicell.OEmbed.Web.Api.Management.OEmbed.Controllers;
 
@@ -24,12 +24,13 @@ public class OEmbedApiController(IOEmbedService oembedService)
         int? maxheight,
         CancellationToken cancellationToken)
     {
-        var request = new OEmbedRequest {
+        var request = new OEmbedRequest
+        {
             Url = url,
             MaxWidth = maxwidth,
             MaxHeight = maxheight
         };
-        
+
         var response = await oembedService
             .GetOEmbedAsync(request, cancellationToken);
 
@@ -55,5 +56,5 @@ public class OEmbedApiController(IOEmbedService oembedService)
             response.ThumbnailWidth,
             response.ThumbnailHeight);
     }
-    
+
 }

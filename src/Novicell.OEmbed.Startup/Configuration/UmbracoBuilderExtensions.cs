@@ -1,4 +1,4 @@
-using Novicell.OEmbed.Extensions;
+using Novicell.OEmbed.Core.Configuration;
 using Umbraco.Cms.Core.DependencyInjection;
 
 namespace Novicell.OEmbed.Extensions;

@@ -2,7 +2,6 @@ using Umbraco.Cms.Core.IO;
 using Umbraco.Cms.Core.PropertyEditors;
 using Umbraco.Cms.Core.Serialization;
 using Umbraco.Cms.Core.Strings;
-using Umbraco.Extension1.PropertyEditors;
 
 namespace Novicell.OEmbed.Core.PropertyEditors;
 

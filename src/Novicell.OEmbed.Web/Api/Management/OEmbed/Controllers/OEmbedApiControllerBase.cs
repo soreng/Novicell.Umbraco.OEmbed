@@ -7,7 +7,6 @@ using Umbraco.Cms.Api.Common.Attributes;
 using Umbraco.Cms.Api.Management.Controllers;
 using Umbraco.Cms.Web.Common.Authorization;
 using Umbraco.Cms.Web.Common.Routing;
-using Umbraco.Extension1.Services;
 
 namespace Novicell.OEmbed.Web.Api.Management.OEmbed.Controllers
 {

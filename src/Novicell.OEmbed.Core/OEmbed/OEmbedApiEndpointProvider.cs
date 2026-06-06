@@ -33,13 +33,13 @@ internal class OEmbedApiEndpointProvider(EmbedProvidersCollection providers) : I
         var provider = providers?
             .Where(x => x.UrlSchemeRegex.Length > 0)
             .FirstOrDefault(x => isUrlMatch(url.OriginalString, x.UrlSchemeRegex));
-        
+
         return Attempt<IEmbedProvider>.If(provider != null, provider);
     }
 
     private static Uri BuildApiEndpointUrl(IEmbedProvider provider)
         => BuildApiEndpointUrl(provider.ApiEndpoint, provider.RequestParams);
-    
+
     private static Uri BuildApiEndpointUrl(string endpoint, IDictionary<string, string> parameters)
     {
         if (parameters.Count <= 0)

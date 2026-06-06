@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using Umbraco.Cms.Core.Models.Validation;
 using Umbraco.Cms.Core.PropertyEditors;
 
-namespace Umbraco.Extension1.PropertyEditors;
+namespace Novicell.OEmbed.Core.PropertyEditors;
 
 public class OEmbedValueValidator : IValueValidator
 {
