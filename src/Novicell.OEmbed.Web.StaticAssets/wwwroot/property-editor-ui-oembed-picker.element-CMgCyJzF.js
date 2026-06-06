@@ -4,7 +4,7 @@ import { UmbLitElement as $ } from "@umbraco-cms/backoffice/lit-element";
 import { UMB_PROPERTY_CONTEXT as B } from "@umbraco-cms/backoffice/property";
 import { UmbFormControlMixin as w, UMB_VALIDATION_EMPTY_LOCALIZATION_KEY as R } from "@umbraco-cms/backoffice/validation";
 import { UmbModalToken as T, umbConfirmModal as N, umbOpenModal as U } from "@umbraco-cms/backoffice/modal";
-import "./oembed-preview.element-CSGYbOax.js";
+import "./oembed-preview.element-k5Io9aFz.js";
 const D = new T(
   "Novicell.Modal.OEmbedPicker",
   {
@@ -224,4 +224,4 @@ export {
   n as default,
   n as element
 };
-//# sourceMappingURL=property-editor-ui-oembed-picker.element-Cxh4KZhc.js.map
+//# sourceMappingURL=property-editor-ui-oembed-picker.element-CMgCyJzF.js.map

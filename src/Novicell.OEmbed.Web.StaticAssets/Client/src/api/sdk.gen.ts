@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetUmbracoNovicellOembedApiV1OembedData, GetUmbracoNovicellOembedApiV1OembedErrors, GetUmbracoNovicellOembedApiV1OembedResponses } from './types.gen';
+import type { GetOEmbedData, GetOEmbedErrors, GetOEmbedResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -19,8 +19,14 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 };
 
 export class NovicellOEmbedService {
-    public static getUmbracoNovicellOembedApiV1Oembed<ThrowOnError extends boolean = false>(options?: Options<GetUmbracoNovicellOembedApiV1OembedData, ThrowOnError>) {
-        return (options?.client ?? client).get<GetUmbracoNovicellOembedApiV1OembedResponses, GetUmbracoNovicellOembedApiV1OembedErrors, ThrowOnError>({
+    public static getOEmbed<ThrowOnError extends boolean = false>(options?: Options<GetOEmbedData, ThrowOnError>) {
+        return (options?.client ?? client).get<GetOEmbedResponses, GetOEmbedErrors, ThrowOnError>({
+            security: [
+                {
+                    scheme: 'bearer',
+                    type: 'http'
+                }
+            ],
             url: '/umbraco/novicell-oembed/api/v1/oembed',
             ...options
         });

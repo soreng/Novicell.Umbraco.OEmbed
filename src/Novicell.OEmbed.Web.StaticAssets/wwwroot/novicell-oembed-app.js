@@ -1,18 +1,18 @@
 import { UMB_AUTH_CONTEXT as i } from "@umbraco-cms/backoffice/auth";
-import { c as s } from "./client.gen-C8It7zoJ.js";
-const a = (o, e) => {
-  console.log("Novicell OEmbed Entrypoint initialized"), o.consumeContext(i, async (t) => {
-    const n = t?.getOpenApiConfiguration();
+import { c as s } from "./client.gen-DVwspqDp.js";
+const c = (o, t) => {
+  o.consumeContext(i, async (e) => {
+    const n = e?.getOpenApiConfiguration();
     s.setConfig({
       auth: n?.token ?? void 0,
       baseUrl: n?.base ?? "",
       credentials: n?.credentials ?? "same-origin"
     });
   });
-}, l = (o, e) => {
+}, g = (o, t) => {
 };
 export {
-  a as onInit,
-  l as onUnload
+  c as onInit,
+  g as onUnload
 };
 //# sourceMappingURL=novicell-oembed-app.js.map

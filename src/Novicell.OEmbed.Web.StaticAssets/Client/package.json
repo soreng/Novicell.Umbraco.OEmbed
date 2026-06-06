@@ -1,5 +1,5 @@
 {
-  "name": "umbraco-extension-1",
+  "name": "@novicell/oembed",
   "private": true,
   "version": "0.0.0",
   "type": "module",

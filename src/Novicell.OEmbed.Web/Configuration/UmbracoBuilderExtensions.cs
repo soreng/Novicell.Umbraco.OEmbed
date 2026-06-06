@@ -61,7 +61,7 @@ public static class UmbracoBuilderExtensions
                 configureSwagger(options);
 
                 //options.DocumentFilter<MimeTypeDocumentFilter>(apiName);
-                //options.OperationFilter<OEmbedApiOperationSecurityFilter>(apiName);
+                options.OperationFilter<OEmbedApiOperationSecurityFilter>();
                 //options.OperationFilter<SwaggerOperationFilter>(apiName);
                 //options.OperationFilter<SseResponseOperationFilter>(apiName);
 

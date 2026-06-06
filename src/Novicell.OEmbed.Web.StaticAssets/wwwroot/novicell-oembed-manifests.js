@@ -3,14 +3,14 @@ const e = [
     type: "modal",
     alias: "Novicell.Modal.OEmbedPicker",
     name: "OEmbed Picker Modal",
-    js: () => import("./oembed-picker-modal.element-ZhZsQi5W.js")
+    js: () => import("./oembed-picker-modal.element-BiSL4Tl4.js")
   }
 ], o = [...e], t = [...o], i = "Novicell.Repository.OEmbed", r = [
   {
     type: "repository",
     alias: i,
     name: "OEmbed Repository",
-    api: () => import("./oembed.repository-BlzFYhmR.js")
+    api: () => import("./oembed.repository--MdgkNG_.js")
   }
 ], s = [...r], a = [
   //...componentsManifests,
@@ -27,7 +27,7 @@ const e = [
   type: "propertyEditorUi",
   alias: "Novicell.PropertyEditorUi.OEmbedPicker",
   name: "OEmbed Picker Property Editor UI",
-  element: () => import("./property-editor-ui-oembed-picker.element-Cxh4KZhc.js"),
+  element: () => import("./property-editor-ui-oembed-picker.element-CMgCyJzF.js"),
   meta: {
     label: "OEmbed Picker",
     propertyEditorSchemaAlias: "Novicell.OEmbed.Picker",
