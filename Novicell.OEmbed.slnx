@@ -7,6 +7,5 @@
     <Project Path="src/Novicell.OEmbed.Startup/Novicell.OEmbed.Startup.csproj" />
     <Project Path="src/Novicell.OEmbed.Web.StaticAssets/Novicell.OEmbed.Web.StaticAssets.csproj" />
   </Folder>
-  <Project Path="Umbraco.Extension1/Umbraco.Extension1.csproj" />
   <Project Path="UmbracoProject1/UmbracoProject1.csproj" />
 </Solution>
