@@ -27,7 +27,7 @@ const e = [
   type: "propertyEditorUi",
   alias: "Novicell.PropertyEditorUi.OEmbedPicker",
   name: "OEmbed Picker Property Editor UI",
-  element: () => import("./property-editor-ui-oembed-picker.element-4j4pziRE.js"),
+  element: () => import("./property-editor-ui-oembed-picker.element-Cxh4KZhc.js"),
   meta: {
     label: "OEmbed Picker",
     propertyEditorSchemaAlias: "Novicell.OEmbed.Picker",

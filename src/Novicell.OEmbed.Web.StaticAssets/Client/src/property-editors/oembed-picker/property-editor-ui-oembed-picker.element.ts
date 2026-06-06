@@ -64,36 +64,17 @@ export default class PropertyEditorUiOEmbedPickerElement
     });
   }
 
-  override connectedCallback() {
-    super.connectedCallback();
-    console.log("[OEmbedPropertyEditor] connected", {
-      alias: this._alias,
-      variantId: this._variantId,
-      value: this.value,
-      readonly: this.readonly,
-      mandatory: this.mandatory,
-    });
-  }
-
-  #onChange(event: CustomEvent & { target: HTMLInputElement & { value?: OEmbedValueModel } }) {
+  #onChange(
+    event: CustomEvent & {
+      target: HTMLInputElement & { value?: OEmbedValueModel };
+    },
+  ) {
     const isEmpty = event.target.value === undefined;
     this.value = isEmpty ? undefined : event.target.value;
-    console.log("[OEmbedPropertyEditor] change", {
-      isEmpty,
-      value: this.value,
-    });
     this.dispatchEvent(new UmbChangeEvent());
   }
 
   override render() {
-    console.log("[OEmbedPropertyEditor] render", {
-      alias: this._alias,
-      variantId: this._variantId,
-      value: this.value,
-      readonly: this.readonly,
-      mandatory: this.mandatory,
-    });
-
     return html`
       <input-oembed
         .alias=${this._alias}

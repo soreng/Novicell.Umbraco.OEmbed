@@ -48,23 +48,7 @@ export class InputOEmbedElement
 
   #hasRenderableValue(value?: OEmbedValueModel): value is OEmbedValueModel {
     const hasRenderableValue = Boolean(value?.url && value?.oembed?.type);
-
-    console.log("[InputOEmbed] hasRenderableValue", {
-      hasRenderableValue,
-      value,
-    });
-
     return hasRenderableValue;
-  }
-
-  override connectedCallback() {
-    super.connectedCallback();
-    console.log("[InputOEmbed] connected", {
-      value: this.value,
-      readonly: this.readonly,
-      required: this.required,
-      requiredMessage: this.requiredMessage,
-    });
   }
 
   async #openPicker(url?: string) {
@@ -75,8 +59,6 @@ export class InputOEmbedElement
       },
     }).catch(() => undefined);
     if (!value) return;
-
-    console.log("picked oembed", value);
 
     this.value = {
       ...value,
@@ -121,8 +103,6 @@ export class InputOEmbedElement
   }
 
   #renderOEmbed(value: OEmbedValueModel) {
-    console.log("[InputOEmbed] render preview", { value });
-
     return html`
       <uui-card-media
         .name=${value.oembed.title}
@@ -139,11 +119,6 @@ export class InputOEmbedElement
 
   #renderAddButton() {
     if (this.readonly || this.#hasRenderableValue(this.value)) return nothing;
-
-    console.log("[InputOEmbed] render add button", {
-      value: this.value,
-      readonly: this.readonly,
-    });
 
     return html`
       <uui-button
@@ -165,13 +140,6 @@ export class InputOEmbedElement
 
   override render() {
     const hasRenderableValue = this.#hasRenderableValue(this.value);
-
-    console.log("[InputOEmbed] render", {
-      hasRenderableValue,
-      value: this.value,
-      readonly: this.readonly,
-    });
-
     return html`<div class="container">
       ${when(
         hasRenderableValue,
