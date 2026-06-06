@@ -16,6 +16,8 @@ export const onInit: UmbEntryPointOnInit = (_host, _extensionRegistry) => {
       auth: config?.token ?? undefined,
       baseUrl: config?.base ?? "",
       credentials: config?.credentials ?? "same-origin",
+      // Throw on error responses so Umbraco's tryExecute can catch them and show a notification.
+      throwOnError: true,
     });
   });
 };

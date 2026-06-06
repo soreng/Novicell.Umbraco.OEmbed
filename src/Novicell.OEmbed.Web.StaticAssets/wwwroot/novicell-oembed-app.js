@@ -1,12 +1,14 @@
 import { UMB_AUTH_CONTEXT as i } from "@umbraco-cms/backoffice/auth";
-import { c as s } from "./client.gen-DVwspqDp.js";
+import { c as r } from "./client.gen-DVwspqDp.js";
 const c = (o, t) => {
   o.consumeContext(i, async (e) => {
     const n = e?.getOpenApiConfiguration();
-    s.setConfig({
+    r.setConfig({
       auth: n?.token ?? void 0,
       baseUrl: n?.base ?? "",
-      credentials: n?.credentials ?? "same-origin"
+      credentials: n?.credentials ?? "same-origin",
+      // Throw on error responses so Umbraco's tryExecute can catch them and show a notification.
+      throwOnError: !0
     });
   });
 }, g = (o, t) => {

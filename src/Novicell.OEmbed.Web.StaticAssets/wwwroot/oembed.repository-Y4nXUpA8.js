@@ -33,8 +33,17 @@ class d {
    * @param {string} type
    * @memberof OEmbedServerDataSource
    */
-  async getOEmbed({ url: e, maxWidth: t, maxHeight: r }) {
-    return m(this.#e, u.getOEmbed({ query: { url: e, maxwidth: t, maxheight: r } }));
+  async getOEmbed({
+    url: e,
+    maxWidth: t,
+    maxHeight: r
+  }) {
+    return m(
+      this.#e,
+      u.getOEmbed({
+        query: { url: e, maxwidth: t, maxheight: r }
+      })
+    );
   }
 }
 class h extends i {
@@ -51,4 +60,4 @@ export {
   h as OEmbedRepository,
   h as api
 };
-//# sourceMappingURL=oembed.repository--MdgkNG_.js.map
+//# sourceMappingURL=oembed.repository-Y4nXUpA8.js.map

@@ -3,14 +3,14 @@ const e = [
     type: "modal",
     alias: "Novicell.Modal.OEmbedPicker",
     name: "OEmbed Picker Modal",
-    js: () => import("./oembed-picker-modal.element-BiSL4Tl4.js")
+    js: () => import("./oembed-picker-modal.element-Db6e9Kxf.js")
   }
 ], o = [...e], t = [...o], i = "Novicell.Repository.OEmbed", r = [
   {
     type: "repository",
     alias: i,
     name: "OEmbed Repository",
-    api: () => import("./oembed.repository--MdgkNG_.js")
+    api: () => import("./oembed.repository-Y4nXUpA8.js")
   }
 ], s = [...r], a = [
   //...componentsManifests,
