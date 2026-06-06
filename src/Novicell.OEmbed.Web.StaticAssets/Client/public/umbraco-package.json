@@ -8,13 +8,13 @@
       "name": "Novicell OEmbed",
       "alias": "Novicell.OEmbed.Bundle",
       "type": "bundle",
-      "js": "/App_Plugins/novicell-oembed/novicell-oembed-manifests.js"
+      "js": "/App_Plugins/novicell-oembed/novicell-oembed-manifests.js?v=20260606"
     },
     {
       "type": "backofficeEntryPoint",
       "name": "Novicell OEmbed Backoffice Entry Point",
       "alias": "Novicell.OEmbed.BackofficeEntryPoint",
-      "js": "/App_Plugins/novicell-oembed/novicell-oembed-app.js"
+      "js": "/App_Plugins/novicell-oembed/novicell-oembed-app.js?v=20260606"
     }
   ],
   "importmap": {
