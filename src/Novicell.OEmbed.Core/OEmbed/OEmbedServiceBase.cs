@@ -21,12 +21,12 @@ internal abstract class OEmbedServiceBase
     {
         return IsXml(mediaType, OEmbedMediaTypeSuffix);
     }
-    
+
     internal static bool IsJson(string? mediaType, string? suffix = null)
         => IsAnyOfWithSuffix(mediaType, suffix ?? string.Empty, JsonMediaTypes);
 
     internal static bool IsXml(string? mediaType, string? suffix = null)
-        => IsAnyOfWithSuffix(mediaType, suffix??string.Empty, XmlMediaTypes);
+        => IsAnyOfWithSuffix(mediaType, suffix ?? string.Empty, XmlMediaTypes);
 
     internal static bool IsAlternateOrAlternative(string? rel)
         => IsAnyOf(rel, "alternate", "alternative");

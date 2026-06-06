@@ -7,11 +7,11 @@ namespace Novicell.OEmbed.Core.OEmbed;
 
 internal class OEmbedApiEndpointDiscoveryProvider(
     IHttpClientFactory httpClientFactory,
-    ILogger<OEmbedApiEndpointDiscoveryProvider> logger):
+    ILogger<OEmbedApiEndpointDiscoveryProvider> logger) :
     OEmbedServiceBase, IOEmbedApiEndpointDiscoveryProvider
 {
     internal record Link(string Href, string Type);
-    
+
     private const string TypeAttributeName = "type";
     private const string RelAttributeName = "rel";
 
@@ -19,14 +19,14 @@ internal class OEmbedApiEndpointDiscoveryProvider(
     public async Task<OEmbedApiEndpoint?> DiscoverApiEndpointAsync(Uri url)
     {
         Uri? endpoint;
-        
+
         try
         {
             using var client = httpClientFactory.CreateClient();
             var response = await client.GetAsync(url);
 
             response.EnsureSuccessStatusCode();
-            
+
             endpoint = await DiscoverEndpointFromLinks(response);
         }
         catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
@@ -57,8 +57,8 @@ internal class OEmbedApiEndpointDiscoveryProvider(
     private static async Task<Uri?> DiscoverEndpointFromLinks(HttpResponseMessage response)
     {
         Uri? endpoint = null;
-        
-        if(response.Headers.TryGetValues("Link", out var headerValues))
+
+        if (response.Headers.TryGetValues("Link", out var headerValues))
         {
             // First, try to find the link in the link-headers, since they are smaller to parse.
             var headerLinks = FindAlternateLinksInLinkHeader(headerValues).ToList();
@@ -108,11 +108,11 @@ internal class OEmbedApiEndpointDiscoveryProvider(
                 .Select(x => x[(RelAttributeName.Length + 1)..].Trim('"'))
                 .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
 
-            if(!IsAlternateOrAlternative(rel))
+            if (!IsAlternateOrAlternative(rel))
             {
                 continue;
             }
-            
+
             var type = inputs.Skip(1)
                 .Where(x => x.StartsWith(TypeAttributeName))
                 .Select(x => x[(TypeAttributeName.Length + 1)..])
@@ -141,7 +141,7 @@ internal class OEmbedApiEndpointDiscoveryProvider(
         var nodes = doc.DocumentNode.Descendants()
             .Where(e => e is { NodeType: HtmlAgilityPack.HtmlNodeType.Element, Name: "link" });
 
-        foreach(var node in nodes)
+        foreach (var node in nodes)
         {
             var rel = HttpUtility.HtmlDecode(node.GetAttributeValue(RelAttributeName, string.Empty));
             if (!IsAlternateOrAlternative(rel))
@@ -151,7 +151,7 @@ internal class OEmbedApiEndpointDiscoveryProvider(
 
             var href = HttpUtility.HtmlDecode(node.GetAttributeValue("href", string.Empty));
             var type = HttpUtility.HtmlDecode(node.GetAttributeValue(TypeAttributeName, string.Empty));
-            
+
             yield return new Link(href, type);
         }
     }
@@ -170,7 +170,7 @@ internal class OEmbedApiEndpointDiscoveryProvider(
         }
 
         var xml = links.FirstOrDefault(x => IsXmlAndOEmbed(x.Type));
-        if (Uri.TryCreate(xml?.Href, UriKind.RelativeOrAbsolute, out var xmlUrl) )
+        if (Uri.TryCreate(xml?.Href, UriKind.RelativeOrAbsolute, out var xmlUrl))
         {
             return xmlUrl;
         }
