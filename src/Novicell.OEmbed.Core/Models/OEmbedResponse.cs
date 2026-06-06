@@ -29,31 +29,31 @@ public record OEmbedResponse
     /// </summary>
     [DataMember(Name = "title")]
     public string? Title { get; set; }
-        
+
     /// <summary>
     /// The name of the author/owner of the resource.
     /// </summary>
     [DataMember(Name = "author_name")]
     public string? AuthorName { get; set; }
-        
+
     /// <summary>
     /// A URL for the author/owner of the resource.
     /// </summary>
     [DataMember(Name = "author_url")]
     public Uri? AuthorUrl { get; set; }
-        
+
     /// <summary>
     /// The name of the resource provider.
     /// </summary>
     [DataMember(Name = "provider_name")]
     public string? ProviderName { get; set; }
-        
+
     /// <summary>
     /// The url of the resource provider.
     /// </summary>
     [DataMember(Name = "provider_url")]
     public Uri? ProviderUrl { get; set; }
-        
+
     /// <summary>
     /// A URL to a thumbnail image representing the resource.
     /// </summary>
@@ -62,16 +62,16 @@ public record OEmbedResponse
     /// </remarks>
     [DataMember(Name = "thumbnail_url")]
     public Uri? ThumbnailUrl { get; set; }
-        
+
     /// <summary>
     /// The height of the optional thumbnail. 
     /// </summary>
-     /// <remarks>
-     /// If this parameter is present, <see cref="ThumbnailUrl" /> and <see cref="ThumbnailWidth"/> must also be present.
-     /// </remarks>
+    /// <remarks>
+    /// If this parameter is present, <see cref="ThumbnailUrl" /> and <see cref="ThumbnailWidth"/> must also be present.
+    /// </remarks>
     [DataMember(Name = "thumbnail_height")]
     public int? ThumbnailHeight { get; set; }
-        
+
     /// <summary>
     /// The width of the optional thumbnail. 
     /// </summary>
@@ -80,21 +80,21 @@ public record OEmbedResponse
     /// </remarks>
     [DataMember(Name = "thumbnail_width")]
     public int? ThumbnailWidth { get; set; }
-        
+
     /// <summary>
     /// The HTML required to embed a video player.
     /// </summary>
     /// <remarks>The HTML should have no padding or margins. Consumers may wish to load the HTML in an off-domain iframe to avoid XSS vulnerabilities.</remarks>
     [DataMember(Name = "html")]
     public string? Html { get; set; }
-        
+
     /// <summary>
     /// The source URL of the image.
     /// </summary>
     /// <remarks>Consumers should be able to insert this URL into an &lt;img&gt; element. Only HTTP and HTTPS URLs are valid.</remarks>
     [DataMember(Name = "url")]
     public Uri? Url { get; set; }
-        
+
     /// <summary>
     /// The height in pixels of the image specified in the <see cref="Url" /> parameter.
     /// </summary>

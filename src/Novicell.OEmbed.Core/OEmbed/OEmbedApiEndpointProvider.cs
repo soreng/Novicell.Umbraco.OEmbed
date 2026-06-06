@@ -12,14 +12,14 @@ internal class OEmbedApiEndpointProvider(EmbedProvidersCollection providers) : I
 {
     public async Task<OEmbedApiEndpoint?> GetApiEndpointAsync(Uri url)
     {
-        var provider = FindEmbedProvider(url);
+        Attempt<IEmbedProvider> provider = FindEmbedProvider(url);
 
         if (provider.Result is null)
         {
             return null;
         }
 
-        var endpoint = BuildApiEndpointUrl(provider.Result);
+        Uri endpoint = BuildApiEndpointUrl(provider.Result);
 
         return new OEmbedApiEndpoint(provider.GetType().Name, endpoint);
     }
@@ -29,7 +29,7 @@ internal class OEmbedApiEndpointProvider(EmbedProvidersCollection providers) : I
         var isUrlMatch = new Func<string, string[], bool>((input, patterns)
             => patterns.Any(p => Regex.IsMatch(input, p, RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1))));
 
-        var provider = providers?
+        IEmbedProvider? provider = providers?
             .Where(x => x.UrlSchemeRegex.Length > 0)
             .FirstOrDefault(x => isUrlMatch(url.OriginalString, x.UrlSchemeRegex));
 
@@ -48,9 +48,9 @@ internal class OEmbedApiEndpointProvider(EmbedProvidersCollection providers) : I
 
         var builder = new UriBuilder(endpoint);
 
-        var queryString = HttpUtility.ParseQueryString(builder.Query);
+        NameValueCollection queryString = HttpUtility.ParseQueryString(builder.Query);
 
-        foreach (var (key, value) in parameters)
+        foreach ((string? key, string? value) in parameters)
         {
             queryString[key] = HttpUtility.UrlEncode(value);
         }

@@ -31,7 +31,7 @@ public class OEmbedApiController(IOEmbedService oembedService)
             MaxHeight = maxheight
         };
 
-        var response = await oembedService
+        Umbraco.Cms.Core.Attempt<OEmbedResponse?, OEmbedOperationStatus> response = await oembedService
             .GetOEmbedAsync(request, cancellationToken);
 
         return response.Success

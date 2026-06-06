@@ -1,3 +1,4 @@
+using System.Collections.Specialized;
 using System.Net;
 using System.Web;
 using System.Xml.Linq;
@@ -24,20 +25,20 @@ internal class OEmbedService(
         OEmbedRequest request,
         CancellationToken cancellationToken)
     {
-        var apiEndpoint = await FindApiEndpoint(request);
+        OEmbedApiEndpoint? apiEndpoint = await FindApiEndpoint(request);
 
         if (apiEndpoint == null)
         {
             return Attempt<OEmbedResponse?, OEmbedOperationStatus>.Fail(OEmbedOperationStatus.ProviderNotSupported);
         }
 
-        using var client = httpClientFactory.CreateClient();
+        using HttpClient client = httpClientFactory.CreateClient();
         client.DefaultRequestHeaders.UserAgent.TryParseAdd(Umbraco.Cms.Core.Constants.HttpClients.Headers
             .UserAgentProductName);
 
         try
         {
-            var endpointUrl = BuildEndpointUrl(apiEndpoint.Endpoint, request);
+            Uri endpointUrl = BuildEndpointUrl(apiEndpoint.Endpoint, request);
             return await FetchOEmbedAsync(endpointUrl, client, cancellationToken);
         }
         catch (Exception e)
@@ -49,7 +50,7 @@ internal class OEmbedService(
 
     private async Task<OEmbedApiEndpoint?> FindApiEndpoint(OEmbedRequest request)
     {
-        var endpoint = await endpointProvider.GetApiEndpointAsync(request.Url);
+        OEmbedApiEndpoint? endpoint = await endpointProvider.GetApiEndpointAsync(request.Url);
 
         if (endpoint is null && _options.Autodiscover)
         {
@@ -63,7 +64,7 @@ internal class OEmbedService(
     {
         var builder = new UriBuilder(apiEndpoint);
 
-        var query = HttpUtility.ParseQueryString(builder.Query);
+        NameValueCollection query = HttpUtility.ParseQueryString(builder.Query);
         query.Set("url", request.Url.ToString());
         if (request.MaxWidth > 0)
         {
@@ -86,7 +87,7 @@ internal class OEmbedService(
         CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
-        using var response = await client.SendAsync(request, cancellationToken);
+        using HttpResponseMessage response = await client.SendAsync(request, cancellationToken);
 
         try
         {
@@ -114,14 +115,14 @@ internal class OEmbedService(
     private static async Task<Attempt<OEmbedResponse?, OEmbedOperationStatus>> FromXmlResponseAsync(
         HttpResponseMessage response, CancellationToken cancellationToken)
     {
-        var i = (string? s) => s is not null && int.TryParse(s, out var n) ? n : 0;
-        var u = (string? s) => Uri.TryCreate(s, UriKind.RelativeOrAbsolute, out var r) ? r : null;
+        Func<string?, int> i = (string? s) => s is not null && int.TryParse(s, out var n) ? n : 0;
+        Func<string?, Uri> u = (string? s) => Uri.TryCreate(s, UriKind.RelativeOrAbsolute, out Uri? r) ? r : null;
 
         try
         {
-            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            var xml = await XDocument.LoadAsync(stream, LoadOptions.None, cancellationToken);
-            var oembed = xml.Element("oembed");
+            await using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            XDocument xml = await XDocument.LoadAsync(stream, LoadOptions.None, cancellationToken);
+            XElement? oembed = xml.Element("oembed");
 
             if (oembed == null || !Enum.TryParse(oembed.Element("type")?.Value, true, out OEmbedType type))
             {
@@ -173,7 +174,7 @@ internal class OEmbedService(
 
         try
         {
-            var result = JsonConvert.DeserializeObject<OEmbedResponse>(json, settings);
+            OEmbedResponse? result = JsonConvert.DeserializeObject<OEmbedResponse>(json, settings);
 
             return Attempt<OEmbedResponse?, OEmbedOperationStatus>.If(
                 result is not null,

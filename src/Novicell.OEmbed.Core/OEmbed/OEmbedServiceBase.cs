@@ -4,29 +4,29 @@ namespace Novicell.OEmbed.Core.OEmbed;
 
 internal abstract class OEmbedServiceBase
 {
-    internal static string OEmbedMediaTypeSuffix = "+oembed";
+    internal static string _oEmbedMediaTypeSuffix = "+oembed";
 
-    private static readonly string[] XmlMediaTypes =
+    private static readonly string[] _xmlMediaTypes =
         [MediaTypeNames.Text.Xml, MediaTypeNames.Application.Xml];
 
-    private static readonly string[] JsonMediaTypes =
+    private static readonly string[] _jsonMediaTypes =
         [MediaTypeNames.Application.Json];
 
     internal static bool IsJsonAndOEmbed(string mediaType)
     {
-        return IsJson(mediaType, OEmbedMediaTypeSuffix);
+        return IsJson(mediaType, _oEmbedMediaTypeSuffix);
     }
 
     internal static bool IsXmlAndOEmbed(string mediaType)
     {
-        return IsXml(mediaType, OEmbedMediaTypeSuffix);
+        return IsXml(mediaType, _oEmbedMediaTypeSuffix);
     }
 
     internal static bool IsJson(string? mediaType, string? suffix = null)
-        => IsAnyOfWithSuffix(mediaType, suffix ?? string.Empty, JsonMediaTypes);
+        => IsAnyOfWithSuffix(mediaType, suffix ?? string.Empty, _jsonMediaTypes);
 
     internal static bool IsXml(string? mediaType, string? suffix = null)
-        => IsAnyOfWithSuffix(mediaType, suffix ?? string.Empty, XmlMediaTypes);
+        => IsAnyOfWithSuffix(mediaType, suffix ?? string.Empty, _xmlMediaTypes);
 
     internal static bool IsAlternateOrAlternative(string? rel)
         => IsAnyOf(rel, "alternate", "alternative");

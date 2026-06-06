@@ -1,5 +1,6 @@
 using System.Net;
 using System.Web;
+using HtmlAgilityPack;
 using Microsoft.Extensions.Logging;
 using Novicell.OEmbed.Core.Models;
 
@@ -22,8 +23,8 @@ internal class OEmbedApiEndpointDiscoveryProvider(
 
         try
         {
-            using var client = httpClientFactory.CreateClient();
-            var response = await client.GetAsync(url);
+            using HttpClient client = httpClientFactory.CreateClient();
+            HttpResponseMessage response = await client.GetAsync(url);
 
             response.EnsureSuccessStatusCode();
 
@@ -58,7 +59,7 @@ internal class OEmbedApiEndpointDiscoveryProvider(
     {
         Uri? endpoint = null;
 
-        if (response.Headers.TryGetValues("Link", out var headerValues))
+        if (response.Headers.TryGetValues("Link", out IEnumerable<string>? headerValues))
         {
             // First, try to find the link in the link-headers, since they are smaller to parse.
             var headerLinks = FindAlternateLinksInLinkHeader(headerValues).ToList();
@@ -138,10 +139,10 @@ internal class OEmbedApiEndpointDiscoveryProvider(
 
         doc.LoadHtml(html);
 
-        var nodes = doc.DocumentNode.Descendants()
+        IEnumerable<HtmlNode> nodes = doc.DocumentNode.Descendants()
             .Where(e => e is { NodeType: HtmlAgilityPack.HtmlNodeType.Element, Name: "link" });
 
-        foreach (var node in nodes)
+        foreach (HtmlNode? node in nodes)
         {
             var rel = HttpUtility.HtmlDecode(node.GetAttributeValue(RelAttributeName, string.Empty));
             if (!IsAlternateOrAlternative(rel))
@@ -163,14 +164,14 @@ internal class OEmbedApiEndpointDiscoveryProvider(
             return null;
         }
 
-        var json = links.FirstOrDefault(x => IsJsonAndOEmbed(x.Type));
-        if (Uri.TryCreate(json?.Href, UriKind.RelativeOrAbsolute, out var jsonUrl))
+        Link? json = links.FirstOrDefault(x => IsJsonAndOEmbed(x.Type));
+        if (Uri.TryCreate(json?.Href, UriKind.RelativeOrAbsolute, out Uri? jsonUrl))
         {
             return jsonUrl;
         }
 
-        var xml = links.FirstOrDefault(x => IsXmlAndOEmbed(x.Type));
-        if (Uri.TryCreate(xml?.Href, UriKind.RelativeOrAbsolute, out var xmlUrl))
+        Link? xml = links.FirstOrDefault(x => IsXmlAndOEmbed(x.Type));
+        if (Uri.TryCreate(xml?.Href, UriKind.RelativeOrAbsolute, out Uri? xmlUrl))
         {
             return xmlUrl;
         }

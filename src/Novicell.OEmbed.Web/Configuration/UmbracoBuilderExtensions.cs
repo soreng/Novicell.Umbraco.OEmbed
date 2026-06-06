@@ -22,13 +22,13 @@ public static class UmbracoBuilderExtensions
 
         return builder;
     }
-    
+
     private static IUmbracoBuilder AddNovicellOEmbedManagementApi(this IUmbracoBuilder builder)
     {
         builder.WithNovicellOEmbedManagementApi(Constants.ApiName, options =>
         {
             options.SwaggerDoc(
-                Constants.ApiName, 
+                Constants.ApiName,
                 new OpenApiInfo
                 {
                     Title = "Novicell OEmbed API",
@@ -54,7 +54,9 @@ public static class UmbracoBuilderExtensions
             {
                 // Only add the swagger doc if it hasn't been added already
                 if (options.SwaggerGeneratorOptions.SwaggerDocs.ContainsKey(apiName))
+                {
                     return;
+                }
 
                 configureSwagger(options);
 
@@ -78,7 +80,7 @@ public static class UmbracoBuilderExtensions
         }
 
         builder.Services.AddSingleton<IOperationIdHandler, OEmbedApiOperationIdHandler>();
-        
+
         return builder;
 
     }

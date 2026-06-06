@@ -1,4 +1,4 @@
-﻿using System.Runtime.Serialization;
+using System.Runtime.Serialization;
 
 namespace Novicell.OEmbed.Core.Models;
 
@@ -8,12 +8,12 @@ public enum OEmbedType
     /// This type is used for representing playable videos.
     /// </summary>
     [EnumMember(Value = "video")]
-    Video, 
+    Video,
     /// <summary>
     /// This type is used for representing static photos.
     /// </summary>
     [EnumMember(Value = "photo")]
-    Photo, 
+    Photo,
     /// <summary>
     /// This type allow a provider to return any generic embed data
     /// </summary>
