@@ -128,7 +128,7 @@ export class InputOEmbedElement
           this.pristine = false;
           this.checkValidity();
         }}
-        @click=${this.#openPicker}
+        @click=${() => this.#openPicker()}
         label=${this.localize.term("general_choose")}
         ?disabled=${this.readonly}
       >

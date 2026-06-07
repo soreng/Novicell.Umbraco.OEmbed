@@ -165,7 +165,7 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
         </div>
       </umb-property-layout>
       ${this.#renderThumbnail(
-        null /*oembed.thumbnailUrl*/,
+        oembed.thumbnailUrl,
         oembed.thumbnailWidth,
         oembed.thumbnailHeight,
         oembed.title,
