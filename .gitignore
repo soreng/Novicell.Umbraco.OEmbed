@@ -43,3 +43,6 @@ demo/OEmbed.Testsite/umbraco/Temp/
 demo/OEmbed.Testsite/umbraco/Smidge/
 demo/OEmbed.Testsite/wwwroot/media/
 demo/OEmbed.Testsite/wwwroot/cache/
+
+.jumbo/
+.jumbo/jumbo.db
