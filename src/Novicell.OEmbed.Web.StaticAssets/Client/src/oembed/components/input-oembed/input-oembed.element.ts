@@ -102,17 +102,52 @@ export class InputOEmbedElement
     `;
   }
 
+  #detail(oembed: OEmbedValueModel["oembed"]): string {
+    return [oembed.providerName, oembed.authorName].filter(Boolean).join(" · ");
+  }
+
+  #aspectRatio(oembed: OEmbedValueModel["oembed"]): string {
+    if (oembed.width && oembed.height) {
+      return `${oembed.width} / ${oembed.height}`;
+    }
+    if (oembed.thumbnailWidth && oembed.thumbnailHeight) {
+      return `${oembed.thumbnailWidth} / ${oembed.thumbnailHeight}`;
+    }
+    // Type can arrive in mixed casing from stored data, so normalise first.
+    switch (oembed.type?.toLowerCase()) {
+      case "video":
+        return "16 / 9";
+      case "photo":
+        return "4 / 3";
+      // TODO: determine sensible fallbacks for "rich" and "link" once those
+      // types are reviewed; defaulting to 16:9 for now.
+      default:
+        return "16 / 9";
+    }
+  }
+
+  #renderCardVisual(value: OEmbedValueModel) {
+    if (value.oembed.thumbnailUrl) {
+      return html`<img
+        src=${value.oembed.thumbnailUrl}
+        alt=${value.oembed.title ?? value.url}
+      />`;
+    }
+    return html`<oembed-preview .value="${value.oembed}"></oembed-preview>`;
+  }
+
   #renderOEmbed(value: OEmbedValueModel) {
     return html`
       <uui-card-media
-        .name=${value.oembed.title}
+        style=${`aspect-ratio: ${this.#aspectRatio(value.oembed)}`}
+        .name=${value.oembed.title ?? value.url}
+        .detail=${this.#detail(value.oembed)}
         .selectonly="true"
         .selectable="false"
         @open="${() => this.#openPicker(value.url)}"
         ?readonly=${this.readonly}
       >
-        <oembed-preview .value="${value.oembed}"></oembed-preview>
-        ${this.#renderActions()}
+        ${this.#renderCardVisual(value)} ${this.#renderActions()}
       </uui-card-media>
     `;
   }
@@ -158,11 +193,11 @@ export class InputOEmbedElement
       .container {
         display: grid;
         gap: var(--uui-size-space-5);
-        grid-template-columns: repeat(
-          auto-fill,
-          minmax(var(--umb-card-medium-min-width), 1fr)
+        grid-template-columns: minmax(
+          var(--umb-card-medium-min-width),
+          var(--umb-card-large-min-width)
         );
-        grid-auto-rows: var(--umb-card-medium-min-width);
+        grid-auto-rows: auto;
       }
 
       #btn-add {
@@ -184,6 +219,10 @@ export class InputOEmbedElement
       }
 
       img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
         background-image: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" fill-opacity=".1"><path d="M50 0h50v50H50zM0 50h50v50H0z"/></svg>');
         background-size: 10px 10px;
         background-repeat: repeat;
