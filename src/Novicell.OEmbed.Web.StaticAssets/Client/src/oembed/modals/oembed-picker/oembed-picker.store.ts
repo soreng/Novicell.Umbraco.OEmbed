@@ -81,24 +81,4 @@ export class OEmbedPickerStore {
     this.#errorState.setValue(undefined);
     this.#loadingState.setValue("idle");
   }
-
-  /**
-   * Mute state changes for batch updates.
-   */
-  mute(): void {
-    this.#urlState.mute();
-    this.#previewState.mute();
-    this.#loadingState.mute();
-    this.#errorState.mute();
-  }
-
-  /**
-   * Unmute state changes and emit all updates.
-   */
-  unmute(): void {
-    this.#urlState.unmute();
-    this.#previewState.unmute();
-    this.#loadingState.unmute();
-    this.#errorState.unmute();
-  }
 }

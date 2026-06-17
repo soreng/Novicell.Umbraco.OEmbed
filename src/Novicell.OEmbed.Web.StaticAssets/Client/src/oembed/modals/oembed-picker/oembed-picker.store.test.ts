@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { OEmbedPickerStore } from "./oembed-picker.store";
-import { mockOEmbedResponses } from "../mocks/data";
+import { mockOEmbedResponses } from "../../../../mocks/data";
 
 /**
  * Tests for OEmbedPickerStore.
@@ -27,19 +27,20 @@ describe("OEmbedPickerStore", () => {
 
     it("should emit URL changes via url$ observable", (done) => {
       let emissionCount = 0;
-      const expectedUrls = ["https://example.com", "https://youtube.com"];
+      // BehaviorSubject emits the current value ("") on subscribe first.
+      const expectedUrls = ["", "https://example.com", "https://youtube.com"];
 
       store.url$.subscribe((url) => {
         expect(url).to.equal(expectedUrls[emissionCount]);
         emissionCount++;
 
-        if (emissionCount === 2) {
+        if (emissionCount === 3) {
           done();
         }
       });
 
-      store.setUrl(expectedUrls[0]);
       store.setUrl(expectedUrls[1]);
+      store.setUrl(expectedUrls[2]);
     });
   });
 
@@ -95,8 +96,9 @@ describe("OEmbedPickerStore", () => {
       store.loading$.subscribe((state) => {
         states.push(state);
 
-        if (states.length === 2) {
-          expect(states).to.deep.equal(["loading", "idle"]);
+        // BehaviorSubject emits the current value ("idle") on subscribe first.
+        if (states.length === 3) {
+          expect(states).to.deep.equal(["idle", "loading", "idle"]);
           done();
         }
       });
@@ -127,26 +129,23 @@ describe("OEmbedPickerStore", () => {
     });
   });
 
-  describe("Batch updates with mute/unmute", () => {
-    it("should batch state updates", (done) => {
-      const emissions: any[] = [];
+  describe("Sequential updates", () => {
+    it("should reflect the final value after multiple updates", (done) => {
+      const emissions: string[] = [];
 
       store.url$.subscribe((url) => {
-        emissions.push({ type: "url", value: url });
+        emissions.push(url);
       });
 
-      store.mute();
       store.setUrl("https://example1.com");
       store.setUrl("https://example2.com");
       store.setUrl("https://example3.com");
-      store.unmute();
 
       setTimeout(() => {
-        // After unmute, should only have the final value
-        expect(emissions.length).to.be.greaterThan(0);
-        expect(emissions[emissions.length - 1].value).to.equal(
+        expect(emissions[emissions.length - 1]).to.equal(
           "https://example3.com",
         );
+        expect(store.getUrl()).to.equal("https://example3.com");
         done();
       }, 50);
     });
