@@ -153,7 +153,10 @@ export class InputOEmbedElement
         alt=${value.oembed.title ?? value.url}
       />`;
     }
-    return html`<oembed-preview .value="${value.oembed}"></oembed-preview>`;
+    return html`<oembed-preview
+      contain
+      .value="${value.oembed}"
+    ></oembed-preview>`;
   }
 
   #renderOEmbed(value: OEmbedValueModel) {

@@ -37,6 +37,14 @@ export class OEmbedPreviewElement
   @property({ attribute: false })
   value?: OEmbedPreviewModel;
 
+  /**
+   * Contained mode clips the preview to its host bounds instead of auto-sizing
+   * to the embed's rendered content. Used inside the property editor card,
+   * where the surrounding `uui-card-media` already fixes the aspect ratio.
+   */
+  @property({ type: Boolean, reflect: true })
+  contain = false;
+
   #frameObservers: ResizeObserver[] = [];
 
   override disconnectedCallback() {
@@ -126,6 +134,18 @@ export class OEmbedPreviewElement
       </div>`;
     }
 
+    // Contained surfaces (the card) clip the embed to the host bounds rather
+    // than auto-growing, so the preview never overflows neighbouring fields.
+    if (this.contain) {
+      return html`<div class="oembed-frame oembed-frame--contained">
+        <iframe
+          srcdoc=${srcdoc}
+          class="oembed-media"
+          sandbox="allow-scripts allow-same-origin allow-presentation"
+        ></iframe>
+      </div>`;
+    }
+
     // Dynamic-height embeds (e.g. tweets) report no usable height, so size the
     // iframe to its rendered content instead of forcing an aspect ratio.
     return html`<div class="oembed-frame oembed-frame--auto">
@@ -205,7 +225,11 @@ export class OEmbedPreviewElement
     const value = this.value;
     if (!value) return nothing;
 
-    return html`${this.#renderVisual(value)}${this.#renderMeta(value)}`;
+    // In contained mode the host (card) renders its own title/detail, so the
+    // preview shows only the visual to avoid duplication and extra height.
+    return html`${this.#renderVisual(value)}${this.contain
+      ? nothing
+      : this.#renderMeta(value)}`;
   }
 
   static styles = [
@@ -213,6 +237,11 @@ export class OEmbedPreviewElement
       :host {
         display: block;
         width: 100%;
+      }
+
+      :host([contain]) {
+        height: 100%;
+        overflow: hidden;
       }
 
       .oembed-frame {
@@ -240,6 +269,10 @@ export class OEmbedPreviewElement
         height: 150px;
         max-height: ${OEmbedPreviewElement.maxDynamicHeight}px;
         object-fit: unset;
+      }
+
+      .oembed-frame--contained {
+        height: 100%;
       }
 
       .oembed-meta {
