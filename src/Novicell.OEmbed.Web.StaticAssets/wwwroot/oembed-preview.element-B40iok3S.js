@@ -217,6 +217,7 @@ U = function(e) {
         <iframe
           srcdoc=${l}
           class="oembed-media"
+          scrolling="no"
           sandbox="allow-scripts allow-same-origin allow-presentation"
         ></iframe>
       </div>` : c`<div class="oembed-frame oembed-frame--auto">
@@ -346,4 +347,4 @@ export {
   Y as U,
   Z as a
 };
-//# sourceMappingURL=oembed-preview.element-CyT_Ma1Y.js.map
+//# sourceMappingURL=oembed-preview.element-B40iok3S.js.map

@@ -136,11 +136,13 @@ export class OEmbedPreviewElement
 
     // Contained surfaces (the card) clip the embed to the host bounds rather
     // than auto-growing, so the preview never overflows neighbouring fields.
+    // `scrolling="no"` suppresses the iframe's own scrollbar for taller embeds.
     if (this.contain) {
       return html`<div class="oembed-frame oembed-frame--contained">
         <iframe
           srcdoc=${srcdoc}
           class="oembed-media"
+          scrolling="no"
           sandbox="allow-scripts allow-same-origin allow-presentation"
         ></iframe>
       </div>`;
