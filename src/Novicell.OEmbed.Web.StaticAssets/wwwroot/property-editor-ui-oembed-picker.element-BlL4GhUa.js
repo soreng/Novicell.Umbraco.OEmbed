@@ -1,33 +1,33 @@
-import { when as R, html as h, nothing as g, css as U, property as u, customElement as b, state as $ } from "@umbraco-cms/backoffice/external/lit";
-import { UmbChangeEvent as _ } from "@umbraco-cms/backoffice/event";
-import { UmbLitElement as w } from "@umbraco-cms/backoffice/lit-element";
-import { UMB_PROPERTY_CONTEXT as A } from "@umbraco-cms/backoffice/property";
-import { UmbFormControlMixin as E, UMB_VALIDATION_EMPTY_LOCALIZATION_KEY as T } from "@umbraco-cms/backoffice/validation";
-import { UmbModalToken as D, umbConfirmModal as L, umbOpenModal as S } from "@umbraco-cms/backoffice/modal";
-import "./oembed-preview.element-B03RQRf5.js";
-const V = new D(
-  "Novicell.Modal.OEmbedPicker",
-  {
-    modal: {
-      type: "sidebar",
-      size: "small"
-    }
-  }
-);
-var q = Object.defineProperty, W = Object.getOwnPropertyDescriptor, O = (e) => {
+import { when as A, html as u, nothing as $, css as S, property as p, customElement as w, state as E } from "@umbraco-cms/backoffice/external/lit";
+import { UmbChangeEvent as C } from "@umbraco-cms/backoffice/event";
+import { UmbLitElement as O } from "@umbraco-cms/backoffice/lit-element";
+import { UMB_PROPERTY_CONTEXT as W } from "@umbraco-cms/backoffice/property";
+import { UmbFormControlMixin as P, UMB_VALIDATION_EMPTY_LOCALIZATION_KEY as q } from "@umbraco-cms/backoffice/validation";
+import { umbConfirmModal as D } from "@umbraco-cms/backoffice/modal";
+import { U as L, a as H } from "./oembed-preview.element-BoIInwIP.js";
+var Y = Object.defineProperty, K = Object.getOwnPropertyDescriptor, M = (e) => {
   throw TypeError(e);
-}, p = (e, t, a, o) => {
-  for (var i = o > 1 ? void 0 : o ? W(t, a) : t, d = e.length - 1, c; d >= 0; d--)
-    (c = e[d]) && (i = (o ? c(t, a, i) : c(i)) || i);
-  return o && i && q(t, a, i), i;
-}, H = (e, t, a) => t.has(e) || O("Cannot " + a), Y = (e, t, a) => t.has(e) ? O("Cannot add the same private member more than once") : t instanceof WeakSet ? t.add(e) : t.set(e, a), n = (e, t, a) => (H(e, t, "access private method"), a), r, f, y, M, C, P, I, k, x, z;
-let l = class extends E(w) {
+}, _ = (e, t, a, o) => {
+  for (var i = o > 1 ? void 0 : o ? K(t, a) : t, h = e.length - 1, c; h >= 0; h--)
+    (c = e[h]) && (i = (o ? c(t, a, i) : c(i)) || i);
+  return o && i && Y(t, a, i), i;
+}, k = (e, t, a) => t.has(e) || M("Cannot " + a), v = (e, t, a) => (k(e, t, "read from private field"), a ? a.call(e) : t.get(e)), b = (e, t, a) => t.has(e) ? M("Cannot add the same private member more than once") : t instanceof WeakSet ? t.add(e) : t.set(e, a), n = (e, t, a) => (k(e, t, "access private method"), a), d, r, y, g, I, x, U, B, R, N, T;
+let l = class extends P(O) {
   constructor() {
-    super(...arguments), Y(this, r);
+    super(), b(this, r), b(this, d, new L(this)), this.provideContext(H, v(this, d));
+  }
+  connectedCallback() {
+    super.connectedCallback(), this.value && v(this, d).setValue(this.value), this.observe(
+      v(this, d).value$,
+      (e) => {
+        e !== this.value && (this.value = e, this.dispatchEvent(new C()));
+      },
+      "_oembedPickerValue"
+    );
   }
   async requestRemoveItem(e) {
     const t = e.oembed.title || e.url;
-    await L(this, {
+    await D(this, {
       color: "danger",
       headline: `#actions_remove ${t}?`,
       content: `#defaultdialogs_confirmremove ${t}?`,
@@ -35,55 +35,47 @@ let l = class extends E(w) {
     });
   }
   render() {
-    const e = n(this, r, f).call(this, this.value);
-    return h`<div class="container">
-      ${R(
+    const e = n(this, r, y).call(this, this.value);
+    return u`<div class="container">
+      ${A(
       e,
-      () => n(this, r, x).call(this, this.value),
-      () => n(this, r, z).call(this)
+      () => n(this, r, N).call(this, this.value),
+      () => n(this, r, T).call(this)
     )}
     </div>`;
   }
 };
+d = /* @__PURE__ */ new WeakMap();
 r = /* @__PURE__ */ new WeakSet();
-f = function(e) {
+y = function(e) {
   return !!(e?.url && e?.oembed?.type);
 };
-y = async function(e) {
-  const t = await S(this, V, {
-    data: {
-      url: e
-      //types: ['video', 'rich', 'photo', 'link'],
-    }
-  }).catch(() => {
-  });
-  t && (this.value = {
-    ...t
-  }, this.dispatchEvent(new _()));
+g = async function(e) {
+  await v(this, d).openPicker(e);
 };
-M = async function() {
+I = async function() {
   try {
-    await this.requestRemoveItem(this.value), this.value = void 0, this.dispatchEvent(new _());
+    await this.requestRemoveItem(this.value), v(this, d).clearValue();
   } catch {
   }
 };
-C = function() {
-  return this.readonly ? g : h`
+x = function() {
+  return this.readonly ? $ : u`
       <uui-action-bar slot="actions">
         <uui-button
           label=${this.localize.term("general_remove")}
           look="secondary"
-          @click=${() => n(this, r, M).call(this)}
+          @click=${() => n(this, r, I).call(this)}
         >
           <uui-icon name="icon-trash"></uui-icon>
         </uui-button>
       </uui-action-bar>
     `;
 };
-P = function(e) {
+U = function(e) {
   return [e.providerName, e.authorName].filter(Boolean).join(" · ");
 };
-I = function(e) {
+B = function(e) {
   if (e.width && e.height)
     return `${e.width} / ${e.height}`;
   if (e.thumbnailWidth && e.thumbnailHeight)
@@ -99,36 +91,36 @@ I = function(e) {
       return "16 / 9";
   }
 };
-k = function(e) {
-  return e.oembed.thumbnailUrl ? h`<img
+R = function(e) {
+  return e.oembed.thumbnailUrl ? u`<img
         src=${e.oembed.thumbnailUrl}
         alt=${e.oembed.title ?? e.url}
-      />` : h`<oembed-preview .value="${e.oembed}"></oembed-preview>`;
+      />` : u`<oembed-preview .value="${e.oembed}"></oembed-preview>`;
 };
-x = function(e) {
-  return h`
+N = function(e) {
+  return u`
       <uui-card-media
-        style=${`aspect-ratio: ${n(this, r, I).call(this, e.oembed)}`}
+        style=${`aspect-ratio: ${n(this, r, B).call(this, e.oembed)}`}
         .name=${e.oembed.title ?? e.url}
-        .detail=${n(this, r, P).call(this, e.oembed)}
+        .detail=${n(this, r, U).call(this, e.oembed)}
         .selectonly="true"
         .selectable="false"
-        @open="${() => n(this, r, y).call(this, e.url)}"
+        @open="${() => n(this, r, g).call(this, e.url)}"
         ?readonly=${this.readonly}
       >
-        ${n(this, r, k).call(this, e)} ${n(this, r, C).call(this)}
+        ${n(this, r, R).call(this, e)} ${n(this, r, x).call(this)}
       </uui-card-media>
     `;
 };
-z = function() {
-  return this.readonly || n(this, r, f).call(this, this.value) ? g : h`
+T = function() {
+  return this.readonly || n(this, r, y).call(this, this.value) ? $ : u`
       <uui-button
         id="btn-add"
         look="placeholder"
         @blur=${() => {
     this.pristine = !1, this.checkValidity();
   }}
-        @click=${() => n(this, r, y).call(this)}
+        @click=${() => n(this, r, g).call(this)}
         label=${this.localize.term("general_choose")}
         ?disabled=${this.readonly}
       >
@@ -139,7 +131,7 @@ z = function() {
 };
 l.tagName = "input-oembed";
 l.styles = [
-  U`
+  S`
       :host {
         position: relative;
       }
@@ -183,28 +175,28 @@ l.styles = [
       }
     `
 ];
-p([
-  u({ type: Boolean })
+_([
+  p({ type: Boolean })
 ], l.prototype, "required", 2);
-p([
-  u({ type: String })
+_([
+  p({ type: String })
 ], l.prototype, "requiredMessage", 2);
-p([
-  u({ type: Boolean, reflect: !0 })
+_([
+  p({ type: Boolean, reflect: !0 })
 ], l.prototype, "readonly", 2);
-l = p([
-  b(l.tagName)
+l = _([
+  w(l.tagName)
 ], l);
-var j = Object.defineProperty, F = Object.getOwnPropertyDescriptor, B = (e) => {
+var X = Object.defineProperty, F = Object.getOwnPropertyDescriptor, V = (e) => {
   throw TypeError(e);
 }, m = (e, t, a, o) => {
-  for (var i = o > 1 ? void 0 : o ? F(t, a) : t, d = e.length - 1, c; d >= 0; d--)
-    (c = e[d]) && (i = (o ? c(t, a, i) : c(i)) || i);
-  return o && i && j(t, a, i), i;
-}, K = (e, t, a) => t.has(e) || B("Cannot " + a), X = (e, t, a) => t.has(e) ? B("Cannot add the same private member more than once") : t instanceof WeakSet ? t.add(e) : t.set(e, a), Z = (e, t, a) => (K(e, t, "access private method"), a), v, N;
-let s = class extends E(w) {
+  for (var i = o > 1 ? void 0 : o ? F(t, a) : t, h = e.length - 1, c; h >= 0; h--)
+    (c = e[h]) && (i = (o ? c(t, a, i) : c(i)) || i);
+  return o && i && X(t, a, i), i;
+}, G = (e, t, a) => t.has(e) || V("Cannot " + a), Z = (e, t, a) => t.has(e) ? V("Cannot add the same private member more than once") : t instanceof WeakSet ? t.add(e) : t.set(e, a), j = (e, t, a) => (G(e, t, "access private method"), a), f, z;
+let s = class extends P(O) {
   constructor() {
-    super(), X(this, v), this.mandatoryMessage = T, this.readonly = !1, this.consumeContext(A, (e) => {
+    super(), Z(this, f), this.mandatoryMessage = q, this.readonly = !1, this.consumeContext(W, (e) => {
       this.observe(e?.alias, (t) => this._alias = t), this.observe(
         e?.variantId,
         (t) => this._variantId = t?.toString() || "invariant"
@@ -212,46 +204,46 @@ let s = class extends E(w) {
     });
   }
   render() {
-    return h`
+    return u`
       <input-oembed
         .alias=${this._alias}
         .value=${this.value}
         .variantId=${this._variantId}
         .required=${this.mandatory}
         .requiredMessage=${this.mandatoryMessage}
-        @change=${Z(this, v, N)}
+        @change=${j(this, f, z)}
         ?readonly=${this.readonly}
       >
       </input-oembed>
     `;
   }
 };
-v = /* @__PURE__ */ new WeakSet();
-N = function(e) {
+f = /* @__PURE__ */ new WeakSet();
+z = function(e) {
   const t = e.target.value === void 0;
-  this.value = t ? void 0 : e.target.value, this.dispatchEvent(new _());
+  this.value = t ? void 0 : e.target.value, this.dispatchEvent(new C());
 };
 s.tagName = "oembed-property-editor";
 m([
-  u({ type: Boolean })
+  p({ type: Boolean })
 ], s.prototype, "mandatory", 2);
 m([
-  u({ type: String })
+  p({ type: String })
 ], s.prototype, "mandatoryMessage", 2);
 m([
-  u({ type: Boolean, reflect: !0 })
+  p({ type: Boolean, reflect: !0 })
 ], s.prototype, "readonly", 2);
 m([
-  $()
+  E()
 ], s.prototype, "_alias", 2);
 m([
-  $()
+  E()
 ], s.prototype, "_variantId", 2);
 s = m([
-  b(s.tagName)
+  w(s.tagName)
 ], s);
 export {
   s as default,
   s as element
 };
-//# sourceMappingURL=property-editor-ui-oembed-picker.element-KFn5TPMm.js.map
+//# sourceMappingURL=property-editor-ui-oembed-picker.element-BlL4GhUa.js.map

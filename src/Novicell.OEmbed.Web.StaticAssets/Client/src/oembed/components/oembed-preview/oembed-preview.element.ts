@@ -32,8 +32,29 @@ export class OEmbedPreviewElement
 {
   static readonly tagName = "oembed-preview";
 
+  static readonly maxDynamicHeight = 600;
+
   @property({ attribute: false })
   value?: OEmbedPreviewModel;
+
+  #frameObservers: ResizeObserver[] = [];
+
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    this.#disconnectFrameObservers();
+  }
+
+  #disconnectFrameObservers() {
+    this.#frameObservers.forEach((observer) => observer.disconnect());
+    this.#frameObservers = [];
+  }
+
+  override willUpdate(changedProperties: Map<string | number | symbol, unknown>) {
+    super.willUpdate(changedProperties);
+    if (changedProperties.has("value")) {
+      this.#disconnectFrameObservers();
+    }
+  }
 
   #normalizedType(type: OEmbedType): string {
     // The Management API may serialize the type as PascalCase (e.g. "Photo")
@@ -80,12 +101,13 @@ export class OEmbedPreviewElement
     if (!markup) return this.#renderThumbnailCard(value);
 
     const aspectRatio = this.#aspectRatio(value.width, value.height);
+    const hasFixedSize = aspectRatio > 0;
 
     const element = window.document.createElement("div");
     element.insertAdjacentHTML("afterbegin", markup);
 
-    let style = "";
-    if (aspectRatio > 0) {
+    let style = "<style>html,body{margin:0;padding:0}</style>";
+    if (hasFixedSize) {
       element.style.width = "100%";
       element.style.height = "100%";
       style =
@@ -94,16 +116,59 @@ export class OEmbedPreviewElement
 
     const srcdoc = `<html><head></head><body>${style}${element.outerHTML}</body></html>`;
 
-    return html`<div
-      class="oembed-frame"
-      style=${aspectRatio > 0 ? `aspect-ratio:${aspectRatio};` : nothing}
-    >
+    if (hasFixedSize) {
+      return html`<div class="oembed-frame" style=${`aspect-ratio:${aspectRatio};`}>
+        <iframe
+          srcdoc=${srcdoc}
+          class="oembed-media"
+          sandbox="allow-scripts allow-same-origin allow-presentation"
+        ></iframe>
+      </div>`;
+    }
+
+    // Dynamic-height embeds (e.g. tweets) report no usable height, so size the
+    // iframe to its rendered content instead of forcing an aspect ratio.
+    return html`<div class="oembed-frame oembed-frame--auto">
       <iframe
         srcdoc=${srcdoc}
-        class="oembed-media"
+        class="oembed-media oembed-media--auto"
         sandbox="allow-scripts allow-same-origin allow-presentation"
+        @load=${this.#onAutoFrameLoad}
       ></iframe>
     </div>`;
+  }
+
+  #onAutoFrameLoad(event: Event) {
+    const iframe = event.target as HTMLIFrameElement;
+
+    let doc: Document | null = null;
+    try {
+      doc = iframe.contentDocument;
+    } catch {
+      // Cross-origin documents cannot be measured; leave the default height.
+      return;
+    }
+
+    const body = doc?.body;
+    if (!body) return;
+
+    const resize = () => {
+      const height = body.scrollHeight;
+      if (height > 0) {
+        iframe.style.height = `${Math.min(
+          height,
+          OEmbedPreviewElement.maxDynamicHeight,
+        )}px`;
+      }
+    };
+
+    resize();
+
+    // Provider scripts (e.g. Twitter's widgets.js) render asynchronously and
+    // change the document height after load, so keep the iframe in sync.
+    const observer = new ResizeObserver(() => resize());
+    observer.observe(body);
+    this.#frameObservers.push(observer);
   }
 
   #renderMeta(value: OEmbedPreviewModel) {
@@ -165,6 +230,16 @@ export class OEmbedPreviewElement
         height: 100%;
         border: none;
         object-fit: cover;
+      }
+
+      .oembed-frame--auto {
+        background-color: transparent;
+      }
+
+      .oembed-media--auto {
+        height: 150px;
+        max-height: ${OEmbedPreviewElement.maxDynamicHeight}px;
+        object-fit: unset;
       }
 
       .oembed-meta {
