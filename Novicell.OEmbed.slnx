@@ -7,5 +7,9 @@
     <Project Path="src/Novicell.OEmbed.Startup/Novicell.OEmbed.Startup.csproj" />
     <Project Path="src/Novicell.OEmbed.Web.StaticAssets/Novicell.OEmbed.Web.StaticAssets.csproj" />
   </Folder>
+  <Folder Name="/src/" />
+  <Folder Name="/tests/">
+    <Project Path="tests/Novicell.OEmbed.Core.Tests/Novicell.OEmbed.Core.Tests.csproj" />
+  </Folder>
   <Project Path="demo/OEmbed.Testsite/OEmbed.Testsite.csproj" />
 </Solution>
