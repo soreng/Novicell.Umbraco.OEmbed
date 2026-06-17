@@ -4,7 +4,7 @@ import { UmbLitElement as O } from "@umbraco-cms/backoffice/lit-element";
 import { UMB_PROPERTY_CONTEXT as W } from "@umbraco-cms/backoffice/property";
 import { UmbFormControlMixin as P, UMB_VALIDATION_EMPTY_LOCALIZATION_KEY as q } from "@umbraco-cms/backoffice/validation";
 import { umbConfirmModal as D } from "@umbraco-cms/backoffice/modal";
-import { U as L, a as H } from "./oembed-preview.element-B40iok3S.js";
+import { U as L, a as H } from "./oembed-preview.element-C-UoyBML.js";
 var Y = Object.defineProperty, K = Object.getOwnPropertyDescriptor, M = (e) => {
   throw TypeError(e);
 }, _ = (e, t, a, o) => {
@@ -249,4 +249,4 @@ export {
   s as default,
   s as element
 };
-//# sourceMappingURL=property-editor-ui-oembed-picker.element-CISX4mBS.js.map
+//# sourceMappingURL=property-editor-ui-oembed-picker.element-CT32DWhN.js.map

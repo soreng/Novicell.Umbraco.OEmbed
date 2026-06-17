@@ -118,6 +118,11 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
     this.#pickerContext.updateUrl(e.target.value as string);
   }
 
+  #label(key: string, fallback: string) {
+    const term = this.localize.term(key);
+    return !term || term === key ? fallback : term;
+  }
+
   #renderLink(url?: string | null, text?: string | null) {
     if (!url || !text) return nothing;
     return html`<a href="${url}" target="_blank" rel="noopener noreferrer"
@@ -125,20 +130,59 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
     >`;
   }
 
-  #renderAuthor(name?: string | null, url?: string | null) {
-    if (!name || !url) return nothing;
-    return html`<span
-      >${this.localize.term("general_by").toLocaleLowerCase()}
-      ${this.#renderLink(url, name)}</span
-    >`;
+  #renderDetailRow(
+    label: string,
+    value?: string | number | null,
+    href?: string | null,
+  ) {
+    if (value === null || value === undefined || value === "") return nothing;
+    const content = href
+      ? this.#renderLink(href, String(value))
+      : html`<span>${value}</span>`;
+    return html`<div class="oembed-details__row">
+      <span class="oembed-details__label">${label}</span>
+      <span class="oembed-details__value">${content}</span>
+    </div>`;
   }
 
-  #renderProvider(name?: string | null, url?: string | null) {
-    if (!name || !url) return nothing;
-    return html`<span
-      >${this.localize.term("general_on").toLocaleLowerCase()}
-      ${this.#renderLink(url, name)}</span
-    >`;
+  #renderDetails(oembed: OEmbedResponseModel) {
+    const dimensions =
+      oembed.width && oembed.height
+        ? `${oembed.width} \u00d7 ${oembed.height}`
+        : null;
+
+    const rows = [
+      this.#renderDetailRow(this.#label("general_title", "Title"), oembed.title),
+      this.#renderDetailRow(this.#label("general_type", "Type"), oembed.type),
+      this.#renderDetailRow(
+        this.#label("general_author", "Author"),
+        oembed.authorName,
+        oembed.authorUrl,
+      ),
+      this.#renderDetailRow(
+        this.#label("general_provider", "Provider"),
+        oembed.providerName,
+        oembed.providerUrl,
+      ),
+      this.#renderDetailRow(
+        this.#label("general_dimensions", "Dimensions"),
+        dimensions,
+      ),
+      this.#renderDetailRow(
+        this.#label("general_url", "URL"),
+        oembed.url,
+        oembed.url,
+      ),
+    ];
+
+    if (rows.every((row) => row === nothing)) return nothing;
+
+    return html`<umb-property-layout
+      label=${this.#label("general_details", "Details")}
+      orientation="vertical"
+    >
+      <div slot="editor" class="oembed-details">${rows}</div>
+    </umb-property-layout>`;
   }
 
   #renderThumbnail(
@@ -149,7 +193,7 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
   ) {
     if (!url) return nothing;
     return html`<umb-property-layout
-      label=${this.localize.term("general_thumbnail")}
+      label=${this.#label("general_thumbnail", "Thumbnail")}
       orientation="vertical"
     >
       <div slot="editor">
@@ -168,13 +212,9 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
       >
         <div slot="editor">
           <oembed-preview .value="${oembed}"></oembed-preview>
-          <div>${oembed.title}</div>
-          <small slot="detail">
-            ${this.#renderAuthor(oembed.authorName, oembed.authorUrl)}
-            ${this.#renderProvider(oembed.providerName, oembed.providerUrl)}
-          </small>
         </div>
       </umb-property-layout>
+      ${this.#renderDetails(oembed)}
       ${this.#renderThumbnail(
         oembed.thumbnailUrl,
         oembed.thumbnailWidth,
@@ -261,6 +301,28 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
 
       umb-property-layout:last-child {
         padding-bottom: 0;
+      }
+
+      .oembed-details {
+        display: flex;
+        flex-direction: column;
+        gap: var(--uui-size-space-2, 6px);
+      }
+
+      .oembed-details__row {
+        display: grid;
+        grid-template-columns: minmax(80px, 25%) 1fr;
+        gap: var(--uui-size-space-3, 9px);
+        align-items: baseline;
+      }
+
+      .oembed-details__label {
+        color: var(--uui-color-text-alt, #515763);
+        font-weight: var(--uui-font-weight-bold, 700);
+      }
+
+      .oembed-details__value {
+        word-break: break-word;
       }
     `,
   ];

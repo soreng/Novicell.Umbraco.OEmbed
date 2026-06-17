@@ -276,25 +276,6 @@ export class OEmbedPreviewElement
       .oembed-frame--contained {
         height: 100%;
       }
-
-      .oembed-meta {
-        display: flex;
-        flex-direction: column;
-        gap: var(--uui-size-space-1, 3px);
-        padding-top: var(--uui-size-space-2, 6px);
-      }
-
-      .oembed-meta__title {
-        font-weight: var(--uui-font-weight-bold, 700);
-        color: var(--uui-color-text, #1b264f);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .oembed-meta__detail {
-        color: var(--uui-color-text-alt, #515763);
-      }
     `,
   ];
 }
