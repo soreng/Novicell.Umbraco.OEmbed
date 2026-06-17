@@ -8,13 +8,14 @@ import {
 } from "@umbraco-cms/backoffice/external/lit";
 import { UmbChangeEvent } from "@umbraco-cms/backoffice/event";
 import { UmbLitElement } from "@umbraco-cms/backoffice/lit-element";
-import { umbOpenModal, umbConfirmModal } from "@umbraco-cms/backoffice/modal";
+import { umbConfirmModal } from "@umbraco-cms/backoffice/modal";
 import { UmbPropertyEditorUiElement } from "@umbraco-cms/backoffice/property-editor";
 import { UmbFormControlMixin } from "@umbraco-cms/backoffice/validation";
 
 import { OEmbedValueModel } from "../../../property-editors/types.ts";
 import "../oembed-preview/index.ts";
-import { OEMBED_MODAL } from "../../modals/oembed-picker/oembed-picker-modal.token.ts";
+import { UmbOEmbedPickerContext } from "../../modals/oembed-picker/oembed-picker.context.ts";
+import { UMB_OEMBED_PICKER_CONTEXT } from "../../modals/oembed-picker/oembed-picker.context.token.ts";
 
 @customElement(InputOEmbedElement.tagName)
 export class InputOEmbedElement
@@ -46,32 +47,51 @@ export class InputOEmbedElement
   @property({ type: Boolean, reflect: true })
   readonly?: boolean;
 
+  readonly #pickerContext = new UmbOEmbedPickerContext(this);
+
+  constructor() {
+    super();
+    // Provider side: expose the context to this element's subtree and to our
+    // own observers. The context owns the value and opens the picker modal.
+    this.provideContext(UMB_OEMBED_PICKER_CONTEXT, this.#pickerContext);
+  }
+
+  override connectedCallback() {
+    super.connectedCallback();
+
+    // Seed the context with the already-persisted value so the first emission
+    // matches and the guard below skips it (no spurious change on load).
+    if (this.value) {
+      this.#pickerContext.setValue(this.value);
+    }
+
+    // Observer side: mirror committed picker values into the form-control value.
+    this.observe(
+      this.#pickerContext.value$,
+      (value) => {
+        if (value === this.value) return; // ignore the seeded/initial emission
+        this.value = value;
+        this.dispatchEvent(new UmbChangeEvent());
+      },
+      "_oembedPickerValue",
+    );
+  }
+
   #hasRenderableValue(value?: OEmbedValueModel): value is OEmbedValueModel {
     const hasRenderableValue = Boolean(value?.url && value?.oembed?.type);
     return hasRenderableValue;
   }
 
   async #openPicker(url?: string) {
-    const value = await umbOpenModal(this, OEMBED_MODAL, {
-      data: {
-        url: url,
-        //types: ['video', 'rich', 'photo', 'link'],
-      },
-    }).catch(() => undefined);
-    if (!value) return;
-
-    this.value = {
-      ...value,
-    };
-
-    this.dispatchEvent(new UmbChangeEvent());
+    // The context opens the modal and commits the value; our value$ observer
+    // mirrors it into this.value and dispatches the change event.
+    await this.#pickerContext.openPicker(url);
   }
 
   async #onRemove() {
     try {
       await this.requestRemoveItem(this.value!);
-      this.value = undefined;
-      this.dispatchEvent(new UmbChangeEvent());
+      this.#pickerContext.clearValue();
     } catch {
       // User cancelled the action
     }

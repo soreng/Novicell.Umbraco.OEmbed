@@ -1,4 +1,5 @@
-import { OEmbedRepository } from "../../repository/oembed/";
+import { UmbOEmbedPickerContext } from "./oembed-picker.context";
+import { UMB_OEMBED_PICKER_CONTEXT } from "./oembed-picker.context.token";
 import type {
   OEmbedModalData,
   OEmbedModalValue,
@@ -35,10 +36,54 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
   static readonly tagName = "oembed-modal";
 
   readonly #validation = new UmbValidationContext(this);
+  readonly #pickerContext = new UmbOEmbedPickerContext(this);
 
-  readonly #oembedRepository = new OEmbedRepository(this);
+  // Provide context to child components
+  constructor() {
+    super();
+    this.provideContext(UMB_OEMBED_PICKER_CONTEXT, this.#pickerContext);
+  }
 
-  #validUrl?: string;
+  @state()
+  private _submitButtonState: UUIButtonState;
+
+  // Observables from context store (for rendering)
+  private _currentUrl = "";
+  private _currentLoading: string = "idle";
+  private _currentError: UmbApiError | UmbCancelError | undefined = undefined;
+  private _currentPreview: OEmbedResponseModel | undefined = undefined;
+  private _validUrl?: string;
+
+  override connectedCallback() {
+    super.connectedCallback();
+
+    // Subscribe to context observables for re-rendering
+    this.observe(this.#pickerContext.url$, (url) => {
+      this._currentUrl = url;
+      this.requestUpdate();
+    });
+
+    this.observe(this.#pickerContext.loading$, (loading) => {
+      this._currentLoading = loading;
+      this.requestUpdate();
+    });
+
+    this.observe(this.#pickerContext.error$, (error) => {
+      this._currentError = error;
+      this.requestUpdate();
+    });
+
+    this.observe(this.#pickerContext.preview$, (preview) => {
+      this._currentPreview = preview;
+      this.requestUpdate();
+    });
+
+    // Initialize with data if provided
+    if (this.data?.url) {
+      this.#pickerContext.updateUrl(this.data.url);
+      this.#getPreview();
+    }
+  }
 
   #close() {
     this.modalContext?.reject();
@@ -50,61 +95,27 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
     try {
       await this.#validation.validate();
       this._submitButtonState = "success";
+
+      // Get the current URL from context
+      const url = this.#pickerContext.getUrl();
+      this.value = {
+        ...this.value,
+        oembed: this._currentPreview,
+        url: url,
+      };
+
       this.modalContext?.submit();
     } catch {
       this._submitButtonState = "failed";
     }
   }
 
-  @state()
-  private _loading?: UUIButtonState;
-
-  @state()
-  private _error?: UmbApiError | UmbCancelError = undefined;
-
-  @state()
-  private _url = "";
-
-  @state()
-  private _submitButtonState: UUIButtonState;
-
-  override connectedCallback() {
-    super.connectedCallback();
-    if (this.data?.url) {
-      this._url = this.data.url;
-      this.#getPreview();
-    }
-  }
-
   async #getPreview() {
-    this._loading = "waiting";
-
-    const { data, error } = await this.#oembedRepository.requestOEmbed({
-      url: this._url,
-      //maxWidth: this._width > 0 ? this._width : undefined,
-      //maxHeight: this._height > 0 ? this._height : undefined,
-    });
-
-    if (data) {
-      this.#validUrl = this._url;
-      this.value = {
-        ...this.value,
-        oembed: {
-          ...data,
-        },
-        url: this.#validUrl,
-      };
-      this._error = undefined;
-    } else {
-      // attach server error for validation feedback
-      this._error = error || undefined;
-    }
-
-    this._loading = this._error === undefined ? "success" : "failed";
+    await this.#pickerContext.fetchPreview();
   }
 
   #onUrlChange(e: UUIInputEvent) {
-    this._url = e.target.value as string;
+    this.#pickerContext.updateUrl(e.target.value as string);
   }
 
   #renderLink(url?: string | null, text?: string | null) {
@@ -180,7 +191,7 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
         data-mark="input:url"
         label=${this.localize.term("placeholders_enterUrl")}
         placeholder=${this.localize.term("placeholders_enterUrl")}
-        .value=${this._url}
+        .value=${this._currentUrl}
         @input=${this.#onUrlChange}
         required="true"
         ${umbFocus()}
@@ -208,11 +219,12 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
             <div slot="editor">${this.renderInput()}</div>
           </umb-property-layout>
           ${when(
-            this._loading === "waiting",
+            this._currentLoading === "loading",
             () => html`<uui-loader-circle></uui-loader-circle>`,
           )}
-          ${when(this._loading === "success", () =>
-            this.#renderPreview(this.value.oembed!),
+          ${when(
+            this._currentLoading === "success" && this._currentPreview,
+            () => this.#renderPreview(this._currentPreview!),
           )}
         </uui-box>
         <uui-button

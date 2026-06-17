@@ -5,7 +5,7 @@ import { html as l, when as w, css as x, state as d, customElement as B, nothing
 import { umbFocus as W } from "@umbraco-cms/backoffice/lit-element";
 import { UmbModalBaseElement as L } from "@umbraco-cms/backoffice/modal";
 import { UmbTextStyles as A } from "@umbraco-cms/backoffice/style";
-import "./oembed-preview.element-k5Io9aFz.js";
+import "./oembed-preview.element-B03RQRf5.js";
 import { UmbValidationContext as N, umbBindToValidation as T } from "@umbraco-cms/backoffice/validation";
 var q = Object.defineProperty, D = Object.getOwnPropertyDescriptor, k = (t) => {
   throw TypeError(t);
@@ -13,10 +13,10 @@ var q = Object.defineProperty, D = Object.getOwnPropertyDescriptor, k = (t) => {
   for (var s = n > 1 ? void 0 : n ? D(e, i) : e, m = t.length - 1, _; m >= 0; m--)
     (_ = t[m]) && (s = (n ? _(e, i, s) : _(s)) || s);
   return n && s && q(e, i, s), s;
-}, f = (t, e, i) => e.has(t) || k("Cannot " + i), v = (t, e, i) => (f(t, e, "read from private field"), i ? i.call(t) : e.get(t)), c = (t, e, i) => e.has(t) ? k("Cannot add the same private member more than once") : e instanceof WeakSet ? e.add(t) : e.set(t, i), I = (t, e, i, n) => (f(t, e, "write to private field"), e.set(t, i), i), a = (t, e, i) => (f(t, e, "access private method"), i), y, $, h, r, C, z, b, E, g, P, O, S, U;
+}, f = (t, e, i) => e.has(t) || k("Cannot " + i), v = (t, e, i) => (f(t, e, "read from private field"), i ? i.call(t) : e.get(t)), h = (t, e, i) => e.has(t) ? k("Cannot add the same private member more than once") : e instanceof WeakSet ? e.add(t) : e.set(t, i), I = (t, e, i, n) => (f(t, e, "write to private field"), e.set(t, i), i), a = (t, e, i) => (f(t, e, "access private method"), i), y, $, c, r, C, z, b, E, g, P, U, O, S;
 let o = class extends L {
   constructor() {
-    super(...arguments), c(this, r), c(this, y, new N(this)), c(this, $, new M(this)), c(this, h), this._error = void 0, this._url = "";
+    super(...arguments), h(this, r), h(this, y, new N(this)), h(this, $, new M(this)), h(this, c), this._error = void 0, this._url = "";
   }
   connectedCallback() {
     super.connectedCallback(), this.data?.url && (this._url = this.data.url, a(this, r, b).call(this));
@@ -60,7 +60,7 @@ let o = class extends L {
     )}
           ${w(
       this._loading === "success",
-      () => a(this, r, U).call(this, this.value.oembed)
+      () => a(this, r, S).call(this, this.value.oembed)
     )}
         </uui-box>
         <uui-button
@@ -85,7 +85,7 @@ let o = class extends L {
 };
 y = /* @__PURE__ */ new WeakMap();
 $ = /* @__PURE__ */ new WeakMap();
-h = /* @__PURE__ */ new WeakMap();
+c = /* @__PURE__ */ new WeakMap();
 r = /* @__PURE__ */ new WeakSet();
 C = function() {
   this.modalContext?.reject();
@@ -105,12 +105,12 @@ b = async function() {
     //maxWidth: this._width > 0 ? this._width : undefined,
     //maxHeight: this._height > 0 ? this._height : undefined,
   });
-  t ? (I(this, h, this._url), this.value = {
+  t ? (I(this, c, this._url), this.value = {
     ...this.value,
     oembed: {
       ...t
     },
-    url: v(this, h)
+    url: v(this, c)
   }, this._error = void 0) : this._error = e || void 0, this._loading = this._error === void 0 ? "success" : "failed";
 };
 E = function(t) {
@@ -127,13 +127,13 @@ P = function(t, e) {
       ${a(this, r, g).call(this, e, t)}</span
     >`;
 };
-O = function(t, e) {
+U = function(t, e) {
   return !t || !e ? p : l`<span
       >${this.localize.term("general_on").toLocaleLowerCase()}
       ${a(this, r, g).call(this, e, t)}</span
     >`;
 };
-S = function(t, e, i, n) {
+O = function(t, e, i, n) {
   return t ? l`<umb-property-layout
       label=${this.localize.term("general_thumbnail")}
       orientation="vertical"
@@ -145,7 +145,7 @@ S = function(t, e, i, n) {
       </div>
     </umb-property-layout>` : p;
 };
-U = function(t) {
+S = function(t) {
   return l`
       <umb-property-layout
         label=${this.localize.term("general_preview")}
@@ -156,11 +156,11 @@ U = function(t) {
           <div>${t.title}</div>
           <small slot="detail">
             ${a(this, r, P).call(this, t.authorName, t.authorUrl)}
-            ${a(this, r, O).call(this, t.providerName, t.providerUrl)}
+            ${a(this, r, U).call(this, t.providerName, t.providerUrl)}
           </small>
         </div>
       </umb-property-layout>
-      ${a(this, r, S).call(this, null, t.thumbnailWidth, t.thumbnailHeight, t.title)}
+      ${a(this, r, O).call(this, t.thumbnailUrl, t.thumbnailWidth, t.thumbnailHeight, t.title)}
     `;
 };
 o.tagName = "oembed-modal";
@@ -201,4 +201,4 @@ export {
   o as OembedPickerModalElement,
   Y as default
 };
-//# sourceMappingURL=oembed-picker-modal.element-Db6e9Kxf.js.map
+//# sourceMappingURL=oembed-picker-modal.element-BahOIM21.js.map
