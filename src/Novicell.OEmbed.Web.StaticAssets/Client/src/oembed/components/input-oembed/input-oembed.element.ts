@@ -77,9 +77,8 @@ export class InputOEmbedElement
     );
   }
 
-  #hasRenderableValue(value?: OEmbedValueModel): value is OEmbedValueModel {
-    const hasRenderableValue = Boolean(value?.url && value?.oembed?.type);
-    return hasRenderableValue;
+  #hasValue(value?: OEmbedValueModel): value is OEmbedValueModel {
+    return Boolean(value?.url && value?.oembed?.type);
   }
 
   async #openPicker(url?: string) {
@@ -126,27 +125,30 @@ export class InputOEmbedElement
     return [oembed.providerName, oembed.authorName].filter(Boolean).join(" · ");
   }
 
-  #aspectRatio(oembed: OEmbedValueModel["oembed"]): string {
-    if (oembed.width && oembed.height) {
-      return `${oembed.width} / ${oembed.height}`;
-    }
+  #dimensions(oembed: OEmbedValueModel["oembed"]): {
+    width?: number;
+    height?: number;
+  } {
     if (oembed.thumbnailWidth && oembed.thumbnailHeight) {
-      return `${oembed.thumbnailWidth} / ${oembed.thumbnailHeight}`;
+      return { width: oembed.thumbnailWidth, height: oembed.thumbnailHeight };
     }
+    if (oembed.width && oembed.height) {
+      return { width: oembed.width, height: oembed.height };
+    }
+
     // Type can arrive in mixed casing from stored data, so normalise first.
     switch (oembed.type?.toLowerCase()) {
-      case "video":
-        return "16 / 9";
       case "photo":
-        return "4 / 3";
+        return { width: 4, height: 3 };
       // TODO: determine sensible fallbacks for "rich" and "link" once those
       // types are reviewed; defaulting to 16:9 for now.
+      case "video":
       default:
-        return "16 / 9";
+        return { width: 16, height: 9 };
     }
   }
 
-  #renderCardVisual(value: OEmbedValueModel) {
+  #renderPreview(value: OEmbedValueModel) {
     if (value.oembed.thumbnailUrl) {
       return html`<img
         src=${value.oembed.thumbnailUrl}
@@ -160,9 +162,13 @@ export class InputOEmbedElement
   }
 
   #renderOEmbed(value: OEmbedValueModel) {
+    const { width, height } = this.#dimensions(value.oembed);
+    const aspectRatio = width && height ? width / height : 0;
     return html`
       <uui-card-media
-        style=${`aspect-ratio: ${this.#aspectRatio(value.oembed)}`}
+        style=${aspectRatio >= 1 && aspectRatio < 2
+          ? `aspect-ratio: ${width} / ${height}`
+          : ""}
         .name=${value.oembed.title ?? value.url}
         .detail=${this.#detail(value.oembed)}
         .selectonly="true"
@@ -170,13 +176,13 @@ export class InputOEmbedElement
         @open="${() => this.#openPicker(value.url)}"
         ?readonly=${this.readonly}
       >
-        ${this.#renderCardVisual(value)} ${this.#renderActions()}
+        ${this.#renderPreview(value)} ${this.#renderActions()}
       </uui-card-media>
     `;
   }
 
   #renderAddButton() {
-    if (this.readonly || this.#hasRenderableValue(this.value)) return nothing;
+    if (this.readonly && this.#hasValue(this.value)) return nothing;
 
     return html`
       <uui-button
@@ -186,7 +192,7 @@ export class InputOEmbedElement
           this.pristine = false;
           this.checkValidity();
         }}
-        @click=${() => this.#openPicker()}
+        @click=${() => this.#openPicker("")}
         label=${this.localize.term("general_choose")}
         ?disabled=${this.readonly}
       >
@@ -197,13 +203,9 @@ export class InputOEmbedElement
   }
 
   override render() {
-    const hasRenderableValue = this.#hasRenderableValue(this.value);
     return html`<div class="container">
-      ${when(
-        hasRenderableValue,
-        () => this.#renderOEmbed(this.value!),
-        () => this.#renderAddButton(),
-      )}
+      ${when(this.#hasValue(this.value), () => this.#renderOEmbed(this.value!))}
+      ${this.#renderAddButton()}
     </div>`;
   }
 
@@ -214,13 +216,17 @@ export class InputOEmbedElement
       }
 
       .container {
-        display: grid;
+        display: flex;
+        flex-wrap: wrap;
         gap: var(--uui-size-space-5);
-        grid-template-columns: minmax(
-          var(--umb-card-medium-min-width),
-          var(--umb-card-large-min-width)
-        );
-        grid-auto-rows: auto;
+        align-items: flex-start;
+        min-height: var(--umb-card-medium-min-width);
+      }
+
+      uui-card-media {
+        height: var(--umb-card-medium-min-width);
+        width: auto;
+        /* aspect-ratio set inline per card */
       }
 
       #btn-add {

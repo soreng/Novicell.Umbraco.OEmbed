@@ -7,10 +7,10 @@ import type {
 import {
   css,
   html,
+  nothing,
   when,
   customElement,
   state,
-  nothing,
 } from "@umbraco-cms/backoffice/external/lit";
 import type {
   UUIButtonState,
@@ -21,7 +21,6 @@ import { UmbModalBaseElement } from "@umbraco-cms/backoffice/modal";
 import { UmbTextStyles } from "@umbraco-cms/backoffice/style";
 
 import "../../components/oembed-preview/oembed-preview.element.ts";
-import { UmbApiError, UmbCancelError } from "@umbraco-cms/backoffice/resources";
 import { OEmbedResponseModel } from "../../../api";
 import {
   umbBindToValidation,
@@ -50,9 +49,7 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
   // Observables from context store (for rendering)
   private _currentUrl = "";
   private _currentLoading: string = "idle";
-  private _currentError: UmbApiError | UmbCancelError | undefined = undefined;
   private _currentPreview: OEmbedResponseModel | undefined = undefined;
-  private _validUrl?: string;
 
   override connectedCallback() {
     super.connectedCallback();
@@ -65,11 +62,6 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
 
     this.observe(this.#pickerContext.loading$, (loading) => {
       this._currentLoading = loading;
-      this.requestUpdate();
-    });
-
-    this.observe(this.#pickerContext.error$, (error) => {
-      this._currentError = error;
       this.requestUpdate();
     });
 
@@ -94,6 +86,12 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
 
     try {
       await this.#validation.validate();
+
+      if (!this._currentPreview) {
+        this._submitButtonState = "failed";
+        return;
+      }
+
       this._submitButtonState = "success";
 
       // Get the current URL from context
@@ -197,9 +195,13 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
       orientation="vertical"
     >
       <div slot="editor">
-        <div>
-          <img src="${url}" width="${width}" height="${height}" alt="${alt}" />
-        </div>
+        <img
+          class="oembed-thumbnail"
+          src="${url}"
+          width="${width ?? nothing}"
+          height="${height ?? nothing}"
+          alt="${alt ?? ""}"
+        />
       </div>
     </umb-property-layout>`;
   }
@@ -323,6 +325,15 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
 
       .oembed-details__value {
         word-break: break-word;
+      }
+
+      .oembed-thumbnail {
+        display: block;
+        width: auto;
+        height: auto;
+        max-width: 100%;
+        max-height: 40vh;
+        border-radius: var(--uui-border-radius, 3px);
       }
     `,
   ];

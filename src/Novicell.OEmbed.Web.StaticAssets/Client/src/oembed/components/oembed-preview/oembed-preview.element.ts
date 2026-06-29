@@ -57,7 +57,9 @@ export class OEmbedPreviewElement
     this.#frameObservers = [];
   }
 
-  override willUpdate(changedProperties: Map<string | number | symbol, unknown>) {
+  override willUpdate(
+    changedProperties: Map<string | number | symbol, unknown>,
+  ) {
     super.willUpdate(changedProperties);
     if (changedProperties.has("value")) {
       this.#disconnectFrameObservers();
@@ -125,7 +127,10 @@ export class OEmbedPreviewElement
     const srcdoc = `<html><head></head><body>${style}${element.outerHTML}</body></html>`;
 
     if (hasFixedSize) {
-      return html`<div class="oembed-frame" style=${`aspect-ratio:${aspectRatio};`}>
+      return html`<div
+        class="oembed-frame"
+        style=${`aspect-ratio:${aspectRatio};`}
+      >
         <iframe
           srcdoc=${srcdoc}
           class="oembed-media"
@@ -193,25 +198,6 @@ export class OEmbedPreviewElement
     this.#frameObservers.push(observer);
   }
 
-  #renderMeta(value: OEmbedPreviewModel) {
-    const detail = [value.providerName, value.authorName]
-      .filter(Boolean)
-      .join(" · ");
-
-    if (!value.title && !detail) return nothing;
-
-    return html`<div class="oembed-meta">
-      ${value.title
-        ? html`<span class="oembed-meta__title" title=${value.title}
-            >${value.title}</span
-          >`
-        : nothing}
-      ${detail
-        ? html`<small class="oembed-meta__detail">${detail}</small>`
-        : nothing}
-    </div>`;
-  }
-
   #renderVisual(value: OEmbedPreviewModel) {
     switch (this.#normalizedType(value.type)) {
       case "photo":
@@ -227,11 +213,7 @@ export class OEmbedPreviewElement
     const value = this.value;
     if (!value) return nothing;
 
-    // In contained mode the host (card) renders its own title/detail, so the
-    // preview shows only the visual to avoid duplication and extra height.
-    return html`${this.#renderVisual(value)}${this.contain
-      ? nothing
-      : this.#renderMeta(value)}`;
+    return html`${this.#renderVisual(value)}`;
   }
 
   static styles = [

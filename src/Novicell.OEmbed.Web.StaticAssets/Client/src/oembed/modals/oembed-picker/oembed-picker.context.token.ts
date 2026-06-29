@@ -8,6 +8,5 @@ import type { UmbOEmbedPickerContext } from "./oembed-picker.context";
  * Provider: oembed-picker-modal.element.ts
  * Consumers: input-oembed.element.ts (or child components that need picker interaction)
  */
-export const UMB_OEMBED_PICKER_CONTEXT = new UmbContextToken<UmbOEmbedPickerContext>(
-  "UmbOEmbedPickerContext",
-);
+export const UMB_OEMBED_PICKER_CONTEXT =
+  new UmbContextToken<UmbOEmbedPickerContext>("UmbOEmbedPickerContext");
