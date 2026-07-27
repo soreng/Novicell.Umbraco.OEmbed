@@ -3,31 +3,65 @@ const e = [
     type: "modal",
     alias: "Novicell.Modal.OEmbedPicker",
     name: "OEmbed Picker Modal",
-    js: () => import("./oembed-picker-modal.element-Clwc00aD.js")
+    js: () => import("./oembed-picker-modal.element-CU5reptc.js")
   }
-], o = [...e], t = [...o], i = "Novicell.Repository.OEmbed", r = [
+], i = [...e], o = [...i], t = "Novicell.Repository.OEmbed", a = [
   {
     type: "repository",
-    alias: i,
+    alias: t,
     name: "OEmbed Repository",
-    api: () => import("./oembed.repository-Y4nXUpA8.js")
+    api: () => import("./oembed.repository-Cz7f-l89.js")
   }
-], s = [...r], a = [
+], l = [...a], r = [
   //...componentsManifests,
-  ...t,
-  ...s
+  ...o,
+  ...l
 ], m = {
   type: "propertyEditorSchema",
   name: "Novicell OEmbed Picker Schema",
   alias: "Novicell.OEmbed.Picker",
   meta: {
-    defaultPropertyEditorUiAlias: "Novicell.PropertyEditorUi.OEmbedPicker"
+    defaultPropertyEditorUiAlias: "Novicell.PropertyEditorUi.OEmbedPicker",
+    settings: {
+      properties: [
+        {
+          alias: "multiple",
+          label: "Pick multiple items",
+          description: "Allow picking more than one embed",
+          propertyEditorUiAlias: "Umb.PropertyEditorUi.Toggle"
+        },
+        {
+          alias: "validationLimit",
+          label: "Amount",
+          description: "Set a required range of embeds",
+          propertyEditorUiAlias: "Umb.PropertyEditorUi.NumberRange",
+          config: [{ alias: "validationRange", value: { min: 0, max: 1 / 0 } }]
+        },
+        {
+          alias: "allowedTypes",
+          label: "Accepted types",
+          description: "Limit to specific oEmbed types. Leave empty to allow any.",
+          propertyEditorUiAlias: "Umb.PropertyEditorUi.CheckBoxList",
+          config: [
+            {
+              alias: "items",
+              value: [
+                { name: "Photo", value: "photo" },
+                { name: "Video", value: "video" },
+                { name: "Link", value: "link" },
+                { name: "Rich", value: "rich" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   }
-}, c = {
+}, n = {
   type: "propertyEditorUi",
   alias: "Novicell.PropertyEditorUi.OEmbedPicker",
   name: "OEmbed Picker Property Editor UI",
-  element: () => import("./property-editor-ui-oembed-picker.element-BZxhwkVx.js"),
+  element: () => import("./property-editor-ui-oembed-picker.element-5DCt487o.js"),
   meta: {
     label: "OEmbed Picker",
     propertyEditorSchemaAlias: "Novicell.OEmbed.Picker",
@@ -35,14 +69,44 @@ const e = [
     group: "media",
     supportsReadOnly: !0
   }
-}, p = [m, c], d = [
-  ...p
-], l = [
+}, s = [m, n], c = [
+  ...s
+], p = [
+  {
+    type: "localization",
+    alias: "Novicell.OEmbed.Localization.EN",
+    name: "Novicell OEmbed English Localization",
+    meta: { culture: "en" },
+    js: () => import("./en-BpNHt5Rp.js")
+  },
+  {
+    type: "localization",
+    alias: "Novicell.OEmbed.Localization.EN_US",
+    name: "Novicell OEmbed English (US) Localization",
+    meta: { culture: "en-US" },
+    js: () => import("./en-BpNHt5Rp.js")
+  },
+  {
+    type: "localization",
+    alias: "Novicell.OEmbed.Localization.DA",
+    name: "Novicell OEmbed Danish Localization",
+    meta: { culture: "da" },
+    js: () => import("./da-BCHA38ws.js")
+  },
+  {
+    type: "localization",
+    alias: "Novicell.OEmbed.Localization.DA_DK",
+    name: "Novicell OEmbed Danish (Denmark) Localization",
+    meta: { culture: "da-DK" },
+    js: () => import("./da-BCHA38ws.js")
+  }
+], d = [
   //    ...entrypoints,
-  ...a,
-  ...d
+  ...r,
+  ...c,
+  ...p
 ];
 export {
-  l as manifests
+  d as manifests
 };
 //# sourceMappingURL=novicell-oembed-manifests.js.map

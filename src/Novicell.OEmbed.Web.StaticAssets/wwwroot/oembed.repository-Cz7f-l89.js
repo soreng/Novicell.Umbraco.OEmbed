@@ -1,9 +1,9 @@
-import { c as o } from "./client.gen-DVwspqDp.js";
-import { tryExecute as m } from "@umbraco-cms/backoffice/resources";
-import { UmbControllerBase as i } from "@umbraco-cms/backoffice/class-api";
+import { c } from "./client.gen-DVwspqDp.js";
+import { tryExecute as i } from "@umbraco-cms/backoffice/resources";
+import { UmbControllerBase as m } from "@umbraco-cms/backoffice/class-api";
 class u {
   static getOEmbed(e) {
-    return (e?.client ?? o).get({
+    return (e?.client ?? c).get({
       security: [
         {
           scheme: "bearer",
@@ -38,26 +38,30 @@ class d {
     maxWidth: t,
     maxHeight: r
   }) {
-    return m(
+    return i(
       this.#e,
       u.getOEmbed({
         query: { url: e, maxwidth: t, maxheight: r }
-      })
+      }),
+      // The picker modal renders its own localized error message from the response's
+      // operationStatus, so suppress the SDK's default toast (which would show the raw,
+      // unlocalized server title/detail).
+      { disableNotifications: !0 }
     );
   }
 }
-class h extends i {
+class h extends m {
   #e = new d(this);
   constructor(e) {
     super(e);
   }
   async requestOEmbed({ url: e, maxWidth: t, maxHeight: r }) {
-    const { data: c, error: a } = await this.#e.getOEmbed({ url: e, maxWidth: t, maxHeight: r });
-    return a ? { error: a } : { data: c };
+    const { data: o, error: a } = await this.#e.getOEmbed({ url: e, maxWidth: t, maxHeight: r });
+    return a ? { error: a } : { data: o };
   }
 }
 export {
   h as OEmbedRepository,
   h as api
 };
-//# sourceMappingURL=oembed.repository-Y4nXUpA8.js.map
+//# sourceMappingURL=oembed.repository-Cz7f-l89.js.map
