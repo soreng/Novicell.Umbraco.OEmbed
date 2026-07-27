@@ -92,7 +92,7 @@ export class OEmbedPreviewElement
 
   #renderThumbnailCard(value: OEmbedPreviewModel) {
     const thumbnail = value.thumbnailUrl;
-    if (!thumbnail) return nothing;
+    if (!thumbnail) return this.#renderLinkCard(value);
 
     const aspectRatio = this.#aspectRatio(
       value.thumbnailWidth,
@@ -103,6 +103,28 @@ export class OEmbedPreviewElement
       style=${aspectRatio > 0 ? `aspect-ratio:${aspectRatio};` : nothing}
     >
       <img class="oembed-media" src=${thumbnail} alt=${value.title ?? ""} />
+    </div>`;
+  }
+
+  #renderLinkCard(value: OEmbedPreviewModel) {
+    const href = value.url ?? undefined;
+    let hostname = value.providerName ?? "";
+    if (!hostname && href) {
+      try {
+        hostname = new URL(href).hostname;
+      } catch {
+        // Leave hostname empty if the URL cannot be parsed.
+      }
+    }
+
+    return html`<div class="oembed-link-card">
+      <uui-icon name="icon-link"></uui-icon>
+      <div class="oembed-link-info">
+        <span class="oembed-link-title">${value.title ?? href ?? ""}</span>
+        ${hostname
+          ? html`<span class="oembed-link-host">${hostname}</span>`
+          : nothing}
+      </div>
     </div>`;
   }
 
@@ -257,6 +279,43 @@ export class OEmbedPreviewElement
 
       .oembed-frame--contained {
         height: 100%;
+      }
+
+      .oembed-link-card {
+        display: flex;
+        align-items: center;
+        gap: var(--uui-size-space-4);
+        padding: var(--uui-size-space-4);
+        border-radius: var(--uui-border-radius, 3px);
+        background-color: var(--uui-color-surface-alt, #f3f3f5);
+        overflow: hidden;
+      }
+
+      .oembed-link-card uui-icon {
+        flex: none;
+        font-size: var(--uui-size-6);
+        color: var(--uui-color-text-alt);
+      }
+
+      .oembed-link-info {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      .oembed-link-title {
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .oembed-link-host {
+        font-size: var(--uui-type-small-size);
+        color: var(--uui-color-text-alt);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
     `,
   ];
