@@ -14,7 +14,7 @@ public enum OEmbedOperationStatus
     /// </summary>
     ProviderNotSupported,
     /// <summary>
-    /// 
+    ///
     /// </summary>
     EmbedNotFound,
     /// <summary>

@@ -1,6 +1,7 @@
 using System.Collections.Specialized;
 using System.Net;
 using System.Web;
+using System.Xml;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -33,7 +34,7 @@ internal class OEmbedService(
         }
 
         using HttpClient client = httpClientFactory.CreateClient();
-        client.DefaultRequestHeaders.UserAgent.TryParseAdd(Umbraco.Cms.Core.Constants.HttpClients.Headers
+        _ = client.DefaultRequestHeaders.UserAgent.TryParseAdd(Umbraco.Cms.Core.Constants.HttpClients.Headers
             .UserAgentProductName);
 
         try
@@ -89,17 +90,13 @@ internal class OEmbedService(
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         using HttpResponseMessage response = await client.SendAsync(request, cancellationToken);
 
-        try
+        if (!response.IsSuccessStatusCode)
         {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.BadRequest)
-        {
-            return Attempt<OEmbedResponse?, OEmbedOperationStatus>.Fail(OEmbedOperationStatus.InvalidResponse);
-        }
-        catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
-        {
-            return Attempt<OEmbedResponse?, OEmbedOperationStatus>.Fail(OEmbedOperationStatus.EmbedNotFound);
+            return response.StatusCode switch
+            {
+                HttpStatusCode.NotFound => Attempt<OEmbedResponse?, OEmbedOperationStatus>.Fail(OEmbedOperationStatus.EmbedNotFound),
+                _ => Attempt<OEmbedResponse?, OEmbedOperationStatus>.Fail(OEmbedOperationStatus.InvalidResponse)
+            };
         }
 
         var mediaType = response.Content.Headers.ContentType?.MediaType;
@@ -121,7 +118,17 @@ internal class OEmbedService(
         try
         {
             await using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            XDocument xml = await XDocument.LoadAsync(stream, LoadOptions.None, cancellationToken);
+
+            var settings = new XmlReaderSettings
+            {
+                Async = true,
+                DtdProcessing = DtdProcessing.Prohibit,
+                XmlResolver = null,
+                CloseInput = true
+            };
+
+            using var reader = XmlReader.Create(stream, settings);
+            XDocument xml = await XDocument.LoadAsync(reader, LoadOptions.None, cancellationToken);
             XElement? oembed = xml.Element("oembed");
 
             if (oembed == null || !Enum.TryParse(oembed.Element("type")?.Value, true, out OEmbedType type))

@@ -21,8 +21,13 @@ public record OEmbedResponse
     /// <summary>
     /// The oEmbed version number. This must be 1.0.
     /// </summary>
+    /// <remarks>
+    /// Optional rather than required: the Management API's <c>OEmbedResponseModel</c> doesn't
+    /// carry this field, so it's never present in the JSON round-tripped from the backoffice
+    /// when a property value is saved.
+    /// </remarks>
     [DataMember(Name = "version")]
-    public required string Version { get; init; }
+    public string? Version { get; set; }
 
     /// <summary>
     /// A text title, describing the resource.
