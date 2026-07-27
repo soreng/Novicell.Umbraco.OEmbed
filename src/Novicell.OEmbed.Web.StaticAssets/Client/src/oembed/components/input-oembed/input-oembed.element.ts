@@ -138,13 +138,14 @@ export class InputOEmbedElement
 
     // Type can arrive in mixed casing from stored data, so normalise first.
     switch (oembed.type?.toLowerCase()) {
-      case "photo":
-        return { width: 4, height: 3 };
-      // TODO: determine sensible fallbacks for "rich" and "link" once those
-      // types are reviewed; defaulting to 16:9 for now.
       case "video":
-      default:
         return { width: 16, height: 9 };
+      case "rich":
+      case "link":
+        return { width: 21, height: 9 };
+      case "photo":
+      default:
+        return { width: 4, height: 3 };
     }
   }
 
@@ -166,7 +167,7 @@ export class InputOEmbedElement
     const aspectRatio = width && height ? width / height : 0;
     return html`
       <uui-card-media
-        style=${aspectRatio >= 1 && aspectRatio < 2
+        style=${aspectRatio >= 1 && aspectRatio <= 3
           ? `aspect-ratio: ${width} / ${height}`
           : ""}
         .name=${value.oembed.title ?? value.url}
