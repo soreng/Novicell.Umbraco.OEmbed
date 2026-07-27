@@ -26,6 +26,8 @@ import {
   umbBindToValidation,
   UmbValidationContext,
 } from "@umbraco-cms/backoffice/validation";
+import type { UmbApiError, UmbCancelError } from "@umbraco-cms/backoffice/resources";
+import { localizedOEmbedErrorKey } from "./oembed-picker.errors.ts";
 
 @customElement(OembedPickerModalElement.tagName)
 export class OembedPickerModalElement extends UmbModalBaseElement<
@@ -50,6 +52,7 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
   private _currentUrl = "";
   private _currentLoading: string = "idle";
   private _currentPreview: OEmbedResponseModel | undefined = undefined;
+  private _currentError: UmbApiError | UmbCancelError | undefined = undefined;
 
   override connectedCallback() {
     super.connectedCallback();
@@ -70,6 +73,11 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
       this.requestUpdate();
     });
 
+    this.observe(this.#pickerContext.error$, (error) => {
+      this._currentError = error;
+      this.requestUpdate();
+    });
+
     // Initialize with data if provided
     if (this.data?.url) {
       this.#pickerContext.updateUrl(this.data.url);
@@ -81,13 +89,19 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
     this.modalContext?.reject();
   }
 
+  #isTypeAllowed(type?: string | null): boolean {
+    const allowedTypes = this.data?.allowedTypes;
+    if (!allowedTypes?.length || !type) return true;
+    return allowedTypes.includes(type);
+  }
+
   async #submit() {
     this._submitButtonState = "waiting";
 
     try {
       await this.#validation.validate();
 
-      if (!this._currentPreview) {
+      if (!this._currentPreview || !this.#isTypeAllowed(this._currentPreview.type)) {
         this._submitButtonState = "failed";
         return;
       }
@@ -150,15 +164,15 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
         : null;
 
     const rows = [
-      this.#renderDetailRow(this.#label("general_title", "Title"), oembed.title),
+      this.#renderDetailRow(this.#label("oembed_details_title", "Title"), oembed.title),
       this.#renderDetailRow(this.#label("general_type", "Type"), oembed.type),
       this.#renderDetailRow(
-        this.#label("general_author", "Author"),
+        this.#label("oembed_details_author", "Author"),
         oembed.authorName,
         oembed.authorUrl,
       ),
       this.#renderDetailRow(
-        this.#label("general_provider", "Provider"),
+        this.#label("oembed_details_provider", "Provider"),
         oembed.providerName,
         oembed.providerUrl,
       ),
@@ -191,7 +205,7 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
   ) {
     if (!url) return nothing;
     return html`<umb-property-layout
-      label=${this.#label("general_thumbnail", "Thumbnail")}
+      label=${this.#label("oembed_details_thumbnail", "Thumbnail")}
       orientation="vertical"
     >
       <div slot="editor">
@@ -252,7 +266,7 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
 
   override render() {
     return html`
-      <umb-body-layout headline="Embed">
+      <umb-body-layout headline=${this.localize.term("general_embed")}>
         <uui-box>
           <umb-property-layout
             label=${this.localize.term("general_url")}
@@ -265,8 +279,28 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
             () => html`<uui-loader-circle></uui-loader-circle>`,
           )}
           ${when(
-            this._currentLoading === "success" && this._currentPreview,
+            this._currentLoading === "success" &&
+              this._currentPreview &&
+              this.#isTypeAllowed(this._currentPreview.type),
             () => this.#renderPreview(this._currentPreview!),
+          )}
+          ${when(
+            this._currentLoading === "success" &&
+              this._currentPreview &&
+              !this.#isTypeAllowed(this._currentPreview.type),
+            () => html`<div class="oembed-error">
+              ${this.localize.term(
+                "oembed_errors_TypeNotAllowed",
+                this._currentPreview!.type,
+                this.data?.allowedTypes?.join(", ") ?? "",
+              )}
+            </div>`,
+          )}
+          ${when(
+            this._currentLoading === "error",
+            () => html`<div class="oembed-error">
+              ${this.localize.term(localizedOEmbedErrorKey(this._currentError))}
+            </div>`,
           )}
         </uui-box>
         <uui-button
@@ -334,6 +368,10 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
         max-width: 100%;
         max-height: 40vh;
         border-radius: var(--uui-border-radius, 3px);
+      }
+
+      .oembed-error {
+        color: var(--uui-color-danger, #d42054);
       }
     `,
   ];

@@ -4,12 +4,14 @@ import { OEMBED_MODAL } from "./oembed-picker-modal.token";
 import type { OEmbedValueModel } from "../../../property-editors/types";
 import type { UmbControllerHost } from "@umbraco-cms/backoffice/controller-api";
 import { UmbControllerBase } from "@umbraco-cms/backoffice/class-api";
-import { UmbObjectState } from "@umbraco-cms/backoffice/observable-api";
 import { umbOpenModal } from "@umbraco-cms/backoffice/modal";
 
 /**
- * Context for oEmbed picker functionality.
- * Manages state, repository communication, and preview fetching.
+ * Context for composing a single oEmbed value (URL entry, preview fetch, error
+ * state). Used both by the picker modal (its own instance) and by the input
+ * element (to open the modal and await the composed result) — it does not
+ * hold or own the property's committed value(s); the input element manages
+ * its own array of embeds directly.
  *
  * Consumed by the picker modal and child input components via
  * consumeContext(UMB_OEMBED_PICKER_CONTEXT, callback).
@@ -18,12 +20,7 @@ export class UmbOEmbedPickerContext extends UmbControllerBase {
   readonly #store = new OEmbedPickerStore();
   readonly #repository = new OEmbedRepository(this);
 
-  // The committed picker value (URL + resolved oEmbed). Source of truth that
-  // the input element mirrors into its form-control value.
-  readonly #value = new UmbObjectState<OEmbedValueModel | undefined>(undefined);
-
   // Public observables
-  readonly value$ = this.#value.asObservable();
   readonly url$ = this.#store.url$;
   readonly preview$ = this.#store.preview$;
   readonly loading$ = this.#store.loading$;
@@ -74,41 +71,19 @@ export class UmbOEmbedPickerContext extends UmbControllerBase {
   }
 
   /**
-   * Get the current committed picker value.
-   */
-  getValue(): OEmbedValueModel | undefined {
-    return this.#value.getValue();
-  }
-
-  /**
-   * Set the committed picker value (e.g. seeding from persisted data).
-   */
-  setValue(value: OEmbedValueModel | undefined): void {
-    this.#value.setValue(value);
-  }
-
-  /**
-   * Clear the committed picker value.
-   */
-  clearValue(): void {
-    this.#value.setValue(undefined);
-  }
-
-  /**
-   * Open the picker modal and commit the chosen value.
+   * Open the picker modal and resolve the composed value.
    * @param url Optional URL to pre-fill the modal with.
+   * @param allowedTypes Optional oEmbed type restriction; empty/undefined allows any type.
    * @returns The chosen value, or undefined if cancelled.
    */
-  async openPicker(url?: string): Promise<OEmbedValueModel | undefined> {
+  async openPicker(url?: string, allowedTypes?: string[]): Promise<OEmbedValueModel | undefined> {
     const result = await umbOpenModal(this, OEMBED_MODAL, {
-      data: { url },
+      data: { url, allowedTypes },
     }).catch(() => undefined);
 
     if (!result) return undefined;
 
-    const value: OEmbedValueModel = { ...result };
-    this.#value.setValue(value);
-    return value;
+    return { ...result };
   }
 
   /**
@@ -116,6 +91,5 @@ export class UmbOEmbedPickerContext extends UmbControllerBase {
    */
   reset(): void {
     this.#store.reset();
-    this.#value.setValue(undefined);
   }
 }

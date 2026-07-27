@@ -1,6 +1,9 @@
+using Novicell.OEmbed.Core.Models;
 using Umbraco.Cms.Core.IO;
 using Umbraco.Cms.Core.PropertyEditors;
+using Umbraco.Cms.Core.PropertyEditors.Validation;
 using Umbraco.Cms.Core.Serialization;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Strings;
 
 namespace Novicell.OEmbed.Core.PropertyEditors;
@@ -13,7 +16,15 @@ public class OEmbedDataValueEditor : DataValueEditor
         IShortStringHelper shortStringHelper,
         IJsonSerializer jsonSerializer,
         IIOHelper ioHelper,
-        DataEditorAttribute attribute)
+        DataEditorAttribute attribute,
+        ILocalizedTextService localizedTextService)
         : base(shortStringHelper, jsonSerializer, ioHelper, attribute)
-        => Validators.Add(new OEmbedValueValidator());
+    {
+        var validators = new TypedJsonValidatorRunner<List<OEmbedPropertyValue>, OEmbedPickerConfiguration>(
+            jsonSerializer,
+            new OEmbedMinMaxValidator(localizedTextService),
+            new OEmbedAllowedTypeValidator(localizedTextService));
+
+        Validators.Add(validators);
+    }
 }

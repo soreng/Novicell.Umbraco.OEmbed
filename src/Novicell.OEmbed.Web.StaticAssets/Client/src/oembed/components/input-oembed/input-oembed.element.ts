@@ -4,13 +4,15 @@ import {
   customElement,
   nothing,
   property,
-  when,
 } from "@umbraco-cms/backoffice/external/lit";
 import { UmbChangeEvent } from "@umbraco-cms/backoffice/event";
 import { UmbLitElement } from "@umbraco-cms/backoffice/lit-element";
 import { umbConfirmModal } from "@umbraco-cms/backoffice/modal";
 import { UmbPropertyEditorUiElement } from "@umbraco-cms/backoffice/property-editor";
-import { UmbFormControlMixin } from "@umbraco-cms/backoffice/validation";
+import {
+  UMB_VALIDATION_EMPTY_LOCALIZATION_KEY,
+  UmbFormControlMixin,
+} from "@umbraco-cms/backoffice/validation";
 
 import { OEmbedValueModel } from "../../../property-editors/types.ts";
 import "../oembed-preview/index.ts";
@@ -20,7 +22,7 @@ import { UMB_OEMBED_PICKER_CONTEXT } from "../../modals/oembed-picker/oembed-pic
 @customElement(InputOEmbedElement.tagName)
 export class InputOEmbedElement
   extends UmbFormControlMixin<
-    OEmbedValueModel,
+    OEmbedValueModel[],
     typeof UmbLitElement,
     undefined
   >(UmbLitElement)
@@ -39,6 +41,35 @@ export class InputOEmbedElement
   requiredMessage?: string;
 
   /**
+   * Allows picking more than one embed. When false, only a single embed is allowed.
+   * @type {boolean}
+   */
+  @property({ type: Boolean })
+  multiple = false;
+
+  /**
+   * This is a minimum amount of embeds in this input.
+   * @type {number}
+   */
+  @property({ type: Number })
+  min?: number;
+
+  /**
+   * This is a maximum amount of embeds in this input.
+   * @type {number}
+   */
+  @property({ type: Number })
+  max?: number;
+
+  /**
+   * Restricts which oEmbed types (video/photo/link/rich) can be picked. Empty/undefined
+   * means no restriction.
+   * @type {string[]}
+   */
+  @property({ type: Array })
+  allowedTypes?: string[];
+
+  /**
    * Sets the input to readonly mode, meaning value cannot be changed but still able to read and select its content.
    * @type {boolean}
    * @attr
@@ -47,50 +78,77 @@ export class InputOEmbedElement
   @property({ type: Boolean, reflect: true })
   readonly?: boolean;
 
+  override get value(): OEmbedValueModel[] {
+    return super.value ?? [];
+  }
+  override set value(value: OEmbedValueModel[] | OEmbedValueModel | undefined) {
+    // Tolerate legacy content saved before multi-value support: Umbraco hands the
+    // parsed stored JSON straight to the property editor UI, so pre-existing
+    // properties still arrive as a single { url, oembed } object, not an array.
+    if (!value) {
+      super.value = [];
+    } else if (Array.isArray(value)) {
+      super.value = value;
+    } else {
+      super.value = [value];
+    }
+  }
+
   readonly #pickerContext = new UmbOEmbedPickerContext(this);
 
   constructor() {
     super();
-    // Provider side: expose the context to this element's subtree and to our
-    // own observers. The context owns the value and opens the picker modal.
     this.provideContext(UMB_OEMBED_PICKER_CONTEXT, this.#pickerContext);
-  }
 
-  override connectedCallback() {
-    super.connectedCallback();
-
-    // Seed the context with the already-persisted value so the first emission
-    // matches and the guard below skips it (no spurious change on load).
-    if (this.value) {
-      this.#pickerContext.setValue(this.value);
-    }
-
-    // Observer side: mirror committed picker values into the form-control value.
-    this.observe(
-      this.#pickerContext.value$,
-      (value) => {
-        if (value === this.value) return; // ignore the seeded/initial emission
-        this.value = value;
-        this.dispatchEvent(new UmbChangeEvent());
-      },
-      "_oembedPickerValue",
+    this.addValidator(
+      "valueMissing",
+      () => this.requiredMessage ?? UMB_VALIDATION_EMPTY_LOCALIZATION_KEY,
+      () => !this.readonly && !!this.required && this.value.length === 0,
+    );
+    this.addValidator(
+      "rangeUnderflow",
+      () =>
+        this.localize.term(
+          "validation_entriesShort",
+          this.min,
+          (this.min ?? 0) - this.value.length,
+        ),
+      () => !this.readonly && !!this.min && this.value.length < this.min,
+    );
+    this.addValidator(
+      "rangeOverflow",
+      () =>
+        this.localize.term(
+          "validation_entriesExceed",
+          this.max,
+          this.value.length - (this.max ?? 0),
+        ),
+      () => !this.readonly && !!this.max && this.value.length > this.max,
     );
   }
 
-  #hasValue(value?: OEmbedValueModel): value is OEmbedValueModel {
-    return Boolean(value?.url && value?.oembed?.type);
+  async #openPicker(url?: string, editIndex?: number) {
+    const result = await this.#pickerContext.openPicker(url, this.allowedTypes);
+    if (!result) return;
+
+    const items = [...this.value];
+    if (editIndex !== undefined) {
+      items[editIndex] = result;
+    } else {
+      items.push(result);
+    }
+
+    this.value = items;
+    this.dispatchEvent(new UmbChangeEvent());
   }
 
-  async #openPicker(url?: string) {
-    // The context opens the modal and commits the value; our value$ observer
-    // mirrors it into this.value and dispatches the change event.
-    await this.#pickerContext.openPicker(url);
-  }
-
-  async #onRemove() {
+  async #onRemove(index: number) {
     try {
-      await this.requestRemoveItem(this.value!);
-      this.#pickerContext.clearValue();
+      await this.requestRemoveItem(this.value[index]);
+      const items = [...this.value];
+      items.splice(index, 1);
+      this.value = items;
+      this.dispatchEvent(new UmbChangeEvent());
     } catch {
       // User cancelled the action
     }
@@ -106,14 +164,14 @@ export class InputOEmbedElement
     });
   }
 
-  #renderActions() {
+  #renderActions(index: number) {
     if (this.readonly) return nothing;
     return html`
       <uui-action-bar slot="actions">
         <uui-button
           label=${this.localize.term("general_remove")}
           look="secondary"
-          @click=${() => this.#onRemove()}
+          @click=${() => this.#onRemove(index)}
         >
           <uui-icon name="icon-trash"></uui-icon>
         </uui-button>
@@ -162,7 +220,13 @@ export class InputOEmbedElement
     ></oembed-preview>`;
   }
 
-  #renderOEmbed(value: OEmbedValueModel) {
+  #isTypeAllowed(item: OEmbedValueModel): boolean {
+    return (
+      !this.allowedTypes?.length || this.allowedTypes.includes(item.oembed.type)
+    );
+  }
+
+  #renderOEmbed(value: OEmbedValueModel, index: number) {
     const { width, height } = this.#dimensions(value.oembed);
     const aspectRatio = width && height ? width / height : 0;
     return html`
@@ -170,20 +234,27 @@ export class InputOEmbedElement
         style=${aspectRatio >= 1 && aspectRatio <= 3
           ? `aspect-ratio: ${width} / ${height}`
           : ""}
-        .name=${value.oembed.title ?? value.url}
+        .name=${value.oembed.title}
         .detail=${this.#detail(value.oembed)}
         .selectonly="true"
         .selectable="false"
-        @open="${() => this.#openPicker(value.url)}"
+        @open="${() => this.#openPicker(value.url, index)}"
         ?readonly=${this.readonly}
+        ?error=${!this.#isTypeAllowed(value)}
       >
-        ${this.#renderPreview(value)} ${this.#renderActions()}
+        ${this.#renderPreview(value)} ${this.#renderActions(index)}
       </uui-card-media>
     `;
   }
 
+  #renderItems() {
+    return this.value.map((item, index) => this.#renderOEmbed(item, index));
+  }
+
   #renderAddButton() {
-    if (this.readonly && this.#hasValue(this.value)) return nothing;
+    if (this.readonly) return nothing;
+    if (!this.multiple && this.value.length >= 1) return nothing;
+    if (this.max && this.value.length >= this.max) return nothing;
 
     return html`
       <uui-button
@@ -204,9 +275,9 @@ export class InputOEmbedElement
   }
 
   override render() {
-    return html`<div class="container">
-      ${when(this.#hasValue(this.value), () => this.#renderOEmbed(this.value!))}
-      ${this.#renderAddButton()}
+    const isEmpty = this.value.length === 0;
+    return html`<div class="container ${isEmpty ? "container--empty" : ""}">
+      ${this.#renderItems()} ${this.#renderAddButton()}
     </div>`;
   }
 
@@ -216,23 +287,51 @@ export class InputOEmbedElement
         position: relative;
       }
 
+      /*
+       * .container holds zero or more cards plus (optionally) the add-button.
+       * Populated: flex-wrap, each card sized by its own aspect-ratio + fixed
+       * row height, so cards of any ratio (16:9 video, 1:1 photo, etc.) keep
+       * their natural size; the add-button (if shown) is just one more flex
+       * item, sized as a fixed square cell.
+       * Empty: fall back to Umbraco's own placeholder grid (auto-fill/minmax/
+       * 1fr, same as Media Picker/Rich Media) so the lone add-button matches
+       * their sizing exactly.
+       */
       .container {
         display: flex;
         flex-wrap: wrap;
         gap: var(--uui-size-space-5);
         align-items: flex-start;
-        min-height: var(--umb-card-medium-min-width);
+      }
+
+      .container--empty {
+        display: grid;
+        grid-template-columns: repeat(
+          auto-fill,
+          minmax(var(--umb-card-medium-min-width), 1fr)
+        );
+        grid-auto-rows: var(--umb-card-medium-min-width);
       }
 
       uui-card-media {
         height: var(--umb-card-medium-min-width);
         width: auto;
-        /* aspect-ratio set inline per card */
+        /* aspect-ratio override inline per card */
+        aspect-ratio: 1/1;
       }
 
       #btn-add {
         text-align: center;
+        /* Populated (flex) state: a fixed square cell, same size as a card's row height. */
+        height: var(--umb-card-medium-min-width);
+        width: var(--umb-card-medium-min-width);
+      }
+
+      .container--empty #btn-add {
+        /* Empty (grid) state: fill the auto-fill/minmax(...)/1fr track exactly,
+           matching Umbraco's Media Picker/Rich Media placeholder pixel-for-pixel. */
         height: 100%;
+        width: 100%;
       }
 
       uui-icon {

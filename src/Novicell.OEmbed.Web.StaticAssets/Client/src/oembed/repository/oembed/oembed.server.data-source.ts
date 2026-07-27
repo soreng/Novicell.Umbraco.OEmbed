@@ -41,6 +41,10 @@ export class OEmbedServerDataSource {
       NovicellOEmbedService.getOEmbed({
         query: { url, maxwidth: maxWidth, maxheight: maxHeight },
       }),
+      // The picker modal renders its own localized error message from the response's
+      // operationStatus, so suppress the SDK's default toast (which would show the raw,
+      // unlocalized server title/detail).
+      { disableNotifications: true },
     );
   }
 }

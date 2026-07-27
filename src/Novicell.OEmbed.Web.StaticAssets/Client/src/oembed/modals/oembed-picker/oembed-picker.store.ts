@@ -31,6 +31,9 @@ export class OEmbedPickerStore {
    */
   setUrl(url: string): void {
     this.#urlState.setValue(url);
+    this.#previewState.setValue(undefined);
+    this.#errorState.setValue(undefined);
+    this.#loadingState.setValue("idle");
   }
 
   /**

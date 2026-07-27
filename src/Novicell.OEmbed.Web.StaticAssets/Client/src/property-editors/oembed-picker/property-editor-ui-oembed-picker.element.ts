@@ -7,7 +7,11 @@ import {
 import { UmbChangeEvent } from "@umbraco-cms/backoffice/event";
 import { UmbLitElement } from "@umbraco-cms/backoffice/lit-element";
 import { UMB_PROPERTY_CONTEXT } from "@umbraco-cms/backoffice/property";
-import { UmbPropertyEditorUiElement } from "@umbraco-cms/backoffice/property-editor";
+import type {
+  UmbPropertyEditorConfigCollection,
+  UmbPropertyEditorUiElement,
+} from "@umbraco-cms/backoffice/property-editor";
+import type { UmbNumberRangeValueType } from "@umbraco-cms/backoffice/models";
 import {
   UMB_VALIDATION_EMPTY_LOCALIZATION_KEY,
   UmbFormControlMixin,
@@ -19,13 +23,25 @@ import "../../oembed/components/input-oembed/input-oembed.element.js";
 @customElement(PropertyEditorUiOEmbedPickerElement.tagName)
 export default class PropertyEditorUiOEmbedPickerElement
   extends UmbFormControlMixin<
-    OEmbedValueModel,
+    OEmbedValueModel[],
     typeof UmbLitElement,
     undefined
   >(UmbLitElement)
   implements UmbPropertyEditorUiElement
 {
   static readonly tagName = "oembed-property-editor";
+
+  public set config(config: UmbPropertyEditorConfigCollection | undefined) {
+    if (!config) return;
+
+    this._multiple = config.getValueByAlias<boolean>("multiple") ?? false;
+
+    const minMax = config.getValueByAlias<UmbNumberRangeValueType>("validationLimit");
+    this._min = minMax?.min ?? undefined;
+    this._max = minMax?.max ?? undefined;
+
+    this._allowedTypes = config.getValueByAlias<string[]>("allowedTypes") ?? [];
+  }
 
   /**
    * Sets the input to mandatory, meaning validation will fail if the value is empty.
@@ -52,6 +68,18 @@ export default class PropertyEditorUiOEmbedPickerElement
   @state()
   private _variantId?: string;
 
+  @state()
+  private _multiple = false;
+
+  @state()
+  private _min?: number;
+
+  @state()
+  private _max?: number;
+
+  @state()
+  private _allowedTypes: string[] = [];
+
   constructor() {
     super();
 
@@ -64,12 +92,20 @@ export default class PropertyEditorUiOEmbedPickerElement
     });
   }
 
+  override firstUpdated() {
+    // Registers the inner <input-oembed> as this control's form control element, so
+    // this wrapper's validity (and therefore server-side validation messages bound to
+    // this property) delegates to the actual input, matching how Umbraco's own picker
+    // wrappers (e.g. Media Picker's umb-property-editor-ui-media-picker) do it.
+    this.addFormControlElement(this.shadowRoot!.querySelector("input-oembed")!);
+  }
+
   #onChange(
     event: CustomEvent & {
-      target: HTMLInputElement & { value?: OEmbedValueModel };
+      target: HTMLInputElement & { value?: OEmbedValueModel[] };
     },
   ) {
-    const isEmpty = event.target.value === undefined;
+    const isEmpty = !event.target.value?.length;
     this.value = isEmpty ? undefined : event.target.value;
     this.dispatchEvent(new UmbChangeEvent());
   }
@@ -82,6 +118,10 @@ export default class PropertyEditorUiOEmbedPickerElement
         .variantId=${this._variantId}
         .required=${this.mandatory}
         .requiredMessage=${this.mandatoryMessage}
+        ?multiple=${this._multiple}
+        .min=${this._min}
+        .max=${this._max}
+        .allowedTypes=${this._allowedTypes}
         @change=${this.#onChange}
         ?readonly=${this.readonly}
       >

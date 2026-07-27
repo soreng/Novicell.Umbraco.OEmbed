@@ -3,6 +3,7 @@ import { OEmbedType } from "../../../api";
 
 export interface OEmbedModalData {
     url?: string;
+    allowedTypes?: string[];
 }
 
 export interface OEmbedResponse {
