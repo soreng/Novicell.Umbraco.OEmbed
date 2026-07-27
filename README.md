@@ -17,7 +17,6 @@ Built on .NET 10 and Umbraco's built-in embed provider infrastructure.
 
 | Project                            | Description                                                                                                    |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `Novicell.OEmbed.Contracts`        | Public contracts and models shared across the package (request/response, discovery service interface).         |
 | `Novicell.OEmbed.Core`             | Core implementation: the oEmbed service, endpoint/discovery providers, options, property editor and constants. |
 | `Novicell.OEmbed.Web`              | Management API controllers and models for the backoffice.                                                      |
 | `Novicell.OEmbed.Web.StaticAssets` | Backoffice front-end (TypeScript/Lit) bundled with Vite.                                                       |

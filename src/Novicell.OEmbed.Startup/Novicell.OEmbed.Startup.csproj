@@ -3,6 +3,7 @@
     <PropertyGroup>
         <Title>Novicell OEmbed Startup</Title>
         <Description>Contains startup logic for Novicell OEmbed</Description>
+        <NoWarn>$(NoWarn);NU1903</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>

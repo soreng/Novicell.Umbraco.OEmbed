@@ -1,6 +1,5 @@
 <Solution>
   <Folder Name="/OEmbed/">
-    <Project Path="src/Novicell.OEmbed.Contracts/Novicell.OEmbed.Contracts.csproj" />
     <Project Path="src/Novicell.OEmbed.Web/Novicell.OEmbed.Web.csproj" />
     <Project Path="src/Novicell.OEmbed/Novicell.OEmbed.csproj" />
     <Project Path="src/Novicell.OEmbed.Core/Novicell.OEmbed.Core.csproj" />

@@ -6,33 +6,23 @@
 
 ## 1. Project Structure
 
-6 projects organized in a layered, dependency-inversion architecture:
-
-### Contracts Layer
-
-**`Novicell.OEmbed.Contracts`** (public API)
-
-- **Purpose**: Shared request/response models and service interfaces
-- **No dependencies** (except Microsoft.Extensions)
-- **Exports**:
-    - `IOEmbedService` — Core service interface
-    - `OEmbedResponse` — API response model
-    - `OEmbedOperationStatus` — Strongly-typed operation status enum
+5 projects organized in a layered architecture:
 
 ### Core Layer
 
 **`Novicell.OEmbed.Core`** (domain implementation)
 
-- **Depends on**: Contracts
-- **Purpose**: Business logic, service implementations, options/configuration
+- **No project dependencies** (besides Umbraco/Microsoft.Extensions)
+- **Purpose**: Public models/interfaces, business logic, service implementations, options/configuration, property editor
 - **Key types**:
-    - `OEmbedService` — Resolves URLs to oEmbed metadata (JSON/XML handling, auto-discovery)
-    - `OEmbedApiEndpointProvider` — Umbraco's embedded provider matching
-    - `OEmbedApiEndpointDiscoveryProvider` — Auto-discovery via `<link rel="alternate" type="application/json+oembed">`
-    - `OEmbedOptions` — Configuration (enable/disable auto-discovery)
-    - `OEmbedPropertyEditor` — Property editor definition
+    - `IOEmbedService` / `OEmbedService` — Resolves URLs to oEmbed metadata (JSON/XML handling, auto-discovery)
+    - `OEmbedApiEndpointProvider` — matches a URL against Umbraco's registered `EmbedProvidersCollection`
+    - `OEmbedApiEndpointDiscoveryProvider` — auto-discovery via HTTP `Link` header or `<link rel="alternate"|"alternative" type="application/json+oembed">` in the page HTML
+    - `OEmbedOptions` — configuration (`Autodiscover`)
+    - `OEmbedDataEditor` / `OEmbedDataValueEditor` / `OEmbedValueValidator` — property editor definition and validation
+    - `OEmbedValuePropertyValueConverter` — converts the stored property JSON into a strongly-typed `OEmbedPropertyValue` for Razor views / Delivery API output
 - **Configuration**: Registered via `AddNovicellOEmbedCore()` extension
-- **DI Pattern**: All services registered as `ITransient` (stateless per-request)
+- **DI Pattern**: All services registered as `Transient`
 
 ### Web Layer
 
@@ -41,9 +31,10 @@
 - **Depends on**: Core
 - **Purpose**: Management API endpoint exposure
 - **Key types**:
-    - `OEmbedController` — REST endpoint: `POST /umbraco/management/api/v1.0/novicell-oembed/oembed`
-    - Request model: `{ url?: string; maxwidth?: number; maxheight?: number }`
-    - Response model: `OEmbedResponseModel` (nullable, with error handling)
+    - `OEmbedApiController` (`Api/Management/OEmbed/Controllers/OEmbedApiController.cs`) — `GET {ApiName}/api/v{version}/oembed?url=&maxwidth=&maxheight=`
+    - `OEmbedApiControllerBase` — maps `OEmbedOperationStatus` to problem-details responses
+    - `OEmbedResponseModel` (`Api/Management/OEmbed/Models`) — API-shape response DTO, mapped from Core's `OEmbedResponse`
+    - `OEmbedApiOperationIdHandler`, `OEmbedApiOperationSecurityFilter` — Swagger/OpenAPI wiring
 - **Configuration**: Registered via `AddNovicellOEmbedWeb()` extension
 
 ### Frontend Assets
@@ -54,7 +45,7 @@
 - **Purpose**: Backoffice UI
     - Vite-built web components
     - Extension manifest (`umbraco-package.json`)
-    - Bundled: `novicell-oembed-manifests.js`, `novicell-oembed-app.js`
+    - Generated API client from the management API's OpenAPI spec (`Client/src/api`)
     - Served as static assets via ASP.NET Core
 - **See**: [Client/ARCHITECTURE.md](./Novicell.OEmbed.Web.StaticAssets/Client/ARCHITECTURE.md) for frontend patterns
 
@@ -73,7 +64,7 @@
 
 **`Novicell.OEmbed`** (NuGet distribution)
 
-- **Depends on**: All 5 projects (via `<IncludeReferencedProjects>true</IncludeReferencedProjects>`)
+- **Depends on**: Startup, Web.StaticAssets (via `<IncludeReferencedProjects>true</IncludeReferencedProjects>`)
 - **Purpose**: Single NuGet package for distribution
 - **Includes**: Frontend assets auto-embedded via `StaticWebAssetBasePath`
 - **Distribution**: `dotnet add package Novicell.OEmbed` installs everything
@@ -87,15 +78,13 @@ Host App (Umbraco project)
   ↓
 Novicell.OEmbed (meta-package)
   ├── Startup (IUmbracoBuilder.AddNovicellOEmbed())
-  │   ├── Core (services, models)
+  │   ├── Core (services, models, property editor)
   │   └── Web (API endpoints)
-  │       ├── Contracts (interfaces, models)
   │       └── Core
-  │           └── Contracts
   └── StaticAssets (compiled TypeScript → wwwroot)
 ```
 
-**Rule**: Dependencies flow inward toward Contracts. Contracts has no dependencies (except Microsoft.Extensions).
+**Rule**: There is no separate Contracts project. Models/interfaces live directly in `Core`, the sole consumer of most of them; `Web` owns its own thin API-shape DTOs. A shared abstraction project is only worth splitting out if a second, architecturally distinct consumer needs the same types — see the precedent in Umbraco-CMS itself (e.g. `Umbraco.Cms.Api.Common`'s generic paging types) and in `Umbraco.AI`, neither of which use a Contracts-only project either.
 
 ---
 
@@ -103,52 +92,48 @@ Novicell.OEmbed (meta-package)
 
 ### IOEmbedService
 
-**Interface** (in Contracts):
-
 ```csharp
 public interface IOEmbedService
 {
-    Task<Attempt<OEmbedResponse?, OEmbedOperationStatus>> RequestOEmbedAsync(
-        string url,
-        int? maxWidth = null,
-        int? maxHeight = null,
-        CancellationToken cancellationToken = default
+    Task<Attempt<OEmbedResponse?, OEmbedOperationStatus>> GetOEmbedAsync(
+        OEmbedRequest request,
+        CancellationToken cancellationToken
     );
 }
 ```
 
-**Implementation** (in Core):
+**Implementation** (`OEmbedService`):
 
 - Fetches oEmbed metadata from external providers
-- Supports JSON and XML responses
-- Auto-discovers providers via `<link rel="alternate" type="application/json+oembed">`
-- Returns `Attempt<OEmbedResponse?, OEmbedOperationStatus>` — never throws, always returns typed status
+- Supports JSON (Newtonsoft, error-tolerant) and XML responses
+- XML parsing is XXE-hardened (`XmlReaderSettings` with `DtdProcessing.Prohibit`, `XmlResolver = null`)
+- Auto-discovers providers via `OEmbedApiEndpointDiscoveryProvider` when no static provider matches and `Autodiscover` is enabled
+- Returns `Attempt<OEmbedResponse?, OEmbedOperationStatus>` — never throws, always returns a typed status
 
-**Operation Status**:
+**Operation Status** (`OEmbedOperationStatus`):
 
 ```csharp
 public enum OEmbedOperationStatus
 {
-    Success = 1,
-    ProviderNotSupported = 2,
-    EmbedNotFound = 3,
-    InvalidResponse = 4,
-    NetworkError = 5,
-    // ... more
+    Success,
+    ProviderNotSupported,
+    EmbedNotFound,
+    InvalidResponse
 }
 ```
+
+`InvalidResponse` covers all fetch/parse failures, including network errors and timeouts — a distinct `NetworkError` status was considered and deliberately not added, since the Management API returns a generic problem-details response for every failure status regardless.
 
 ### Endpoint Provider Pattern
 
 Two complementary providers:
 
-1. **`IOEmbedApiEndpointProvider`** — Built-in Umbraco endpoint definitions
-    - Static list of known providers (YouTube, Vimeo, etc.)
-    - Fast, no network calls
-2. **`IOEmbedApiEndpointDiscoveryProvider`** — Dynamic discovery
-    - Fetches target URL and looks for `<link rel="alternate" type="application/json+oembed">`
-    - Slower but supports any provider advertising oEmbed
-    - Controlled by `OEmbedOptions.EnableAutodiscovery`
+1. **`IOEmbedApiEndpointProvider`** — matches the URL against Umbraco's own `EmbedProvidersCollection` (YouTube, Vimeo, etc., as registered by Umbraco core) via each provider's `UrlSchemeRegex`. Fast, no network calls.
+2. **`IOEmbedApiEndpointDiscoveryProvider`** — dynamic discovery. Checks the target URL's HTTP `Link` header first, then falls back to parsing `<link rel="alternate"|"alternative">` in the page HTML. Slower but supports any provider advertising oEmbed. Controlled by `OEmbedOptions.Autodiscover`.
+
+### Property Value Converter
+
+`OEmbedValuePropertyValueConverter` converts the property editor's stored JSON (`{ "url": "...", "oembed": { ... } }`) into an `OEmbedPropertyValue` record, so the value is usable from Razor views and the Delivery API rather than being exposed as a raw JSON string.
 
 ---
 
@@ -165,29 +150,31 @@ public static IUmbracoBuilder AddNovicellOEmbed(this IUmbracoBuilder builder)
 }
 ```
 
-**Core registration** (in Core project):
+**Core registration** (`Novicell.OEmbed.Core/Configuration/UmbracoBuilderExtensions.cs`):
 
 ```csharp
-public static IUmbracoBuilder AddNovicellOEmbedCore(this IUmbracoBuilder builder)
+internal static IUmbracoBuilder AddNovicellOEmbedCore(this IUmbracoBuilder builder)
 {
-    builder.Services.AddTransient<IOEmbedService, OEmbedService>();
     builder.Services.AddTransient<IOEmbedApiEndpointProvider, OEmbedApiEndpointProvider>();
     builder.Services.AddTransient<IOEmbedApiEndpointDiscoveryProvider, OEmbedApiEndpointDiscoveryProvider>();
-    builder.Services.AddOptions<OEmbedOptions>().Bind(config.GetSection("Novicell:OEmbed"));
+    builder.Services.AddTransient<IOEmbedService, OEmbedService>();
+    builder.Services.AddOptions<OEmbedOptions>().Bind(config.GetSection(OEmbedOptions.SectionKey));
+    builder.PropertyValueConverters().Append<OEmbedValuePropertyValueConverter>();
     return builder;
 }
 ```
 
-**Web registration** (in Web project):
+**Web registration** (`Novicell.OEmbed.Web/Configuration/UmbracoBuilderExtensions.cs`):
 
 ```csharp
 public static IUmbracoBuilder AddNovicellOEmbedWeb(this IUmbracoBuilder builder)
 {
-    builder.AddNotificationHandler<ServerVariablesParsingNotification, OEmbedServerVariablesHandler>();
-    builder.Services.AddApiEndpoint<OEmbedController>();
+    builder.AddNovicellOEmbedManagementApi();
     return builder;
 }
 ```
+
+This registers the versioned Management API (Swagger doc, operation-id handler, security filter) via `WithNovicellOEmbedManagementApi()`. There is no notification handler in this project — no `ServerVariablesParsingNotification` handling exists or is required.
 
 ---
 
@@ -199,18 +186,18 @@ public static IUmbracoBuilder AddNovicellOEmbedWeb(this IUmbracoBuilder builder)
 {
     "Novicell": {
         "OEmbed": {
-            "EnableAutodiscovery": false
+            "Autodiscover": false
         }
     }
 }
 ```
 
-**Options class** (in Core):
+**Options class** (`Novicell.OEmbed.Core/Models/OEmbedOptions.cs`):
 
 ```csharp
 public class OEmbedOptions
 {
-    public bool EnableAutodiscovery { get; set; } = false;
+    public bool Autodiscover { get; set; } = false;
 }
 ```
 
@@ -222,19 +209,19 @@ Accessed via `IOptions<OEmbedOptions>` in services.
 
 ### Add a New Service Method
 
-1. **Interface** in Contracts: Define method signature
-2. **Implementation** in Core: Add logic
-3. **Usage**: Inject `IOEmbedService` in Web controllers or frontend via API
+1. **Interface** in Core: Define method signature on `IOEmbedService`
+2. **Implementation** in Core: Add logic to `OEmbedService`
+3. **Usage**: Inject `IOEmbedService` in Web controllers or frontend via the API
 
 ### Add a New API Endpoint
 
-1. **Controller** in Web: Inherit from `ManagementApiControllerBase`
-2. **Request/Response Models**: Add to Web/Api/Models
-3. **Register**: Add to `AddNovicellOEmbedWeb()` via `.AddApiEndpoint<T>()`
+1. **Controller** in Web: Inherit from `OEmbedApiControllerBase`
+2. **Request/Response Models**: Add to `Web/Api/Management/OEmbed/Models`
+3. **Register**: Wire up via `AddNovicellOEmbedWeb()` / `WithNovicellOEmbedManagementApi()`
 
 ### Add a New Property Editor
 
-1. **Editor Definition** in Core: `OEmbedPropertyEditor` (or new)
+1. **Editor Definition** in Core: `OEmbedDataEditor` (or new)
 2. **Manifest** in StaticAssets/Client/public
 3. **Lit Components** in StaticAssets/Client/src
 
@@ -242,18 +229,15 @@ Accessed via `IOptions<OEmbedOptions>` in services.
 
 ## 7. Testing Considerations
 
-### Backend Tests
+### Backend Tests (`tests/Novicell.OEmbed.Core.Tests`)
 
-- **Scope**: IOEmbedService (happy path, error scenarios)
-- **Approach**: Mock HTTP responses, test status codes
-- **Recommended**: xUnit with Moq
+- Cover `OEmbedService` (provider matching/fallthrough, HTTP status mapping, JSON/XML parsing, XXE-hardening regression), `OEmbedValuePropertyValueConverter`, and `OEmbedValueValidator`
+- Approach: mock `HttpMessageHandler` responses via `IHttpClientFactory`, assert typed `OEmbedOperationStatus` outcomes
 
 ### Frontend Tests
 
-- **Scope**: Components, repositories, data sources
-- **Approach**: @web/test-runner with MSW mocking
-- **Recommended**: 70%+ coverage on critical paths (picker logic, API integration)
-- **See**: StaticAssets/Client docs
+- Scope: components, repositories, data sources (`@web/test-runner` + MSW mocking)
+- See: StaticAssets/Client docs
 
 ---
 
@@ -269,19 +253,20 @@ Create new property editors that use `IOEmbedService`.
 
 ### Frontend Customization
 
-Override components in `StaticAssets/Client/src/property-editors/` or create new extension types.
+Override components in `StaticAssets/Client/src/oembed/` or `property-editors/`, or create new extension types.
 
 ---
 
 ## 9. Key Files Reference
 
-| File                                                                  | Purpose                     |
-| --------------------------------------------------------------------- | --------------------------- |
-| `Novicell.OEmbed.Startup/Configuration/UmbracoBuilderExtensions.cs`   | DI entry point              |
-| `Novicell.OEmbed.Core/OEmbed/OEmbedService.cs`                        | Core service implementation |
-| `Novicell.OEmbed.Web/Api/OEmbedController.cs`                         | REST endpoint               |
-| `Novicell.OEmbed.Web.StaticAssets/Client/src/oembed/`                 | Frontend components & logic |
-| `Novicell.OEmbed.Web.StaticAssets/Client/public/umbraco-package.json` | Extension manifest          |
+| File                                                                          | Purpose                            |
+| ------------------------------------------------------------------------------ | ----------------------------------- |
+| `Novicell.OEmbed.Startup/Configuration/UmbracoBuilderExtensions.cs`           | DI entry point                      |
+| `Novicell.OEmbed.Core/OEmbed/OEmbedService.cs`                                | Core service implementation         |
+| `Novicell.OEmbed.Core/PropertyEditors/OEmbedValuePropertyValueConverter.cs`   | Property value converter            |
+| `Novicell.OEmbed.Web/Api/Management/OEmbed/Controllers/OEmbedApiController.cs` | REST endpoint                       |
+| `Novicell.OEmbed.Web.StaticAssets/Client/src/oembed/`                         | Frontend components & logic         |
+| `Novicell.OEmbed.Web.StaticAssets/Client/public/umbraco-package.json`         | Extension manifest                  |
 
 ---
 
@@ -289,12 +274,8 @@ Override components in `StaticAssets/Client/src/property-editors/` or create new
 
 - **DI Composition**: Umbraco's `IUmbracoBuilder` pattern
 - **Result Pattern**: `Attempt<T, TStatus>` instead of exceptions
-- **Notifications**: Integrate with Umbraco's notification system where needed
+- **Property Value Conversion**: `IPropertyValueConverter` for Razor/Delivery API output
 - **Configuration**: `IOptions<T>` pattern with appsettings binding
 - **API Versioning**: Management API v1.0 endpoint structure
-
----
-
-**This backend is production-ready and follows Umbraco conventions. No changes needed.**
 
 For frontend alignment with Umbraco.Web.UI.Client patterns, see: [Client/ARCHITECTURE.md](./Novicell.OEmbed.Web.StaticAssets/Client/ARCHITECTURE.md)

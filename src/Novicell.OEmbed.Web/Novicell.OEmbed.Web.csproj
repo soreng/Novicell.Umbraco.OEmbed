@@ -4,6 +4,7 @@
         <Title>Novicell OEmbed Web</Title>
         <Description>Management API for Novicell OEmbed</Description>
         <RootNamespace>Novicell.OEmbed.Web</RootNamespace>
+        <NoWarn>$(NoWarn);NU1903</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
