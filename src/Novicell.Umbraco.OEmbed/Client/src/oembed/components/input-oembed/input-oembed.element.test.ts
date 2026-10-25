@@ -166,6 +166,27 @@ describe("InputOEmbedElement", () => {
     expect((cards[1] as HTMLElement).hasAttribute("error")).to.be.false;
   });
 
+  it("shows a saved value without a thumbnail in a preview that never runs its markup", async () => {
+    element.value = [
+      {
+        url: "https://example.com/tweet",
+        oembed: {
+          type: "rich",
+          html: '<blockquote>x</blockquote><script>window.__oembedCard = true</script>',
+        } as any,
+      },
+    ];
+    await element.updateComplete;
+
+    const preview = element.shadowRoot!.querySelector(
+      "oembed-preview",
+    ) as any;
+    expect(preview).to.not.be.null;
+    expect(preview.live).to.be.false;
+    await preview.updateComplete;
+    expect(preview.shadowRoot.querySelector("iframe")).to.be.null;
+  });
+
   it("passes type validation regardless of the casing of the allowed types", async () => {
     element.allowedTypes = ["Video"];
     element.value = [video("https://example.com/1")];

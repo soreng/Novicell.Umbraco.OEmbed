@@ -13,6 +13,8 @@ describe("OEmbedPreviewElement", () => {
     element = document.createElement(
       "oembed-preview",
     ) as OEmbedPreviewElement;
+    // Provider markup only runs in live mode (the picker modal's fresh server response).
+    element.live = true;
     document.body.appendChild(element);
   });
 
@@ -236,6 +238,55 @@ describe("OEmbedPreviewElement", () => {
     expect(element.shadowRoot!.querySelector("iframe")).to.be.null;
     expect(element.shadowRoot!.querySelector("img.oembed-media")).to.not.be
       .null;
+  });
+
+  describe("saved values (not live)", () => {
+    // A saved value comes from the client and is shown to every editor who opens the content,
+    // so its markup must never run in the backoffice.
+    let saved: OEmbedPreviewElement;
+
+    beforeEach(() => {
+      saved = document.createElement("oembed-preview") as OEmbedPreviewElement;
+      document.body.appendChild(saved);
+    });
+
+    afterEach(() => {
+      saved.remove();
+      delete (window as any).__oembedSaved;
+    });
+
+    it("is not live by default", () => {
+      expect(saved.live).to.be.false;
+    });
+
+    it("renders no iframe for script-based markup, only a card", async () => {
+      saved.value = {
+        type: "rich" as any,
+        html: '<img src="x-does-not-exist.png" onerror="window.__oembedSaved = true"><script>window.__oembedSaved = true</script>',
+        title: "A tweet",
+        url: "https://example.com/tweet",
+      };
+      await saved.updateComplete;
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      expect(saved.shadowRoot!.querySelector("iframe")).to.be.null;
+      expect(saved.shadowRoot!.querySelector(".oembed-link-card")).to.not.be.null;
+      expect((window as any).__oembedSaved).to.be.undefined;
+    });
+
+    it("renders no iframe even for a lone provider iframe", async () => {
+      saved.value = {
+        type: "video" as any,
+        html: '<iframe src="https://example.com/embed"></iframe>',
+        thumbnailUrl: "https://example.com/thumb.jpg",
+        thumbnailWidth: 200,
+        thumbnailHeight: 100,
+      };
+      await saved.updateComplete;
+
+      expect(saved.shadowRoot!.querySelector("iframe")).to.be.null;
+      expect(saved.shadowRoot!.querySelector("img.oembed-media")).to.not.be.null;
+    });
   });
 
   describe("untrusted provider markup", () => {

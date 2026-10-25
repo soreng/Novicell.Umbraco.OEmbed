@@ -41,6 +41,16 @@ export class OEmbedPreviewElement
   value?: OEmbedResponseModel;
 
   /**
+   * Live mode runs the provider's own markup (an iframe, or a script-based embed in a sandbox).
+   * Set it only for a response the server has just fetched from a provider, such as the
+   * picker modal's preview. A saved value comes from the client and is shown to every editor
+   * who opens the content, so without this flag its markup is never run: the preview shows a
+   * thumbnail or link card instead.
+   */
+  @property({ type: Boolean })
+  live = false;
+
+  /**
    * Contained mode clips the preview to its host bounds instead of auto-sizing
    * to the embed's rendered content. Used inside the property editor card,
    * where the surrounding `uui-card-media` already fixes the aspect ratio.
@@ -181,7 +191,7 @@ export class OEmbedPreviewElement
 
   #renderIFrame(value: OEmbedResponseModel) {
     const markup = value.html;
-    if (!markup) return this.#renderThumbnailCard(value);
+    if (!markup || !this.live) return this.#renderThumbnailCard(value);
 
     // A lone iframe on another origin is rendered as a normal, cross-origin iframe, so the
     // provider keeps its own origin without sharing the backoffice's. Any other markup

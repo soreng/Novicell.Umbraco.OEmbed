@@ -230,7 +230,7 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
         orientation="vertical"
       >
         <div slot="editor">
-          <oembed-preview .value="${oembed}"></oembed-preview>
+          <oembed-preview live .value="${oembed}"></oembed-preview>
         </div>
       </umb-property-layout>
       ${this.#renderDetails(oembed)}
