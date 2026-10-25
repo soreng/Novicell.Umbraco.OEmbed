@@ -46,3 +46,6 @@ demo/OEmbed.Testsite/wwwroot/cache/
 
 .jumbo/
 .jumbo/jumbo.db
+
+# Client build output, produced by `npm run build` in src/Novicell.Umbraco.OEmbed.Web.StaticAssets/Client
+src/Novicell.Umbraco.OEmbed.Web.StaticAssets/wwwroot/
