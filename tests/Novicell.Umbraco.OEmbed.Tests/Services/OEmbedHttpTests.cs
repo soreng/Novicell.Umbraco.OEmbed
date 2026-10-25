@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Sockets;
 using Microsoft.Extensions.DependencyInjection;
 using Novicell.Umbraco.OEmbed.Configuration;
+using Novicell.Umbraco.OEmbed.Models;
 using Novicell.Umbraco.OEmbed.Services;
 using NUnit.Framework;
 
@@ -28,9 +29,11 @@ public class OEmbedHttpTests
         Assert.That(OEmbedHttp.IsHttpUrl(null), Is.False);
     }
 
-    private static HttpClient CreateClient()
+    private static HttpClient CreateClient(bool allowPrivateNetworks = true)
     {
-        ServiceProvider provider = new ServiceCollection().AddOEmbedHttpClient().BuildServiceProvider();
+        var services = new ServiceCollection();
+        services.Configure<OEmbedOptions>(options => options.AllowPrivateNetworks = allowPrivateNetworks);
+        ServiceProvider provider = services.AddOEmbedHttpClient().BuildServiceProvider();
         return provider.GetRequiredService<IHttpClientFactory>().CreateClient(OEmbedHttp.ClientName);
     }
 
@@ -54,6 +57,50 @@ public class OEmbedHttpTests
 
         Assert.That(response.StatusCode, Is.EqualTo(expected));
     }
+
+    [Test]
+    public void Loopback_Requests_Are_Blocked_By_Default()
+    {
+        using var server = new RedirectServer();
+        using HttpClient client = CreateClient(allowPrivateNetworks: false);
+
+        HttpRequestException? exception = Assert.ThrowsAsync<HttpRequestException>(
+            async () => await client.GetAsync(server.UrlFor(0)));
+
+        // The block is raised from the connect callback, so it may be wrapped by the handler.
+        Assert.That(exception!.ToString(), Does.Contain("AllowPrivateNetworks"));
+    }
+
+    [TestCase("http://127.0.0.1:9/")]
+    [TestCase("http://[::1]:9/")]
+    [TestCase("http://169.254.169.254/latest/meta-data/")]
+    [TestCase("http://10.0.0.1/")]
+    [TestCase("http://192.168.1.1/")]
+    [TestCase("http://[::ffff:127.0.0.1]:9/")]
+    public void Private_IP_Literals_Are_Blocked_By_Default(string url)
+    {
+        using HttpClient client = CreateClient(allowPrivateNetworks: false);
+
+        HttpRequestException? exception = Assert.ThrowsAsync<HttpRequestException>(
+            async () => await client.GetAsync(url));
+
+        Assert.That(exception!.ToString(), Does.Contain("AllowPrivateNetworks"));
+    }
+
+    [Test]
+    public async Task Loopback_Requests_Succeed_When_Private_Networks_Are_Allowed()
+    {
+        using var server = new RedirectServer();
+        using HttpClient client = CreateClient(allowPrivateNetworks: true);
+
+        using HttpResponseMessage response = await client.GetAsync(server.UrlFor(0));
+
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+
+    [Test]
+    public void Private_Networks_Are_Not_Allowed_Unless_Configured()
+        => Assert.That(new OEmbedOptions().AllowPrivateNetworks, Is.False);
 
     /// <summary>A loopback server where /hop/N redirects to /hop/N-1 and /hop/0 answers 200.</summary>
     private sealed class RedirectServer : IDisposable

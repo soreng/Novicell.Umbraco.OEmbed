@@ -58,12 +58,17 @@ Configure options under the `Novicell:OEmbed` section in `appsettings.json`:
 | Setting        | Default | Description                                                                                                             |
 | -------------- | ------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `Autodiscover` | `false` | When enabled, attempts to discover an oEmbed endpoint from the target page when no registered provider matches the URL. |
+| `AllowPrivateNetworks` | `false` | Allows the server to call loopback and private network addresses. Off by default, see the security note below. |
 
 ### Security note on providers and Autodiscover
 
 The live preview in the picker modal shows the HTML that an oEmbed provider has just returned to the server. A provider that returns a single `<iframe>` (YouTube, Vimeo, Spotify and similar) is rendered as a normal cross-origin iframe. Other markup, typically a `<blockquote>` plus the provider's script (X, TikTok, Reddit), runs in a sandboxed iframe that shares the backoffice's origin, because those scripts need it to work. The providers registered with Umbraco, plus Reddit, Spotify and TikTok added by this package, are therefore trusted.
 
 Enabling `Autodiscover` extends that trust to any site an editor pastes, and makes the server request the URLs it finds. Leave it off unless you trust the editors with that.
+
+Whatever the server requests on an editor's behalf is limited: only `http` and `https`, a 10 second timeout, at most 3 redirects and a 1 MiB response. The server also only connects to publicly routable addresses. Loopback, private (RFC 1918), link-local (including cloud metadata at `169.254.169.254`), carrier-grade NAT, multicast and reserved ranges are refused, and the check is made on the address actually connected to, so redirects and DNS rebinding cannot get around it.
+
+Set `AllowPrivateNetworks` to `true` if you need to call a provider on `localhost`, or if the server reaches the internet through an outbound proxy on a private address (the check then sees the proxy, not the target, and the proxy has to restrict what can be reached). The setting is read when the HTTP client is created, so changing it needs a restart.
 
 A saved value is different: the stored `oembed` JSON, including its `html`, is sent by the client and is not checked against the provider. The property editor therefore never runs it. Saved embeds are shown as a thumbnail or link card, and only the picker modal fetches a fresh response and runs it. Sites that render the stored `html` on the frontend should treat it as editor-supplied content.
 

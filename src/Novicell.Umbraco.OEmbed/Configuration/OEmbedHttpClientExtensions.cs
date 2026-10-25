@@ -1,4 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Novicell.Umbraco.OEmbed.Models;
 using Novicell.Umbraco.OEmbed.Services;
 
 namespace Novicell.Umbraco.OEmbed.Configuration;
@@ -19,11 +21,21 @@ internal static class OEmbedHttpClientExtensions
                 _ = client.DefaultRequestHeaders.UserAgent.TryParseAdd(
                     global::Umbraco.Cms.Core.Constants.HttpClients.Headers.UserAgentProductName);
             })
-            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            .ConfigurePrimaryHttpMessageHandler(serviceProvider =>
             {
-                AllowAutoRedirect = true,
-                MaxAutomaticRedirections = OEmbedHttp.MaxRedirects,
-                PooledConnectionLifetime = TimeSpan.FromMinutes(2),
+                var handler = new SocketsHttpHandler
+                {
+                    AllowAutoRedirect = true,
+                    MaxAutomaticRedirections = OEmbedHttp.MaxRedirects,
+                    PooledConnectionLifetime = TimeSpan.FromMinutes(2),
+                };
+
+                if (!serviceProvider.GetRequiredService<IOptions<OEmbedOptions>>().Value.AllowPrivateNetworks)
+                {
+                    handler.ConnectCallback = PublicNetworkConnector.ConnectAsync;
+                }
+
+                return handler;
             });
 
         return services;
