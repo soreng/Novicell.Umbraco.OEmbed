@@ -119,18 +119,18 @@ export class OEmbedPreviewElement
     const aspectRatio = this.#aspectRatio(value.width, value.height);
     const hasFixedSize = aspectRatio > 0;
 
-    const element = window.document.createElement("div");
-    element.insertAdjacentHTML("afterbegin", markup);
-
+    // The provider's markup is untrusted. It only ever ends up inside the srcdoc string and is
+    // parsed by the iframe. It must never be parsed into an element of the backoffice document:
+    // even a detached element runs handlers such as <img onerror> with backoffice privileges.
     let style = "<style>html,body{margin:0;padding:0}</style>";
+    let wrapperStyle = "";
     if (hasFixedSize) {
-      element.style.width = "100%";
-      element.style.height = "100%";
+      wrapperStyle = ' style="width:100%;height:100%"';
       style =
         "<style>html,body,iframe{width:100%;height:100%;margin:0;padding:0;overflow:hidden}</style>";
     }
 
-    const srcdoc = `<html><head></head><body>${style}${element.outerHTML}</body></html>`;
+    const srcdoc = `<html><head></head><body>${style}<div${wrapperStyle}>${markup}</div></body></html>`;
 
     if (hasFixedSize) {
       return html`<div

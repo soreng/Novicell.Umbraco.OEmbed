@@ -112,4 +112,39 @@ describe("OEmbedPreviewElement", () => {
     expect(element.shadowRoot!.querySelector("img.oembed-media")).to.not.be
       .null;
   });
+
+  describe("untrusted provider markup", () => {
+    afterEach(() => {
+      delete (window as any).__oembedXss;
+    });
+
+    it("does not run event handlers from the markup in the backoffice document", async () => {
+      element.value = {
+        type: "video" as any,
+        html: '<img src="x-does-not-exist.png" onerror="window.__oembedXss = true">',
+        width: 16,
+        height: 9,
+      };
+      await element.updateComplete;
+      // The failed image load fires asynchronously.
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      expect((window as any).__oembedXss).to.be.undefined;
+    });
+
+    it("still passes the markup to the iframe unchanged", async () => {
+      element.value = {
+        type: "video" as any,
+        html: '<img src="x-does-not-exist.png" onerror="window.__oembedXss = true">',
+        width: 16,
+        height: 9,
+      };
+      await element.updateComplete;
+
+      const srcdoc = element
+        .shadowRoot!.querySelector("iframe")!
+        .getAttribute("srcdoc");
+      expect(srcdoc).to.contain('onerror="window.__oembedXss = true"');
+    });
+  });
 });
