@@ -63,7 +63,7 @@ public URL for that platform and check:
 
 ## 3. Implement the provider
 
-This project's `OEmbedService` (`Novicell.Umbraco.OEmbed.Core/OEmbed/OEmbedService.cs`)
+This project's `OEmbedService` (`Services/OEmbedService.cs`)
 does its own JSON/XML fetching and parsing — it does **not** call
 `IEmbedProvider.GetMarkupAsync`. Only three members actually matter for URL
 matching and endpoint construction: `ApiEndpoint`, `UrlSchemeRegex`,
@@ -73,7 +73,7 @@ matching and endpoint construction: `ApiEndpoint`, `UrlSchemeRegex`,
 Editor's embed insert) may call directly.
 
 Create the class under
-`src/Novicell.Umbraco.OEmbed.Core/OEmbed/EmbedProviders/<ProviderName>.cs`, following
+`src/Novicell.Umbraco.OEmbed/EmbedProviders/<ProviderName>.cs`, following
 the same shape as Umbraco core's own providers
 (`Umbraco.Cms.Core.Media.EmbedProviders.OEmbedProviderBase` — see e.g.
 `Kickstarter.cs`, `SoundCloud.cs`, `Flickr.cs` in the Umbraco-CMS repo for
@@ -83,7 +83,7 @@ reference patterns):
 using Umbraco.Cms.Core.Media.EmbedProviders;
 using Umbraco.Cms.Core.Serialization;
 
-namespace Novicell.Umbraco.OEmbed.Core.OEmbed.EmbedProviders;
+namespace Novicell.Umbraco.OEmbed.EmbedProviders;
 
 public class Spotify : OEmbedProviderBase
 {
@@ -122,7 +122,7 @@ Notes:
 
 ## 4. Register the provider
 
-In `src/Novicell.Umbraco.OEmbed.Core/Configuration/UmbracoBuilderExtensions.cs`,
+In `src/Novicell.Umbraco.OEmbed/Configuration/UmbracoBuilderExtensions.cs`,
 append it to the `EmbedProviders()` collection builder inside
 `AddNovicellOEmbedCore`:
 
@@ -141,7 +141,7 @@ its own `AddNovicellOEmbedCore` builder extension as the composition root.
 
 ## 5. Verify
 
-- `dotnet build src/Novicell.Umbraco.OEmbed.Core/Novicell.Umbraco.OEmbed.Core.csproj`
+- `dotnet build src/Novicell.Umbraco.OEmbed/Novicell.Umbraco.OEmbed.csproj`
 - Test a real, live URL for the platform end-to-end in the demo site
   (`demo/OEmbed.Testsite`) — paste it into the oEmbed picker and confirm it
   resolves with the expected `type` (photo/video/link/rich).
