@@ -10,7 +10,7 @@ export default defineConfig({
       },
       formats: ["es"],
     },
-    outDir: "../wwwroot", // your web component will be saved in this location
+    outDir: "../wwwroot/App_Plugins/NovicellUmbracoOEmbed", // your web component will be saved in this location
     emptyOutDir: true,
     sourcemap: true,
     rollupOptions: {
