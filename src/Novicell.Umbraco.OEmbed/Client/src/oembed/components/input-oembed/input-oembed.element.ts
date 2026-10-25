@@ -235,6 +235,7 @@ export class InputOEmbedElement
     return html`<oembed-preview
       contain
       .value="${value.oembed}"
+      .sourceUrl="${value.url}"
     ></oembed-preview>`;
   }
 

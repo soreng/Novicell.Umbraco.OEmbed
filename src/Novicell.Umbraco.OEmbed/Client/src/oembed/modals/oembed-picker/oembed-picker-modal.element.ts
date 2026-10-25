@@ -27,6 +27,7 @@ import {
 import type { UmbApiError, UmbCancelError } from "@umbraco-cms/backoffice/resources";
 import { localizedOEmbedErrorKey } from "./oembed-picker.errors.ts";
 import { isOEmbedTypeAllowed } from "../../allowed-types.ts";
+import { toHttpUrl } from "../../safe-url.ts";
 
 @customElement(OembedPickerModalElement.tagName)
 export class OembedPickerModalElement extends UmbModalBaseElement<
@@ -134,7 +135,12 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
 
   #renderLink(url?: string | null, text?: string | null) {
     if (!url || !text) return nothing;
-    return html`<a href="${url}" target="_blank" rel="noopener noreferrer"
+
+    // Provider-supplied URL: never render a javascript:, data: or similar link.
+    const href = toHttpUrl(url);
+    if (!href) return html`<span>${text}</span>`;
+
+    return html`<a href="${href}" target="_blank" rel="noopener noreferrer"
       >${text}</a
     >`;
   }
@@ -224,7 +230,7 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
         orientation="vertical"
       >
         <div slot="editor">
-          <oembed-preview .value="${oembed}"></oembed-preview>
+          <oembed-preview live .value="${oembed}"></oembed-preview>
         </div>
       </umb-property-layout>
       ${this.#renderDetails(oembed)}
