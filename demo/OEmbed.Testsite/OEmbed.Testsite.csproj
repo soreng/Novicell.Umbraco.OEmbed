@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Novicell.OEmbed\Novicell.OEmbed.csproj" />
+    <ProjectReference Include="..\..\src\Novicell.Umbraco.OEmbed\Novicell.Umbraco.OEmbed.csproj" />
   </ItemGroup>
 
 

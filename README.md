@@ -1,4 +1,4 @@
-# Novicell.OEmbed
+# Novicell.Umbraco.OEmbed
 
 An [oEmbed](https://oembed.com/) integration for [Umbraco CMS](https://umbraco.com/). It lets editors paste a URL (YouTube, Vimeo, Twitter/X, etc.) and have Umbraco resolve the rich embed (HTML, thumbnail, dimensions and metadata) through the oEmbed protocol.
 
@@ -17,11 +17,11 @@ Built on .NET 10 and Umbraco's built-in embed provider infrastructure.
 
 | Project                            | Description                                                                                                    |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `Novicell.OEmbed.Core`             | Core implementation: the oEmbed service, endpoint/discovery providers, options, property editor and constants. |
-| `Novicell.OEmbed.Web`              | Management API controllers and models for the backoffice.                                                      |
-| `Novicell.OEmbed.Web.StaticAssets` | Backoffice front-end (TypeScript/Lit) bundled with Vite.                                                       |
-| `Novicell.OEmbed.Startup`          | Composition root: the `IComposer` and builder extensions that wire everything up.                              |
-| `Novicell.OEmbed`                  | Meta NuGet package that ties the other projects together.                                                      |
+| `Novicell.Umbraco.OEmbed.Core`             | Core implementation: the oEmbed service, endpoint/discovery providers, options, property editor and constants. |
+| `Novicell.Umbraco.OEmbed.Web`              | Management API controllers and models for the backoffice.                                                      |
+| `Novicell.Umbraco.OEmbed.Web.StaticAssets` | Backoffice front-end (TypeScript/Lit) bundled with Vite.                                                       |
+| `Novicell.Umbraco.OEmbed.Startup`          | Composition root: the `IComposer` and builder extensions that wire everything up.                              |
+| `Novicell.Umbraco.OEmbed`                  | Meta NuGet package that ties the other projects together.                                                      |
 | `demo/OEmbed.Testsite`             | A runnable Umbraco site used for local development and testing.                                                |
 
 ## How it works
@@ -66,7 +66,7 @@ Configure options under the `Novicell:OEmbed` section in `appsettings.json`:
 dotnet run --project demo/OEmbed.Testsite/OEmbed.Testsite.csproj
 ```
 
-To work on the backoffice UI, build the client assets in `src/Novicell.OEmbed.Web.StaticAssets/Client`:
+To work on the backoffice UI, build the client assets in `src/Novicell.Umbraco.OEmbed.Web.StaticAssets/Client`:
 
 ```bash
 npm install

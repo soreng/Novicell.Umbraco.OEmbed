@@ -1,9 +1,9 @@
 ---
 name: add-embed-provider
-description: Add a new oEmbed provider (e.g. TikTok, Spotify, Reddit) to Novicell.OEmbed. Use when a paste-a-URL provider is reported as "not supported" and the platform has a public oEmbed endpoint.
+description: Add a new oEmbed provider (e.g. TikTok, Spotify, Reddit) to Novicell.Umbraco.OEmbed. Use when a paste-a-URL provider is reported as "not supported" and the platform has a public oEmbed endpoint.
 ---
 
-# Adding an embed provider to Novicell.OEmbed
+# Adding an embed provider to Novicell.Umbraco.OEmbed
 
 This project resolves oEmbed URLs by matching them against Umbraco CMS's own
 `EmbedProvidersCollection` (see `OEmbedApiEndpointProvider.cs`). If a platform
@@ -63,7 +63,7 @@ public URL for that platform and check:
 
 ## 3. Implement the provider
 
-This project's `OEmbedService` (`Novicell.OEmbed.Core/OEmbed/OEmbedService.cs`)
+This project's `OEmbedService` (`Novicell.Umbraco.OEmbed.Core/OEmbed/OEmbedService.cs`)
 does its own JSON/XML fetching and parsing — it does **not** call
 `IEmbedProvider.GetMarkupAsync`. Only three members actually matter for URL
 matching and endpoint construction: `ApiEndpoint`, `UrlSchemeRegex`,
@@ -73,7 +73,7 @@ matching and endpoint construction: `ApiEndpoint`, `UrlSchemeRegex`,
 Editor's embed insert) may call directly.
 
 Create the class under
-`src/Novicell.OEmbed.Core/OEmbed/EmbedProviders/<ProviderName>.cs`, following
+`src/Novicell.Umbraco.OEmbed.Core/OEmbed/EmbedProviders/<ProviderName>.cs`, following
 the same shape as Umbraco core's own providers
 (`Umbraco.Cms.Core.Media.EmbedProviders.OEmbedProviderBase` — see e.g.
 `Kickstarter.cs`, `SoundCloud.cs`, `Flickr.cs` in the Umbraco-CMS repo for
@@ -83,7 +83,7 @@ reference patterns):
 using Umbraco.Cms.Core.Media.EmbedProviders;
 using Umbraco.Cms.Core.Serialization;
 
-namespace Novicell.OEmbed.Core.OEmbed.EmbedProviders;
+namespace Novicell.Umbraco.OEmbed.Core.OEmbed.EmbedProviders;
 
 public class Spotify : OEmbedProviderBase
 {
@@ -122,7 +122,7 @@ Notes:
 
 ## 4. Register the provider
 
-In `src/Novicell.OEmbed.Core/Configuration/UmbracoBuilderExtensions.cs`,
+In `src/Novicell.Umbraco.OEmbed.Core/Configuration/UmbracoBuilderExtensions.cs`,
 append it to the `EmbedProviders()` collection builder inside
 `AddNovicellOEmbedCore`:
 
@@ -141,7 +141,7 @@ its own `AddNovicellOEmbedCore` builder extension as the composition root.
 
 ## 5. Verify
 
-- `dotnet build src/Novicell.OEmbed.Core/Novicell.OEmbed.Core.csproj`
+- `dotnet build src/Novicell.Umbraco.OEmbed.Core/Novicell.Umbraco.OEmbed.Core.csproj`
 - Test a real, live URL for the platform end-to-end in the demo site
   (`demo/OEmbed.Testsite`) — paste it into the oEmbed picker and confirm it
   resolves with the expected `type` (photo/video/link/rich).

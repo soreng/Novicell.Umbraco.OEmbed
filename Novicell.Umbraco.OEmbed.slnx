@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/OEmbed/">
+    <Project Path="src/Novicell.Umbraco.OEmbed.Web/Novicell.Umbraco.OEmbed.Web.csproj" />
+    <Project Path="src/Novicell.Umbraco.OEmbed/Novicell.Umbraco.OEmbed.csproj" />
+    <Project Path="src/Novicell.Umbraco.OEmbed.Core/Novicell.Umbraco.OEmbed.Core.csproj" />
+    <Project Path="src/Novicell.Umbraco.OEmbed.Startup/Novicell.Umbraco.OEmbed.Startup.csproj" />
+    <Project Path="src/Novicell.Umbraco.OEmbed.Web.StaticAssets/Novicell.Umbraco.OEmbed.Web.StaticAssets.csproj" />
+  </Folder>
+  <Folder Name="/src/" />
+  <Folder Name="/tests/">
+    <Project Path="tests/Novicell.Umbraco.OEmbed.Core.Tests/Novicell.Umbraco.OEmbed.Core.Tests.csproj" />
+  </Folder>
+  <Project Path="demo/OEmbed.Testsite/OEmbed.Testsite.csproj" />
+</Solution>

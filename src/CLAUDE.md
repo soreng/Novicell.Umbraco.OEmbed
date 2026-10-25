@@ -1,4 +1,4 @@
-# Novicell.OEmbed — Backend Architecture
+# Novicell.Umbraco.OEmbed — Backend Architecture
 
 .NET backend extension for Umbraco CMS providing oEmbed protocol integration. Enables editors to embed external content (videos, images, rich embeds) by pasting URLs.
 
@@ -10,7 +10,7 @@
 
 ### Core Layer
 
-**`Novicell.OEmbed.Core`** (domain implementation)
+**`Novicell.Umbraco.OEmbed.Core`** (domain implementation)
 
 - **No project dependencies** (besides Umbraco/Microsoft.Extensions)
 - **Purpose**: Public models/interfaces, business logic, service implementations, options/configuration, property editor
@@ -26,7 +26,7 @@
 
 ### Web Layer
 
-**`Novicell.OEmbed.Web`** (API endpoints)
+**`Novicell.Umbraco.OEmbed.Web`** (API endpoints)
 
 - **Depends on**: Core
 - **Purpose**: Management API endpoint exposure
@@ -39,7 +39,7 @@
 
 ### Frontend Assets
 
-**`Novicell.OEmbed.Web.StaticAssets`** (Lit/TypeScript components + manifest)
+**`Novicell.Umbraco.OEmbed.Web.StaticAssets`** (Lit/TypeScript components + manifest)
 
 - **Depends on**: None (compiled TypeScript, static files)
 - **Purpose**: Backoffice UI
@@ -47,11 +47,11 @@
     - Extension manifest (`umbraco-package.json`)
     - Generated API client from the management API's OpenAPI spec (`Client/src/api`)
     - Served as static assets via ASP.NET Core
-- **See**: [Client/ARCHITECTURE.md](./Novicell.OEmbed.Web.StaticAssets/Client/ARCHITECTURE.md) for frontend patterns
+- **See**: [Client/ARCHITECTURE.md](./Novicell.Umbraco.OEmbed.Web.StaticAssets/Client/ARCHITECTURE.md) for frontend patterns
 
 ### Startup (Composition Root)
 
-**`Novicell.OEmbed.Startup`** (DI registration)
+**`Novicell.Umbraco.OEmbed.Startup`** (DI registration)
 
 - **Depends on**: Core, Web
 - **Purpose**: Bootstrap extension into Umbraco
@@ -62,12 +62,12 @@
 
 ### Meta Package
 
-**`Novicell.OEmbed`** (NuGet distribution)
+**`Novicell.Umbraco.OEmbed`** (NuGet distribution)
 
 - **Depends on**: Startup, Web.StaticAssets (via `<IncludeReferencedProjects>true</IncludeReferencedProjects>`)
 - **Purpose**: Single NuGet package for distribution
 - **Includes**: Frontend assets auto-embedded via `StaticWebAssetBasePath`
-- **Distribution**: `dotnet add package Novicell.OEmbed` installs everything
+- **Distribution**: `dotnet add package Novicell.Umbraco.OEmbed` installs everything
 
 ---
 
@@ -76,7 +76,7 @@
 ```
 Host App (Umbraco project)
   ↓
-Novicell.OEmbed (meta-package)
+Novicell.Umbraco.OEmbed (meta-package)
   ├── Startup (IUmbracoBuilder.AddNovicellOEmbed())
   │   ├── Core (services, models, property editor)
   │   └── Web (API endpoints)
@@ -150,7 +150,7 @@ public static IUmbracoBuilder AddNovicellOEmbed(this IUmbracoBuilder builder)
 }
 ```
 
-**Core registration** (`Novicell.OEmbed.Core/Configuration/UmbracoBuilderExtensions.cs`):
+**Core registration** (`Novicell.Umbraco.OEmbed.Core/Configuration/UmbracoBuilderExtensions.cs`):
 
 ```csharp
 internal static IUmbracoBuilder AddNovicellOEmbedCore(this IUmbracoBuilder builder)
@@ -164,7 +164,7 @@ internal static IUmbracoBuilder AddNovicellOEmbedCore(this IUmbracoBuilder build
 }
 ```
 
-**Web registration** (`Novicell.OEmbed.Web/Configuration/UmbracoBuilderExtensions.cs`):
+**Web registration** (`Novicell.Umbraco.OEmbed.Web/Configuration/UmbracoBuilderExtensions.cs`):
 
 ```csharp
 public static IUmbracoBuilder AddNovicellOEmbedWeb(this IUmbracoBuilder builder)
@@ -192,7 +192,7 @@ This registers the versioned Management API (Swagger doc, operation-id handler, 
 }
 ```
 
-**Options class** (`Novicell.OEmbed.Core/Models/OEmbedOptions.cs`):
+**Options class** (`Novicell.Umbraco.OEmbed.Core/Models/OEmbedOptions.cs`):
 
 ```csharp
 public class OEmbedOptions
@@ -229,7 +229,7 @@ Accessed via `IOptions<OEmbedOptions>` in services.
 
 ## 7. Testing Considerations
 
-### Backend Tests (`tests/Novicell.OEmbed.Core.Tests`)
+### Backend Tests (`tests/Novicell.Umbraco.OEmbed.Core.Tests`)
 
 - Cover `OEmbedService` (provider matching/fallthrough, HTTP status mapping, JSON/XML parsing, XXE-hardening regression), `OEmbedValuePropertyValueConverter`, and `OEmbedValueValidator`
 - Approach: mock `HttpMessageHandler` responses via `IHttpClientFactory`, assert typed `OEmbedOperationStatus` outcomes
@@ -261,12 +261,12 @@ Override components in `StaticAssets/Client/src/oembed/` or `property-editors/`,
 
 | File                                                                          | Purpose                            |
 | ------------------------------------------------------------------------------ | ----------------------------------- |
-| `Novicell.OEmbed.Startup/Configuration/UmbracoBuilderExtensions.cs`           | DI entry point                      |
-| `Novicell.OEmbed.Core/OEmbed/OEmbedService.cs`                                | Core service implementation         |
-| `Novicell.OEmbed.Core/PropertyEditors/OEmbedValuePropertyValueConverter.cs`   | Property value converter            |
-| `Novicell.OEmbed.Web/Api/Management/OEmbed/Controllers/OEmbedApiController.cs` | REST endpoint                       |
-| `Novicell.OEmbed.Web.StaticAssets/Client/src/oembed/`                         | Frontend components & logic         |
-| `Novicell.OEmbed.Web.StaticAssets/Client/public/umbraco-package.json`         | Extension manifest                  |
+| `Novicell.Umbraco.OEmbed.Startup/Configuration/UmbracoBuilderExtensions.cs`           | DI entry point                      |
+| `Novicell.Umbraco.OEmbed.Core/OEmbed/OEmbedService.cs`                                | Core service implementation         |
+| `Novicell.Umbraco.OEmbed.Core/PropertyEditors/OEmbedValuePropertyValueConverter.cs`   | Property value converter            |
+| `Novicell.Umbraco.OEmbed.Web/Api/Management/OEmbed/Controllers/OEmbedApiController.cs` | REST endpoint                       |
+| `Novicell.Umbraco.OEmbed.Web.StaticAssets/Client/src/oembed/`                         | Frontend components & logic         |
+| `Novicell.Umbraco.OEmbed.Web.StaticAssets/Client/public/umbraco-package.json`         | Extension manifest                  |
 
 ---
 
@@ -278,4 +278,4 @@ Override components in `StaticAssets/Client/src/oembed/` or `property-editors/`,
 - **Configuration**: `IOptions<T>` pattern with appsettings binding
 - **API Versioning**: Management API v1.0 endpoint structure
 
-For frontend alignment with Umbraco.Web.UI.Client patterns, see: [Client/ARCHITECTURE.md](./Novicell.OEmbed.Web.StaticAssets/Client/ARCHITECTURE.md)
+For frontend alignment with Umbraco.Web.UI.Client patterns, see: [Client/ARCHITECTURE.md](./Novicell.Umbraco.OEmbed.Web.StaticAssets/Client/ARCHITECTURE.md)
