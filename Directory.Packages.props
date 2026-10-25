@@ -16,7 +16,6 @@
     <PackageVersion Include="uSync" Version="17.3.2" />
     <PackageVersion Include="Umbraco.Cms" Version="$(UmbracoVersion)" />
     <PackageVersion Include="Umbraco.Cms.Core" Version="$(UmbracoVersion)" />
-    <PackageVersion Include="Umbraco.Cms.Web.Website" Version="$(UmbracoVersion)" />
     <PackageVersion Include="Umbraco.Cms.Web.Common" Version="$(UmbracoVersion)" />
     <PackageVersion Include="Umbraco.Cms.Api.Common" Version="$(UmbracoVersion)" />
     <PackageVersion Include="Umbraco.Cms.Api.Management" Version="$(UmbracoVersion)" />

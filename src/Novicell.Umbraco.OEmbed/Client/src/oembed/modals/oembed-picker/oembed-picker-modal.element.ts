@@ -1,9 +1,7 @@
 import { UmbOEmbedPickerContext } from "./oembed-picker.context";
 import { UMB_OEMBED_PICKER_CONTEXT } from "./oembed-picker.context.token";
-import type {
-  OEmbedModalData,
-  OEmbedModalValue,
-} from "./oembed-picker-modal.token.ts";
+import type { OEmbedModalData } from "./oembed-picker-modal.token.ts";
+import type { OEmbedValueModel } from "../../../property-editors/types.ts";
 import {
   css,
   html,
@@ -32,7 +30,7 @@ import { localizedOEmbedErrorKey } from "./oembed-picker.errors.ts";
 @customElement(OembedPickerModalElement.tagName)
 export class OembedPickerModalElement extends UmbModalBaseElement<
   OEmbedModalData,
-  OEmbedModalValue
+  OEmbedValueModel
 > {
   static readonly tagName = "oembed-modal";
 

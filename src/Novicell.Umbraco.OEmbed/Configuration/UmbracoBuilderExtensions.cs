@@ -49,14 +49,13 @@ public static class UmbracoBuilderExtensions
     }
 
     /// <summary>
-    /// Adds Umbraco AI services to the Umbraco builder.
+    /// Adds the OEmbed Management API to the Umbraco builder.
     /// </summary>
     /// <param name="builder"></param>
     /// <returns></returns>
     public static IUmbracoBuilder AddNovicellOEmbedWeb(this IUmbracoBuilder builder)
     {
         builder.AddNovicellOEmbedManagementApi();
-        //builder.AddNovicellOEmbedWeb();
 
         return builder;
     }
@@ -71,12 +70,6 @@ public static class UmbracoBuilderExtensions
                 {
                     Title = "Novicell OEmbed API",
                     Version = "1.0",
-                    // Contact = new OpenApiContact
-                    // {
-                    //     Name = "Some Developer",
-                    //     Email = "you@company.com",
-                    //     Url = new Uri("https://company.com")
-                    // }
                 });
         });
 
@@ -98,28 +91,12 @@ public static class UmbracoBuilderExtensions
 
                 configureSwagger(options);
 
-                //options.DocumentFilter<MimeTypeDocumentFilter>(apiName);
                 options.OperationFilter<OEmbedApiOperationSecurityFilter>();
-                //options.OperationFilter<SwaggerOperationFilter>(apiName);
-                //options.OperationFilter<SseResponseOperationFilter>(apiName);
-
-                // // Map IdOrAlias to string in OpenAPI schema for cleaner client generation
-                // if (!options.SchemaGeneratorOptions.CustomTypeMappings.ContainsKey(typeof(IdOrAlias)))
-                // {
-                //     options.MapType<IdOrAlias>(() => new OpenApiSchema { Type = JsonSchemaType.String });
-                // }
-
-                // Map System.Type to string in OpenAPI schema (JsonStringTypeConverter handles serialization)
-                if (!options.SchemaGeneratorOptions.CustomTypeMappings.ContainsKey(typeof(Type)))
-                {
-                    options.MapType<Type>(() => new OpenApiSchema { Type = JsonSchemaType.String });
-                }
             });
         }
 
         builder.Services.AddSingleton<IOperationIdHandler, OEmbedApiOperationIdHandler>();
 
         return builder;
-
     }
 }

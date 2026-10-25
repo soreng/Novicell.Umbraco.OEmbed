@@ -7,23 +7,7 @@ import {
 } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement } from "@umbraco-cms/backoffice/lit-element";
 import { UmbPropertyEditorUiElement } from "@umbraco-cms/backoffice/property-editor";
-import { OEmbedType } from "../../../api";
-
-export interface OEmbedPreviewModel {
-  type: OEmbedType;
-  html?: string | null;
-  url?: string | null;
-  width?: number | null;
-  height?: number | null;
-  title?: string | null;
-  authorName?: string | null;
-  authorUrl?: string | null;
-  providerName?: string | null;
-  providerUrl?: string | null;
-  thumbnailUrl?: string | null;
-  thumbnailWidth?: number | null;
-  thumbnailHeight?: number | null;
-}
+import type { OEmbedResponseModel, OEmbedType } from "../../../api";
 
 @customElement(OEmbedPreviewElement.tagName)
 export class OEmbedPreviewElement
@@ -35,7 +19,7 @@ export class OEmbedPreviewElement
   static readonly maxDynamicHeight = 600;
 
   @property({ attribute: false })
-  value?: OEmbedPreviewModel;
+  value?: OEmbedResponseModel;
 
   /**
    * Contained mode clips the preview to its host bounds instead of auto-sizing
@@ -77,7 +61,7 @@ export class OEmbedPreviewElement
     return width && height ? width / height : 0;
   }
 
-  #renderImage(value: OEmbedPreviewModel) {
+  #renderImage(value: OEmbedResponseModel) {
     const url = value.url ?? value.thumbnailUrl;
     if (!url) return this.#renderThumbnailCard(value);
 
@@ -90,7 +74,7 @@ export class OEmbedPreviewElement
     </div>`;
   }
 
-  #renderThumbnailCard(value: OEmbedPreviewModel) {
+  #renderThumbnailCard(value: OEmbedResponseModel) {
     const thumbnail = value.thumbnailUrl;
     if (!thumbnail) return this.#renderLinkCard(value);
 
@@ -106,7 +90,7 @@ export class OEmbedPreviewElement
     </div>`;
   }
 
-  #renderLinkCard(value: OEmbedPreviewModel) {
+  #renderLinkCard(value: OEmbedResponseModel) {
     const href = value.url ?? undefined;
     let hostname = value.providerName ?? "";
     if (!hostname && href) {
@@ -128,7 +112,7 @@ export class OEmbedPreviewElement
     </div>`;
   }
 
-  #renderIFrame(value: OEmbedPreviewModel) {
+  #renderIFrame(value: OEmbedResponseModel) {
     const markup = value.html;
     if (!markup) return this.#renderThumbnailCard(value);
 
@@ -220,7 +204,7 @@ export class OEmbedPreviewElement
     this.#frameObservers.push(observer);
   }
 
-  #renderVisual(value: OEmbedPreviewModel) {
+  #renderVisual(value: OEmbedResponseModel) {
     switch (this.#normalizedType(value.type)) {
       case "photo":
         return this.#renderImage(value);
