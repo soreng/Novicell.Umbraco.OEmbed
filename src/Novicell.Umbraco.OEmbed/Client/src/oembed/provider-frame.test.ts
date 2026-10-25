@@ -21,6 +21,16 @@ describe("effectiveSandbox", () => {
     expect(effectiveSandbox("", policy)).to.equal("");
   });
 
+  it("splits tokens only on ASCII whitespace, like the browser does", () => {
+    // A non-breaking space does not separate tokens, so the browser sees one unknown token.
+    expect(effectiveSandbox("allow-scripts allow-popups", policy)).to.equal("");
+    expect(effectiveSandbox("allow-scripts allow-popups", policy)).to.equal("");
+    // Tab, newline, form feed and carriage return do separate tokens.
+    expect(effectiveSandbox("allow-scripts\tallow-popups\n\f\r", policy)).to.equal(
+      "allow-scripts allow-popups",
+    );
+  });
+
   it("ignores casing and extra whitespace in the provider's tokens", () => {
     expect(effectiveSandbox("  ALLOW-POPUPS   allow-scripts ", policy)).to.equal(
       "allow-scripts allow-popups",

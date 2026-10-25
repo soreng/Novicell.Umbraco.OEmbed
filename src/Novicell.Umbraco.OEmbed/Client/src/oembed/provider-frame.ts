@@ -34,11 +34,14 @@ export function effectiveSandbox(
 ): string {
   if (requested === undefined) return policy.join(" ");
 
+  // Browsers split sandbox tokens on ASCII whitespace only and compare them ASCII
+  // case-insensitively. \s and toLowerCase() are broader (non-breaking space, other Unicode
+  // spaces and case folds), which could grant a token the browser would not.
   const asked = new Set(
     requested
-      .split(/\s+/)
+      .split(/[\t\n\f\r ]+/)
       .filter(Boolean)
-      .map((token) => token.toLowerCase()),
+      .map((token) => token.replace(/[A-Z]/g, (c) => c.toLowerCase())),
   );
   return policy.filter((token) => asked.has(token)).join(" ");
 }
