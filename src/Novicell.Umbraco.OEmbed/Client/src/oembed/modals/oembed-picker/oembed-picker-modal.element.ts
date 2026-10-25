@@ -26,6 +26,7 @@ import {
 } from "@umbraco-cms/backoffice/validation";
 import type { UmbApiError, UmbCancelError } from "@umbraco-cms/backoffice/resources";
 import { localizedOEmbedErrorKey } from "./oembed-picker.errors.ts";
+import { isOEmbedTypeAllowed } from "../../allowed-types.ts";
 
 @customElement(OembedPickerModalElement.tagName)
 export class OembedPickerModalElement extends UmbModalBaseElement<
@@ -88,9 +89,7 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
   }
 
   #isTypeAllowed(type?: string | null): boolean {
-    const allowedTypes = this.data?.allowedTypes;
-    if (!allowedTypes?.length || !type) return true;
-    return allowedTypes.includes(type);
+    return isOEmbedTypeAllowed(this.data?.allowedTypes, type);
   }
 
   async #submit() {

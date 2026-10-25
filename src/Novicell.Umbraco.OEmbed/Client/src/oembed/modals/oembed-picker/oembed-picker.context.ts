@@ -20,6 +20,13 @@ export class UmbOEmbedPickerContext extends UmbControllerBase {
   readonly #store = new OEmbedPickerStore();
   readonly #repository = new OEmbedRepository(this);
 
+  /**
+   * Bumped whenever the URL changes or a new fetch starts. A response is only applied if it
+   * still belongs to the latest request, so a slow response for an earlier URL can never
+   * overwrite the preview (or error) of the URL that is currently entered.
+   */
+  #requestId = 0;
+
   // Public observables
   readonly url$ = this.#store.url$;
   readonly preview$ = this.#store.preview$;
@@ -34,6 +41,7 @@ export class UmbOEmbedPickerContext extends UmbControllerBase {
    * Update the URL and fetch preview data.
    */
   async updateUrl(url: string): Promise<void> {
+    this.#requestId++;
     this.#store.setUrl(url);
   }
 
@@ -48,6 +56,13 @@ export class UmbOEmbedPickerContext extends UmbControllerBase {
     const urlToFetch = url || this.#store.getUrl();
     if (!urlToFetch) return;
 
+    // The preview is saved together with getUrl(), so keep the two in sync.
+    if (urlToFetch !== this.#store.getUrl()) {
+      this.#requestId++;
+      this.#store.setUrl(urlToFetch);
+    }
+
+    const requestId = ++this.#requestId;
     this.#store.setLoading(true);
 
     const { data, error } = await this.#repository.requestOEmbed({
@@ -55,6 +70,9 @@ export class UmbOEmbedPickerContext extends UmbControllerBase {
       maxWidth,
       maxHeight,
     });
+
+    // A newer request or a URL change happened while this one was in flight.
+    if (requestId !== this.#requestId) return;
 
     if (data) {
       this.#store.setPreview(data);
@@ -90,6 +108,7 @@ export class UmbOEmbedPickerContext extends UmbControllerBase {
    * Reset all state to initial values.
    */
   reset(): void {
+    this.#requestId++;
     this.#store.reset();
   }
 }

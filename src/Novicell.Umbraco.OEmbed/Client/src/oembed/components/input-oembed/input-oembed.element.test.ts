@@ -165,4 +165,36 @@ describe("InputOEmbedElement", () => {
     expect((cards[0] as HTMLElement).hasAttribute("error")).to.be.true;
     expect((cards[1] as HTMLElement).hasAttribute("error")).to.be.false;
   });
+
+  it("passes type validation regardless of the casing of the allowed types", async () => {
+    element.allowedTypes = ["Video"];
+    element.value = [video("https://example.com/1")];
+    await element.updateComplete;
+
+    expect(element.checkValidity()).to.be.true;
+  });
+
+  it("fails type validation when an item's type is not allowed", async () => {
+    element.allowedTypes = ["photo"];
+    element.value = [video("https://example.com/1")];
+    await element.updateComplete;
+
+    expect(element.checkValidity()).to.be.false;
+  });
+
+  it("fails validation when more than one item exists and multiple is false", async () => {
+    element.multiple = false;
+    element.value = [video("https://example.com/1"), video("https://example.com/2")];
+    await element.updateComplete;
+
+    expect(element.checkValidity()).to.be.false;
+  });
+
+  it("passes validation with more than one item when multiple is true", async () => {
+    element.multiple = true;
+    element.value = [video("https://example.com/1"), video("https://example.com/2")];
+    await element.updateComplete;
+
+    expect(element.checkValidity()).to.be.true;
+  });
 });

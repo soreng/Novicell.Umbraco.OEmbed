@@ -15,5 +15,6 @@ export default {
     Unknown: "An unexpected error occurred.",
     TypeNotAllowed:
       "This embed's type (%0%) isn't allowed for this field. Allowed types are: %1%",
+    SingleValueOnly: "This field only allows one embed.",
   },
 } satisfies UmbLocalizationDictionary;

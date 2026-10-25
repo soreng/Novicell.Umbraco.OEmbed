@@ -16,5 +16,6 @@ export default {
     Unknown: "Der opstod en uventet fejl.",
     TypeNotAllowed:
       "Denne embed-type (%0%) er ikke tilladt for dette felt. Tilladte typer er: %1%",
+    SingleValueOnly: "Dette felt tillader kun én embed.",
   },
 } satisfies UmbLocalizationDictionary;

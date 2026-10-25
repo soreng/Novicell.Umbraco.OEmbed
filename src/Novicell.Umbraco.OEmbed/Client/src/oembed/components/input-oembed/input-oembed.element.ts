@@ -15,6 +15,7 @@ import {
 } from "@umbraco-cms/backoffice/validation";
 
 import { OEmbedValueModel } from "../../../property-editors/types.ts";
+import { isOEmbedTypeAllowed } from "../../allowed-types.ts";
 import "../oembed-preview/index.ts";
 import { UmbOEmbedPickerContext } from "../../modals/oembed-picker/oembed-picker.context.ts";
 import { UMB_OEMBED_PICKER_CONTEXT } from "../../modals/oembed-picker/oembed-picker.context.token.ts";
@@ -125,6 +126,23 @@ export class InputOEmbedElement
         ),
       () => !this.readonly && !!this.max && this.value.length > this.max,
     );
+    // The server rejects both of these on save (OEmbedAllowedTypeValidator and
+    // OEmbedMinMaxValidator), so surface them in the editor as well.
+    this.addValidator(
+      "typeMismatch",
+      () =>
+        this.localize.term(
+          "oembed_errors_TypeNotAllowed",
+          this.#disallowedTypes().join(", "),
+          (this.allowedTypes ?? []).join(", "),
+        ),
+      () => !this.readonly && this.#disallowedTypes().length > 0,
+    );
+    this.addValidator(
+      "customError",
+      () => this.localize.term("oembed_errors_SingleValueOnly"),
+      () => !this.readonly && !this.multiple && this.value.length > 1,
+    );
   }
 
   async #openPicker(url?: string, editIndex?: number) {
@@ -221,9 +239,17 @@ export class InputOEmbedElement
   }
 
   #isTypeAllowed(item: OEmbedValueModel): boolean {
-    return (
-      !this.allowedTypes?.length || this.allowedTypes.includes(item.oembed.type)
-    );
+    return isOEmbedTypeAllowed(this.allowedTypes, item.oembed.type);
+  }
+
+  #disallowedTypes(): string[] {
+    return [
+      ...new Set(
+        this.value
+          .filter((item) => !this.#isTypeAllowed(item))
+          .map((item) => item.oembed.type),
+      ),
+    ];
   }
 
   #renderOEmbed(value: OEmbedValueModel, index: number) {
