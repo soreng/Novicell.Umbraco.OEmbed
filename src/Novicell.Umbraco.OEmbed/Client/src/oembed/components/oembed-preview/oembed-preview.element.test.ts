@@ -69,10 +69,10 @@ describe("OEmbedPreviewElement", () => {
     expect(img).to.not.be.null;
   });
 
-  it("renders a sandboxed iframe with the embed markup for a video type", async () => {
+  it("renders a provider's lone iframe directly, sandboxed, with its own origin", async () => {
     element.value = {
       type: "video" as any,
-      html: '<iframe src="https://example.com/embed"></iframe>',
+      html: '<iframe src="https://example.com/embed" allow="autoplay" allowfullscreen title="Clip"></iframe>',
       width: 16,
       height: 9,
     };
@@ -82,12 +82,66 @@ describe("OEmbedPreviewElement", () => {
       "iframe.oembed-media",
     ) as HTMLIFrameElement;
     expect(iframe).to.not.be.null;
+    expect(iframe.getAttribute("src")).to.equal("https://example.com/embed");
+    expect(iframe.hasAttribute("srcdoc")).to.be.false;
+    expect(iframe.getAttribute("sandbox")).to.contain("allow-scripts");
+    expect(iframe.getAttribute("sandbox")).to.contain("allow-same-origin");
+    expect(iframe.getAttribute("allow")).to.equal("autoplay");
+    expect(iframe.hasAttribute("allowfullscreen")).to.be.true;
+    expect(iframe.getAttribute("title")).to.equal("Clip");
+  });
+
+  it("renders other markup in a sandboxed srcdoc iframe", async () => {
+    element.value = {
+      type: "video" as any,
+      html: '<blockquote class="embed">x</blockquote><script async src="https://example.com/widgets.js"></script>',
+      width: 16,
+      height: 9,
+    };
+    await element.updateComplete;
+
+    const iframe = element.shadowRoot!.querySelector(
+      "iframe.oembed-media",
+    ) as HTMLIFrameElement;
     expect(iframe.getAttribute("sandbox")).to.equal(
       "allow-scripts allow-same-origin allow-presentation",
     );
-    expect(iframe.getAttribute("srcdoc")).to.contain(
-      "https://example.com/embed",
-    );
+    expect(iframe.getAttribute("srcdoc")).to.contain("widgets.js");
+    expect(iframe.hasAttribute("src")).to.be.false;
+  });
+
+  it("does not render an iframe that points back at the backoffice directly", async () => {
+    element.value = {
+      type: "video" as any,
+      html: `<iframe src="${window.location.origin}/some/page"></iframe>`,
+      width: 16,
+      height: 9,
+    };
+    await element.updateComplete;
+
+    const iframe = element.shadowRoot!.querySelector(
+      "iframe.oembed-media",
+    ) as HTMLIFrameElement;
+    expect(iframe.hasAttribute("src")).to.be.false;
+    expect(iframe.hasAttribute("srcdoc")).to.be.true;
+  });
+
+  it("sizes a dimensionless provider iframe from its own height attribute, capped", async () => {
+    element.value = {
+      type: "rich" as any,
+      html: '<iframe src="https://example.com/embed" height="400"></iframe>',
+    };
+    await element.updateComplete;
+    const frame = () =>
+      element.shadowRoot!.querySelector("iframe") as HTMLIFrameElement;
+    expect(frame().style.height).to.equal("400px");
+
+    element.value = {
+      type: "rich" as any,
+      html: '<iframe src="https://example.com/embed" height="5000"></iframe>',
+    };
+    await element.updateComplete;
+    expect(frame().style.height).to.equal("600px");
   });
 
   it("normalizes mixed-case types from the Management API (e.g. 'Photo')", async () => {

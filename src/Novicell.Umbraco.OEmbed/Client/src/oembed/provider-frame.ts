@@ -1,0 +1,61 @@
+import { toHttpUrl } from "./safe-url.ts";
+
+/** The parts of a provider's `<iframe>` embed that are safe to render directly. */
+export interface ProviderFrame {
+  src: string;
+  allow?: string;
+  allowFullscreen: boolean;
+  title?: string;
+  width?: number;
+  height?: number;
+}
+
+const positiveInteger = (value: string | null): number | undefined => {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+};
+
+/**
+ * Returns the iframe attributes when the provider's markup is exactly one `<iframe>` that
+ * points at an absolute http(s) URL on another origin than the backoffice, otherwise undefined.
+ *
+ * Such an embed can be rendered as a normal iframe. It is cross-origin from the backoffice, so
+ * it keeps its own origin (providers such as YouTube need storage access, and a sandbox is
+ * inherited by nested frames) without being able to reach the backoffice.
+ *
+ * The markup is parsed with DOMParser, which creates an inert document: nothing runs and no
+ * resources load.
+ */
+export function parseProviderFrame(
+  markup: string,
+  backofficeOrigin: string,
+): ProviderFrame | undefined {
+  const doc = new DOMParser().parseFromString(markup, "text/html");
+
+  // Leading <script>, <style> or <link> elements end up in <head>: not a lone iframe.
+  if (doc.head.children.length > 0) return undefined;
+
+  const nodes = [...doc.body.childNodes].filter(
+    (node) =>
+      node.nodeType !== Node.COMMENT_NODE &&
+      !(node.nodeType === Node.TEXT_NODE && !node.textContent?.trim()),
+  );
+  if (nodes.length !== 1) return undefined;
+
+  const element = nodes[0] as Element;
+  if (element.nodeType !== Node.ELEMENT_NODE || element.localName !== "iframe") {
+    return undefined;
+  }
+
+  const src = toHttpUrl(element.getAttribute("src"));
+  if (!src || new URL(src).origin === backofficeOrigin) return undefined;
+
+  return {
+    src,
+    allow: element.getAttribute("allow") ?? undefined,
+    allowFullscreen: element.hasAttribute("allowfullscreen"),
+    title: element.getAttribute("title") ?? undefined,
+    width: positiveInteger(element.getAttribute("width")),
+    height: positiveInteger(element.getAttribute("height")),
+  };
+}

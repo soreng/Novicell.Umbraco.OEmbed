@@ -59,6 +59,12 @@ Configure options under the `Novicell:OEmbed` section in `appsettings.json`:
 | -------------- | ------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `Autodiscover` | `false` | When enabled, attempts to discover an oEmbed endpoint from the target page when no registered provider matches the URL. |
 
+### Security note on providers and Autodiscover
+
+The backoffice preview shows the HTML that an oEmbed provider returns. A provider that returns a single `<iframe>` (YouTube, Vimeo, Spotify and similar) is rendered as a normal cross-origin iframe. Other markup, typically a `<blockquote>` plus the provider's script (X, TikTok, Reddit), runs in a sandboxed iframe that shares the backoffice's origin, because those scripts need it to work. The providers registered with Umbraco, plus Reddit, Spotify and TikTok added by this package, are therefore trusted.
+
+Enabling `Autodiscover` extends that trust to any site an editor pastes, and makes the server request the URLs it finds. Leave it off unless you trust the editors with that.
+
 ## Running the demo site
 
 ```bash
