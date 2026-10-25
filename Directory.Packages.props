@@ -7,9 +7,10 @@
   </PropertyGroup>
   <!-- Global packages (private, build-time packages for all projects) -->
   <ItemGroup>
-    <!-- Pin transitive MessagePack to patched version (CVE-2026-48109 / GHSA-hv8m-jj95-wg3x) -->
-    <PackageVersion Include="MessagePack" Version="3.1.7" />
-    <PackageVersion Include="System.Security.Cryptography.Xml" Version="10.0.10" />
+    <!-- Transitive dependencies pinned to patched versions (NU1902/NU1903 audit warnings) -->
+    <PackageVersion Include="MessagePack" Version="3.1.12" />
+    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
+    <PackageVersion Include="System.Security.Cryptography.Xml" Version="10.0.13" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.6" />
     <PackageVersion Include="uSync" Version="17.3.2" />
     <PackageVersion Include="Umbraco.Cms" Version="$(UmbracoVersion)" />
