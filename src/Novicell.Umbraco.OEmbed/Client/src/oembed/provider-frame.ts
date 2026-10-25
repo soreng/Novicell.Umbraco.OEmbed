@@ -52,6 +52,23 @@ const positiveInteger = (value: string | null): number | undefined => {
 };
 
 /**
+ * The pixel height from an inline style, for example `style="height:315px"`. Only a plain pixel
+ * value counts; percentages, calc() and the like cannot be reproduced safely and are ignored,
+ * as are `max-height`, `min-height` and `line-height`. The last declaration wins, as in CSS.
+ */
+const inlinePixelHeight = (style: string | null): number | undefined => {
+  let height: number | undefined;
+  for (const declaration of (style ?? "").split(";")) {
+    const match = declaration.match(
+      /^\s*height\s*:\s*(\d+(?:\.\d+)?)px\s*(?:!important\s*)?$/i,
+    );
+    const pixels = match ? Math.round(Number(match[1])) : 0;
+    if (pixels > 0) height = pixels;
+  }
+  return height;
+};
+
+/**
  * Returns the iframe attributes when the provider's markup is exactly one `<iframe>` that
  * points at an absolute http(s) URL on another origin than the backoffice, otherwise undefined.
  *
@@ -97,7 +114,9 @@ export function parseProviderFrame(
     allowFullscreen: element.hasAttribute("allowfullscreen"),
     title: element.getAttribute("title") ?? undefined,
     width: positiveInteger(element.getAttribute("width")),
-    height: positiveInteger(element.getAttribute("height")),
+    height:
+      inlinePixelHeight(element.getAttribute("style")) ??
+      positiveInteger(element.getAttribute("height")),
     sandbox: element.getAttribute("sandbox") ?? undefined,
     referrerPolicy:
       referrerPolicy && ALLOWED_REFERRER_POLICIES.has(referrerPolicy)

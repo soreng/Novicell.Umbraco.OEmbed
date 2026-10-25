@@ -106,6 +106,34 @@ describe("OEmbedPreviewElement", () => {
     ).to.equal("");
   });
 
+  it("uses an inline pixel height from the provider iframe's style", async () => {
+    element.value = {
+      type: "rich" as any,
+      html: '<iframe src="https://example.com/embed" style="height:320px"></iframe>',
+    };
+    await element.updateComplete;
+
+    expect(element.shadowRoot!.querySelector("iframe")!.style.height).to.equal(
+      "320px",
+    );
+  });
+
+  it("replaces the iframe when its effective sandbox changes, so a stricter sandbox takes effect", async () => {
+    const markup = (sandbox: string) =>
+      `<iframe src="https://example.com/embed" sandbox="${sandbox}"></iframe>`;
+
+    element.value = { type: "video" as any, html: markup("allow-scripts allow-popups"), width: 16, height: 9 };
+    await element.updateComplete;
+    const before = element.shadowRoot!.querySelector("iframe")!;
+
+    element.value = { type: "video" as any, html: markup("allow-scripts"), width: 16, height: 9 };
+    await element.updateComplete;
+    const after = element.shadowRoot!.querySelector("iframe")!;
+
+    expect(after).to.not.equal(before);
+    expect(after.getAttribute("sandbox")).to.equal("allow-scripts");
+  });
+
   it("passes on the provider iframe's referrer policy", async () => {
     element.value = {
       type: "video" as any,

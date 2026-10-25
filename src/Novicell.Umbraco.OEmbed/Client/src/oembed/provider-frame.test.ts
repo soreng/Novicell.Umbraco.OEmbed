@@ -125,6 +125,31 @@ describe("parseProviderFrame", () => {
     ).to.be.undefined;
   });
 
+  it("reads an inline pixel height from the style attribute, which wins over the height attribute", () => {
+    const height = (attributes: string) =>
+      parseProviderFrame(
+        `<iframe src="https://player.example/x" ${attributes}></iframe>`,
+        origin,
+      )?.height;
+
+    expect(height('style="height:315px"')).to.equal(315);
+    expect(height('style="border:0; HEIGHT : 320.4px !important; width:100%"')).to.equal(320);
+    expect(height('height="200" style="height:315px"')).to.equal(315);
+  });
+
+  it("ignores style heights that are not plain pixel values", () => {
+    const height = (attributes: string) =>
+      parseProviderFrame(
+        `<iframe src="https://player.example/x" ${attributes}></iframe>`,
+        origin,
+      )?.height;
+
+    expect(height('style="height:50%"')).to.be.undefined;
+    expect(height('style="height:calc(100vh - 20px)"')).to.be.undefined;
+    expect(height('height="200" style="max-height:900px; min-height:100px"')).to.equal(200);
+    expect(height('height="200" style="line-height:30px"')).to.equal(200);
+  });
+
   it("rejects an iframe that also has a srcdoc, which browsers load instead of src", () => {
     expect(
       parseProviderFrame(

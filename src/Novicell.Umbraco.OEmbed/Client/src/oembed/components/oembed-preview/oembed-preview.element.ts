@@ -2,6 +2,7 @@ import {
   css,
   html,
   customElement,
+  keyed,
   nothing,
   property,
 } from "@umbraco-cms/backoffice/external/lit";
@@ -131,16 +132,24 @@ export class OEmbedPreviewElement
   }
 
   #renderProviderFrame(value: OEmbedResponseModel, frame: ProviderFrame) {
-    const iframe = (className: string, style?: string) => html`<iframe
-      class=${className}
-      src=${frame.src}
-      sandbox=${effectiveSandbox(frame.sandbox, PROVIDER_FRAME_SANDBOX)}
-      allow=${frame.allow ?? nothing}
-      referrerpolicy=${frame.referrerPolicy ?? nothing}
-      ?allowfullscreen=${frame.allowFullscreen}
-      title=${frame.title ?? value.title ?? ""}
-      style=${style ?? nothing}
-    ></iframe>`;
+    // A sandbox only applies when a document is loaded. keyed() makes Lit replace the iframe
+    // instead of reusing it when the sandbox or src changes, so a stricter sandbox takes
+    // effect rather than being set on an already loaded document.
+    const sandbox = effectiveSandbox(frame.sandbox, PROVIDER_FRAME_SANDBOX);
+    const iframe = (className: string, style?: string) =>
+      keyed(
+        `${sandbox}|${frame.src}`,
+        html`<iframe
+          class=${className}
+          src=${frame.src}
+          sandbox=${sandbox}
+          allow=${frame.allow ?? nothing}
+          referrerpolicy=${frame.referrerPolicy ?? nothing}
+          ?allowfullscreen=${frame.allowFullscreen}
+          title=${frame.title ?? value.title ?? ""}
+          style=${style ?? nothing}
+        ></iframe>`,
+      );
 
     const aspectRatio = this.#aspectRatio(value.width, value.height);
     if (aspectRatio > 0) {
