@@ -52,20 +52,36 @@ const positiveInteger = (value: string | null): number | undefined => {
 };
 
 /**
- * The pixel height from an inline style, for example `style="height:315px"`. Only a plain pixel
- * value counts; percentages, calc() and the like cannot be reproduced safely and are ignored,
- * as are `max-height`, `min-height` and `line-height`. The last declaration wins, as in CSS.
+ * The pixel height from an inline style, for example `style="height:315px"`.
+ *
+ * The effective `height` declaration is worked out the way CSS does it: a declaration the browser
+ * cannot parse is dropped and overrides nothing, a later declaration overrides an earlier one,
+ * and a normal declaration never overrides an `!important` one. Only when the winner is a plain
+ * pixel value is it returned. Percentages, calc() and the like cannot be reproduced safely, so
+ * they give undefined and the height attribute is used instead. `max-height`, `min-height` and
+ * `line-height` are different properties and are ignored.
  */
 const inlinePixelHeight = (style: string | null): number | undefined => {
-  let height: number | undefined;
+  let effective: { value: string; important: boolean } | undefined;
+
   for (const declaration of (style ?? "").split(";")) {
     const match = declaration.match(
-      /^\s*height\s*:\s*(\d+(?:\.\d+)?)px\s*(?:!important\s*)?$/i,
+      /^\s*height\s*:\s*(.*?)\s*(!\s*important)?\s*$/i,
     );
-    const pixels = match ? Math.round(Number(match[1])) : 0;
-    if (pixels > 0) height = pixels;
+    if (!match) continue;
+
+    const value = match[1];
+    if (!value || !CSS.supports("height", value)) continue;
+
+    const important = Boolean(match[2]);
+    if (effective?.important && !important) continue;
+
+    effective = { value, important };
   }
-  return height;
+
+  const pixels = effective?.value.match(/^(\d+(?:\.\d+)?)px$/i);
+  const height = pixels ? Math.round(Number(pixels[1])) : 0;
+  return height > 0 ? height : undefined;
 };
 
 /**

@@ -274,6 +274,38 @@ describe("OEmbedPreviewElement", () => {
       expect((window as any).__oembedSaved).to.be.undefined;
     });
 
+    it("falls back to the saved source URL as plain text when the response has no title or URL", async () => {
+      saved.sourceUrl = "https://example.com/saved-tweet";
+      saved.value = {
+        type: "rich" as any,
+        html: "<blockquote>x</blockquote>",
+      };
+      await saved.updateComplete;
+
+      const card = saved.shadowRoot!.querySelector(".oembed-link-card")!;
+      expect(card.querySelector(".oembed-link-title")!.textContent).to.equal(
+        "https://example.com/saved-tweet",
+      );
+      expect(card.querySelector(".oembed-link-host")!.textContent).to.equal(
+        "example.com",
+      );
+      expect(saved.shadowRoot!.querySelector("a")).to.be.null;
+    });
+
+    it("prefers the response's own title and URL over the saved source URL", async () => {
+      saved.sourceUrl = "https://example.com/saved";
+      saved.value = {
+        type: "rich" as any,
+        html: "<blockquote>x</blockquote>",
+        title: "A real title",
+      };
+      await saved.updateComplete;
+
+      expect(
+        saved.shadowRoot!.querySelector(".oembed-link-title")!.textContent,
+      ).to.equal("A real title");
+    });
+
     it("renders no iframe even for a lone provider iframe", async () => {
       saved.value = {
         type: "video" as any,

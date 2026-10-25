@@ -51,6 +51,13 @@ export class OEmbedPreviewElement
   live = false;
 
   /**
+   * The URL the embed was created from. Shown as plain text on the link card when the response
+   * itself has no title or URL, so saved embeds can be told apart. Never used as a link.
+   */
+  @property({ attribute: false })
+  sourceUrl?: string;
+
+  /**
    * Contained mode clips the preview to its host bounds instead of auto-sizing
    * to the embed's rendered content. Used inside the property editor card,
    * where the surrounding `uui-card-media` already fixes the aspect ratio.
@@ -120,7 +127,7 @@ export class OEmbedPreviewElement
   }
 
   #renderLinkCard(value: OEmbedResponseModel) {
-    const href = value.url ?? undefined;
+    const href = value.url ?? this.sourceUrl ?? undefined;
     let hostname = value.providerName ?? "";
     if (!hostname && href) {
       try {

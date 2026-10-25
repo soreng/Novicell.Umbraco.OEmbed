@@ -137,6 +137,26 @@ describe("parseProviderFrame", () => {
     expect(height('height="200" style="height:315px"')).to.equal(315);
   });
 
+  it("follows CSS precedence between height declarations", () => {
+    const height = (style: string, extra = "") =>
+      parseProviderFrame(
+        `<iframe src="https://player.example/x" ${extra} style="${style}"></iframe>`,
+        origin,
+      )?.height;
+
+    // !important wins over a later normal declaration.
+    expect(height("height:320px !important; height:150px")).to.equal(320);
+    expect(height("height:150px; height:320px ! important; height:100px")).to.equal(320);
+    // A later valid declaration overrides an earlier one, even when it is not a pixel value:
+    // the effective height can't be reproduced, so the height attribute is used instead.
+    expect(height("height:315px; height:100%")).to.be.undefined;
+    expect(height("height:315px; height:100%", 'height="200"')).to.equal(200);
+    expect(height("height:315px !important; height:100% !important")).to.be.undefined;
+    // An invalid declaration is dropped by CSS and overrides nothing.
+    expect(height("height:315px; height:banana")).to.equal(315);
+    expect(height("height:315px; height:")).to.equal(315);
+  });
+
   it("ignores style heights that are not plain pixel values", () => {
     const height = (attributes: string) =>
       parseProviderFrame(

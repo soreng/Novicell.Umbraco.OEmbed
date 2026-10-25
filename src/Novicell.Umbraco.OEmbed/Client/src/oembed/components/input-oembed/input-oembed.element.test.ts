@@ -185,6 +185,10 @@ describe("InputOEmbedElement", () => {
     expect(preview.live).to.be.false;
     await preview.updateComplete;
     expect(preview.shadowRoot.querySelector("iframe")).to.be.null;
+    // The saved source URL keeps otherwise empty cards telling each other apart.
+    expect(
+      preview.shadowRoot.querySelector(".oembed-link-title").textContent,
+    ).to.equal("https://example.com/tweet");
   });
 
   it("passes type validation regardless of the casing of the allowed types", async () => {
