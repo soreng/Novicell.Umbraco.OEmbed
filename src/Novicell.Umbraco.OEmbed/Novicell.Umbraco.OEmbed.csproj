@@ -1,17 +1,32 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
     <PropertyGroup>
         <Title>Novicell OEmbed</Title>
         <Description>Novicell OEmbed</Description>
-        <IncludeBuildOutput>false</IncludeBuildOutput>
-        <IncludeSymbols>false</IncludeSymbols>
-        <IncludeReferencedProjects>true</IncludeReferencedProjects>
-        <NoWarn>$(NoWarn);NU1903</NoWarn>
+        <RootNamespace>Novicell.Umbraco.OEmbed</RootNamespace>
+        <StaticWebAssetBasePath>App_Plugins/NovicellUmbracoOEmbed</StaticWebAssetBasePath>
+        <AddRazorSupportForMvc>false</AddRazorSupportForMvc>
     </PropertyGroup>
 
+    <!-- Central package management - no versions -->
     <ItemGroup>
-        <ProjectReference Include="..\Novicell.Umbraco.OEmbed.Startup\Novicell.Umbraco.OEmbed.Startup.csproj" />
-        <ProjectReference Include="..\Novicell.Umbraco.OEmbed.Web.StaticAssets\Novicell.Umbraco.OEmbed.Web.StaticAssets.csproj" />
+        <PackageReference Include="Microsoft.Extensions.Http" />
+        <PackageReference Include="Umbraco.Cms.Api.Common" />
+        <PackageReference Include="Umbraco.Cms.Api.Management" />
+        <PackageReference Include="Umbraco.Cms.Core" />
+        <PackageReference Include="Umbraco.Cms.Web.Common" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Don't include the client folder as part of packaging nuget build -->
+        <Content Remove="Client\**" />
+
+        <!-- However make the Umbraco-package.json included for dotnet pack or nuget package and visible to the solution -->
+        <None Include="Client\public\umbraco-package.json" Pack="false" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Novicell.Umbraco.OEmbed.Tests" />
     </ItemGroup>
 
 </Project>
