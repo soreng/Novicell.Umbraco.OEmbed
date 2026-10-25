@@ -8,6 +8,39 @@ export interface ProviderFrame {
   title?: string;
   width?: number;
   height?: number;
+  /** The sandbox tokens the provider asked for. Undefined when the iframe had no sandbox attribute. */
+  sandbox?: string;
+  referrerPolicy?: string;
+}
+
+/** Referrer policies a provider may request. The ones that send the full backoffice URL are left out. */
+const ALLOWED_REFERRER_POLICIES = new Set([
+  "no-referrer",
+  "origin",
+  "origin-when-cross-origin",
+  "same-origin",
+  "strict-origin",
+  "strict-origin-when-cross-origin",
+]);
+
+/**
+ * The sandbox to apply to a provider's iframe: the package policy, narrowed to what the provider
+ * asked for. A provider that requests a sandbox never ends up with more permissions than it
+ * asked for, and an empty sandbox stays fully restricted.
+ */
+export function effectiveSandbox(
+  requested: string | undefined,
+  policy: readonly string[],
+): string {
+  if (requested === undefined) return policy.join(" ");
+
+  const asked = new Set(
+    requested
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((token) => token.toLowerCase()),
+  );
+  return policy.filter((token) => asked.has(token)).join(" ");
 }
 
 const positiveInteger = (value: string | null): number | undefined => {
@@ -47,8 +80,13 @@ export function parseProviderFrame(
     return undefined;
   }
 
+  // Browsers load srcdoc instead of src, so such an iframe is not what its src says.
+  if (element.hasAttribute("srcdoc")) return undefined;
+
   const src = toHttpUrl(element.getAttribute("src"));
   if (!src || new URL(src).origin === backofficeOrigin) return undefined;
+
+  const referrerPolicy = element.getAttribute("referrerpolicy")?.trim().toLowerCase();
 
   return {
     src,
@@ -57,5 +95,10 @@ export function parseProviderFrame(
     title: element.getAttribute("title") ?? undefined,
     width: positiveInteger(element.getAttribute("width")),
     height: positiveInteger(element.getAttribute("height")),
+    sandbox: element.getAttribute("sandbox") ?? undefined,
+    referrerPolicy:
+      referrerPolicy && ALLOWED_REFERRER_POLICIES.has(referrerPolicy)
+        ? referrerPolicy
+        : undefined,
   };
 }

@@ -9,6 +9,7 @@ import { UmbLitElement } from "@umbraco-cms/backoffice/lit-element";
 import { UmbPropertyEditorUiElement } from "@umbraco-cms/backoffice/property-editor";
 import type { OEmbedResponseModel, OEmbedType } from "../../../api";
 import {
+  effectiveSandbox,
   parseProviderFrame,
   type ProviderFrame,
 } from "../../provider-frame.ts";
@@ -18,8 +19,13 @@ import {
  * backoffice, so `allow-same-origin` only lets it keep its own origin (YouTube and others need
  * storage access); it cannot reach the backoffice.
  */
-const PROVIDER_FRAME_SANDBOX =
-  "allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox";
+const PROVIDER_FRAME_SANDBOX = [
+  "allow-scripts",
+  "allow-same-origin",
+  "allow-presentation",
+  "allow-popups",
+  "allow-popups-to-escape-sandbox",
+];
 
 @customElement(OEmbedPreviewElement.tagName)
 export class OEmbedPreviewElement
@@ -128,8 +134,9 @@ export class OEmbedPreviewElement
     const iframe = (className: string, style?: string) => html`<iframe
       class=${className}
       src=${frame.src}
-      sandbox=${PROVIDER_FRAME_SANDBOX}
+      sandbox=${effectiveSandbox(frame.sandbox, PROVIDER_FRAME_SANDBOX)}
       allow=${frame.allow ?? nothing}
+      referrerpolicy=${frame.referrerPolicy ?? nothing}
       ?allowfullscreen=${frame.allowFullscreen}
       title=${frame.title ?? value.title ?? ""}
       style=${style ?? nothing}

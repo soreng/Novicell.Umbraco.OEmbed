@@ -1,7 +1,32 @@
 import { expect } from "chai";
-import { parseProviderFrame } from "./provider-frame.ts";
+import { effectiveSandbox, parseProviderFrame } from "./provider-frame.ts";
 
 const origin = "https://backoffice.example";
+
+describe("effectiveSandbox", () => {
+  const policy = ["allow-scripts", "allow-same-origin", "allow-popups"];
+
+  it("uses the package policy when the provider asked for no sandbox", () => {
+    expect(effectiveSandbox(undefined, policy)).to.equal(
+      "allow-scripts allow-same-origin allow-popups",
+    );
+  });
+
+  it("never grants more than the provider asked for", () => {
+    expect(effectiveSandbox("allow-scripts", policy)).to.equal("allow-scripts");
+    expect(effectiveSandbox("allow-scripts allow-forms", policy)).to.equal("allow-scripts");
+  });
+
+  it("keeps an empty sandbox fully restricted", () => {
+    expect(effectiveSandbox("", policy)).to.equal("");
+  });
+
+  it("ignores casing and extra whitespace in the provider's tokens", () => {
+    expect(effectiveSandbox("  ALLOW-POPUPS   allow-scripts ", policy)).to.equal(
+      "allow-scripts allow-popups",
+    );
+  });
+});
 
 /**
  * A provider's markup is rendered as a direct iframe only when it is exactly one iframe on
@@ -21,6 +46,8 @@ describe("parseProviderFrame", () => {
       title: "A video",
       width: 200,
       height: 113,
+      sandbox: undefined,
+      referrerPolicy: undefined,
     });
   });
 
@@ -86,6 +113,45 @@ describe("parseProviderFrame", () => {
     expect(
       parseProviderFrame(`<iframe src="${origin}/umbraco/x"></iframe>`, origin),
     ).to.be.undefined;
+  });
+
+  it("rejects an iframe that also has a srcdoc, which browsers load instead of src", () => {
+    expect(
+      parseProviderFrame(
+        '<iframe src="https://player.example/x" srcdoc="<p>other</p>"></iframe>',
+        origin,
+      ),
+    ).to.be.undefined;
+  });
+
+  it("reads the sandbox the provider asked for, including an empty one", () => {
+    const none = parseProviderFrame('<iframe src="https://player.example/x"></iframe>', origin);
+    const some = parseProviderFrame(
+      '<iframe src="https://player.example/x" sandbox="allow-scripts allow-forms"></iframe>',
+      origin,
+    );
+    const empty = parseProviderFrame(
+      '<iframe src="https://player.example/x" sandbox></iframe>',
+      origin,
+    );
+
+    expect(none?.sandbox).to.be.undefined;
+    expect(some?.sandbox).to.equal("allow-scripts allow-forms");
+    expect(empty?.sandbox).to.equal("");
+  });
+
+  it("passes on a referrer policy only when it does not leak the full backoffice URL", () => {
+    const policy = (value: string) =>
+      parseProviderFrame(
+        `<iframe src="https://player.example/x" referrerpolicy="${value}"></iframe>`,
+        origin,
+      )?.referrerPolicy;
+
+    expect(policy("strict-origin-when-cross-origin")).to.equal("strict-origin-when-cross-origin");
+    expect(policy("no-referrer")).to.equal("no-referrer");
+    expect(policy("unsafe-url")).to.be.undefined;
+    expect(policy("no-referrer-when-downgrade")).to.be.undefined;
+    expect(policy("nonsense")).to.be.undefined;
   });
 
   it("does not run or load anything while parsing", () => {

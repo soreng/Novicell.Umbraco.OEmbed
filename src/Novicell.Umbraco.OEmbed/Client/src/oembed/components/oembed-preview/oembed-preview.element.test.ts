@@ -91,6 +91,49 @@ describe("OEmbedPreviewElement", () => {
     expect(iframe.getAttribute("title")).to.equal("Clip");
   });
 
+  it("never gives a provider's iframe more sandbox permissions than it asked for", async () => {
+    const sandboxFor = async (markup: string) => {
+      element.value = { type: "video" as any, html: markup, width: 16, height: 9 };
+      await element.updateComplete;
+      return element.shadowRoot!.querySelector("iframe")!.getAttribute("sandbox");
+    };
+
+    expect(
+      await sandboxFor('<iframe src="https://example.com/embed" sandbox="allow-scripts"></iframe>'),
+    ).to.equal("allow-scripts");
+    expect(
+      await sandboxFor('<iframe src="https://example.com/embed" sandbox></iframe>'),
+    ).to.equal("");
+  });
+
+  it("passes on the provider iframe's referrer policy", async () => {
+    element.value = {
+      type: "video" as any,
+      html: '<iframe src="https://example.com/embed" referrerpolicy="strict-origin-when-cross-origin"></iframe>',
+      width: 16,
+      height: 9,
+    };
+    await element.updateComplete;
+
+    expect(
+      element.shadowRoot!.querySelector("iframe")!.getAttribute("referrerpolicy"),
+    ).to.equal("strict-origin-when-cross-origin");
+  });
+
+  it("renders an iframe that has both src and srcdoc through the srcdoc path", async () => {
+    element.value = {
+      type: "video" as any,
+      html: '<iframe src="https://example.com/embed" srcdoc="<p>inline</p>"></iframe>',
+      width: 16,
+      height: 9,
+    };
+    await element.updateComplete;
+
+    const iframe = element.shadowRoot!.querySelector("iframe")!;
+    expect(iframe.hasAttribute("src")).to.be.false;
+    expect(iframe.hasAttribute("srcdoc")).to.be.true;
+  });
+
   it("renders other markup in a sandboxed srcdoc iframe", async () => {
     element.value = {
       type: "video" as any,
