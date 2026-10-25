@@ -19,12 +19,18 @@ internal class OEmbedApiEndpointDiscoveryProvider(
     /// <inheritdoc/>
     public async Task<OEmbedApiEndpoint?> DiscoverApiEndpointAsync(Uri url)
     {
+        // The page is fetched on behalf of an editor, so only http(s) is ever requested.
+        if (!OEmbedHttp.IsHttpUrl(url))
+        {
+            return null;
+        }
+
         Uri? endpoint;
 
         try
         {
-            using HttpClient client = httpClientFactory.CreateClient();
-            HttpResponseMessage response = await client.GetAsync(url);
+            using HttpClient client = httpClientFactory.CreateClient(OEmbedHttp.ClientName);
+            using HttpResponseMessage response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
 
             response.EnsureSuccessStatusCode();
 
@@ -52,6 +58,17 @@ internal class OEmbedApiEndpointDiscoveryProvider(
             endpoint = new Uri(url, endpoint);
         }
 
+        // The page chooses the endpoint, so it is checked like any other URL we are about to request.
+        if (!OEmbedHttp.IsHttpUrl(endpoint))
+        {
+            logger.LogWarning(
+                "Ignoring oEmbed endpoint {Endpoint} advertised by {Url}: only http and https are supported",
+                endpoint,
+                url);
+
+            return null;
+        }
+
         return new OEmbedApiEndpoint(endpoint.Host, endpoint);
     }
 
@@ -70,7 +87,7 @@ internal class OEmbedApiEndpointDiscoveryProvider(
         if (endpoint is null)
         {
             // Next, try to find the link in the html content.
-            var content = await response.Content.ReadAsStringAsync();
+            var content = await OEmbedHttp.ReadLimitedStringAsync(response.Content, CancellationToken.None);
             var htmlLinks = FindAlternateLinksInHtml(content).ToList();
 
             endpoint = GetEndpointFromLinks(htmlLinks);
@@ -116,7 +133,7 @@ internal class OEmbedApiEndpointDiscoveryProvider(
 
             var type = inputs.Skip(1)
                 .Where(x => x.StartsWith(TypeAttributeName))
-                .Select(x => x[(TypeAttributeName.Length + 1)..])
+                .Select(x => x[(TypeAttributeName.Length + 1)..].Trim('"'))
                 .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
 
             if (type is null)

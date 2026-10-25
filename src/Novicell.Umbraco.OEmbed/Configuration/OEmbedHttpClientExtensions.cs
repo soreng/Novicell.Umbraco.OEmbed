@@ -1,0 +1,31 @@
+using Microsoft.Extensions.DependencyInjection;
+using Novicell.Umbraco.OEmbed.Services;
+
+namespace Novicell.Umbraco.OEmbed.Configuration;
+
+internal static class OEmbedHttpClientExtensions
+{
+    /// <summary>
+    /// Registers the <see cref="HttpClient"/> used for all oEmbed traffic with a timeout, a redirect
+    /// limit and the Umbraco User-Agent. The response size limit is applied when the body is read,
+    /// see <see cref="OEmbedHttp"/>.
+    /// </summary>
+    internal static IServiceCollection AddOEmbedHttpClient(this IServiceCollection services)
+    {
+        services
+            .AddHttpClient(OEmbedHttp.ClientName, client =>
+            {
+                client.Timeout = OEmbedHttp.Timeout;
+                _ = client.DefaultRequestHeaders.UserAgent.TryParseAdd(
+                    global::Umbraco.Cms.Core.Constants.HttpClients.Headers.UserAgentProductName);
+            })
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                AllowAutoRedirect = true,
+                MaxAutomaticRedirections = OEmbedHttp.MaxRedirects,
+                PooledConnectionLifetime = TimeSpan.FromMinutes(2),
+            });
+
+        return services;
+    }
+}
