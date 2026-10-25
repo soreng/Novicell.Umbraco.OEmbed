@@ -15,14 +15,13 @@ Built on .NET 10 and Umbraco's built-in embed provider infrastructure.
 
 ## Project structure
 
-| Project                            | Description                                                                                                    |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `Novicell.Umbraco.OEmbed.Core`             | Core implementation: the oEmbed service, endpoint/discovery providers, options, property editor and constants. |
-| `Novicell.Umbraco.OEmbed.Web`              | Management API controllers and models for the backoffice.                                                      |
-| `Novicell.Umbraco.OEmbed.Web.StaticAssets` | Backoffice front-end (TypeScript/Lit) bundled with Vite.                                                       |
-| `Novicell.Umbraco.OEmbed.Startup`          | Composition root: the `IComposer` and builder extensions that wire everything up.                              |
-| `Novicell.Umbraco.OEmbed`                  | Meta NuGet package that ties the other projects together.                                                      |
-| `demo/OEmbed.Testsite`             | A runnable Umbraco site used for local development and testing.                                                |
+| Path                                      | Description                                                                                                                           |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/Novicell.Umbraco.OEmbed`             | The NuGet package: oEmbed service, endpoint/discovery providers, property editor, Management API, composer and the `Client/` backoffice UI (TypeScript/Lit, built with Vite). |
+| `tests/Novicell.Umbraco.OEmbed.Tests`     | NUnit tests for the service, validators and value converter.                                                                          |
+| `demo/OEmbed.Testsite`                    | A runnable Umbraco site used for local development and testing.                                                                       |
+
+Inside the package, namespaces mirror folders: `Api`, `Composers`, `Configuration`, `EmbedProviders`, `Models`, `PropertyEditors` and `Services`. See [src/CLAUDE.md](src/CLAUDE.md) and [Client/ARCHITECTURE.md](src/Novicell.Umbraco.OEmbed/Client/ARCHITECTURE.md) for details.
 
 ## How it works
 
@@ -66,10 +65,11 @@ Configure options under the `Novicell:OEmbed` section in `appsettings.json`:
 dotnet run --project demo/OEmbed.Testsite/OEmbed.Testsite.csproj
 ```
 
-To work on the backoffice UI, build the client assets in `src/Novicell.Umbraco.OEmbed.Web.StaticAssets/Client`:
+The backoffice client is built into `wwwroot/App_Plugins/NovicellUmbracoOEmbed` and is not committed, so build it before running the demo (and before `dotnet pack`):
 
 ```bash
-npm install
+cd src/Novicell.Umbraco.OEmbed/Client
+npm ci
 npm run build
 ```
 

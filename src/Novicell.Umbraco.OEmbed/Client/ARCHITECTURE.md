@@ -9,35 +9,31 @@ TypeScript/Lit web components for the Umbraco backoffice, following Umbraco.Web.
 ```
 Client/
 ├── src/
-│   ├── api/
-│   │   ├── client.gen.ts              # Generated OpenAPI client
-│   │   ├── client/                    # Generated API operations
-│   │   ├── core/                      # Generated types
-│   │   └── sdk.gen.ts                 # Generated SDK
+│   ├── api/                           # Generated OpenAPI client (hey-api), do not edit
+│   ├── lang/                          # en.ts, da.ts and their manifests
 │   ├── property-editors/
 │   │   ├── oembed-picker/             # Property editor UI
 │   │   │   ├── property-editor-ui-oembed-picker.element.ts
 │   │   │   ├── manifests.ts
 │   │   │   └── index.ts
-│   │   └── manifests.ts
+│   │   ├── manifests.ts
+│   │   └── types.ts                   # Shared value types (OEmbedValueModel)
 │   ├── oembed/
 │   │   ├── components/
-│   │   │   ├── input-oembed/          # URL input component
+│   │   │   ├── input-oembed/          # Picker input (list of embeds)
 │   │   │   │   ├── input-oembed.element.ts
-│   │   │   │   ├── index.ts
-│   │   │   │   └── manifests.ts
+│   │   │   │   └── index.ts
 │   │   │   └── oembed-preview/        # Preview rendering component
 │   │   │       ├── oembed-preview.element.ts
-│   │   │       ├── index.ts
-│   │   │       └── manifests.ts
+│   │   │       └── index.ts
 │   │   ├── modals/
 │   │   │   ├── oembed-picker/         # Picker modal + context
 │   │   │   │   ├── oembed-picker-modal.element.ts
 │   │   │   │   ├── oembed-picker-modal.token.ts
-│   │   │   │   ├── oembed-picker.context.ts         # NEW: Context implementation
-│   │   │   │   ├── oembed-picker.context.token.ts   # NEW: Context token
-│   │   │   │   ├── oembed-picker.store.ts           # NEW: State store
-│   │   │   │   ├── oembed-picker.store.test.ts      # NEW: Store tests
+│   │   │   │   ├── oembed-picker.context.ts
+│   │   │   │   ├── oembed-picker.context.token.ts
+│   │   │   │   ├── oembed-picker.errors.ts
+│   │   │   │   ├── oembed-picker.store.ts
 │   │   │   │   ├── manifests.ts
 │   │   │   │   └── index.ts
 │   │   │   └── manifests.ts
@@ -49,20 +45,20 @@ Client/
 │   │   │   │   ├── manifests.ts
 │   │   │   │   └── index.ts
 │   │   │   └── manifests.ts
+│   │   ├── components/index.ts
 │   │   └── manifests.ts
 │   ├── app.ts                         # OAuth/API token configuration
 │   ├── manifests.ts                   # Extension manifest aggregator
-│   ├── index.ts                       # Public exports
-│   └── types.ts                       # Shared TypeScript types
-├── mocks/                             # NEW: Test data and MSW handlers
-│   ├── handlers.ts
-│   └── data.ts
+│   └── index.ts                       # Public exports
+├── mocks/                             # Test data (data.ts) and MSW handlers
 ├── public/
 │   └── umbraco-package.json           # Extension manifest
+├── scripts/
+│   └── generate-openapi.js            # Regenerates src/api from a running site
 ├── package.json
 ├── tsconfig.json
-├── vite.config.ts
-└── web-test-runner.config.ts          # NEW: Test runner config
+├── vite.config.ts                     # Builds to ../wwwroot/App_Plugins/NovicellUmbracoOEmbed
+└── web-test-runner.config.mjs
 ```
 
 ---
@@ -143,7 +139,7 @@ DataSource (API calls via tryExecute)
   ↓ calls
 Generated API Client (NovicellOEmbedService)
   ↓
-Server (/umbraco/management/api/v1.0/novicell-oembed/oembed)
+Server (/umbraco/novicell-oembed/api/v1/oembed)
 ```
 
 **Benefits**:
