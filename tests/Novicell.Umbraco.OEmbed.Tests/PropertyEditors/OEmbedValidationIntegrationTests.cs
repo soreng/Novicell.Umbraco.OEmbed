@@ -127,6 +127,25 @@ public class OEmbedValidationIntegrationTests
         Assert.That(results, Is.Not.Empty);
     }
 
+    [TestCase("[null]")]
+    [TestCase("""[{ "url": "https://youtube.com/watch?v=1", "oembed": null }]""")]
+    [TestCase("""[{ "url": null, "oembed": { "type": "video" } }]""")]
+    [TestCase("""[{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "video" } }, null]""")]
+    public void Explicit_Nulls_In_The_Posted_Json_Are_Rejected_Without_Throwing(string json)
+    {
+        // With and without an allowed-type restriction: both validators must cope with the shape.
+        foreach (string[] allowedTypes in new[] { Array.Empty<string>(), new[] { "video" } })
+        {
+            var results = BuildRunner().Validate(json, null, new OEmbedPickerConfiguration
+            {
+                Multiple = true,
+                AllowedTypes = allowedTypes,
+            }, Context()).ToList();
+
+            Assert.That(results, Is.Not.Empty, $"allowed types: {string.Join(",", allowedTypes)}");
+        }
+    }
+
     [Test]
     public void Ordinary_Http_Urls_In_The_Posted_Json_Pass_Through_The_Real_Runner()
     {

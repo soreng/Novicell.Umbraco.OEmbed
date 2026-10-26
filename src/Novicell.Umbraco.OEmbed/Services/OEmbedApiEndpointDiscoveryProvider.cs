@@ -27,14 +27,20 @@ internal class OEmbedApiEndpointDiscoveryProvider(
 
         Uri? endpoint;
 
+        // One deadline for the request and for reading the page, see OEmbedHttp.CreateDeadline.
+        using CancellationTokenSource deadline = OEmbedHttp.CreateDeadline(CancellationToken.None);
+
         try
         {
             using HttpClient client = httpClientFactory.CreateClient(OEmbedHttp.ClientName);
-            using HttpResponseMessage response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+            using HttpResponseMessage response = await client.GetAsync(
+                url,
+                HttpCompletionOption.ResponseHeadersRead,
+                deadline.Token);
 
             response.EnsureSuccessStatusCode();
 
-            endpoint = await DiscoverEndpointFromLinks(response);
+            endpoint = await DiscoverEndpointFromLinks(response, deadline.Token);
         }
         catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
         {
@@ -72,7 +78,7 @@ internal class OEmbedApiEndpointDiscoveryProvider(
         return new OEmbedApiEndpoint(endpoint.Host, endpoint);
     }
 
-    private static async Task<Uri?> DiscoverEndpointFromLinks(HttpResponseMessage response)
+    private static async Task<Uri?> DiscoverEndpointFromLinks(HttpResponseMessage response, CancellationToken deadline)
     {
         Uri? endpoint = null;
 
@@ -87,7 +93,7 @@ internal class OEmbedApiEndpointDiscoveryProvider(
         if (endpoint is null)
         {
             // Next, try to find the link in the html content.
-            var content = await OEmbedHttp.ReadLimitedStringAsync(response.Content, CancellationToken.None);
+            var content = await OEmbedHttp.ReadLimitedStringAsync(response.Content, deadline);
             var htmlLinks = FindAlternateLinksInHtml(content).ToList();
 
             endpoint = GetEndpointFromLinks(htmlLinks);

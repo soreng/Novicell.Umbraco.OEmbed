@@ -95,6 +95,21 @@ public class OEmbedUrlValidatorTests
     }
 
     [Test]
+    public void Explicit_Nulls_In_The_Posted_Value_Fail_The_Value_Without_Throwing()
+    {
+        // `required` does not stop an explicit JSON null: [null], or "oembed": null.
+        Assert.That(
+            _validator.Validate([null!], new OEmbedPickerConfiguration(), null, PropertyValidationContext.Empty()),
+            Is.Not.Empty);
+
+        var nullResponse = new OEmbedPropertyValue { Url = "https://youtube.com/watch?v=1", OEmbed = null! };
+        Assert.That(Validate(nullResponse), Is.Not.Empty);
+
+        var nullUrl = new OEmbedPropertyValue { Url = null!, OEmbed = new OEmbedResponse { Type = OEmbedType.Video } };
+        Assert.That(Validate(nullUrl), Is.Not.Empty);
+    }
+
+    [Test]
     public void One_Bad_Item_Among_Several_Fails_The_Value()
         => Assert.That(
             Validate(Embed(), Embed("javascript:alert(1)"), Embed()),

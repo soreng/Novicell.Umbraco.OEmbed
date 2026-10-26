@@ -22,6 +22,13 @@ public class OEmbedApiEndpointDiscoveryProviderTests
         return response;
     }
 
+    private static HttpResponseMessage Bytes(byte[] body, string contentType)
+    {
+        var content = new ByteArrayContent(body);
+        content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse(contentType);
+        return new HttpResponseMessage(HttpStatusCode.OK) { Content = content };
+    }
+
     private static string LinkElement(string href, string type = "application/json+oembed")
         => $"""<html><head><link rel="alternate" type="{type}" href="{href}" /></head><body></body></html>""";
 
@@ -121,6 +128,39 @@ public class OEmbedApiEndpointDiscoveryProviderTests
         OEmbedApiEndpoint? endpoint = await Create(handler).DiscoverApiEndpointAsync(PageUrl);
 
         Assert.That(endpoint, Is.Null);
+    }
+
+    // The page declares its charset, and the endpoint has a non-ASCII character in its query.
+    [TestCase("iso-8859-1", "é", "%C3%A9")]
+    [TestCase("windows-1252", "€", "%E2%82%AC")]
+    [TestCase("utf-8", "é", "%C3%A9")]
+    [TestCase("UTF-8", "€", "%E2%82%AC")]
+    [TestCase("\"iso-8859-1\"", "é", "%C3%A9")]
+    public async Task Decodes_The_Page_With_The_Charset_It_Declares(string charset, string character, string encoded)
+    {
+        System.Text.Encoding encoding = System.Text.Encoding.GetEncoding(charset.Trim('"'));
+        var html = LinkElement($"https://provider.example/oembed?q={character}");
+        var handler = new StubHttpMessageHandler(_ => Bytes(encoding.GetBytes(html), $"text/html; charset={charset}"));
+
+        OEmbedApiEndpoint? endpoint = await Create(handler).DiscoverApiEndpointAsync(PageUrl);
+
+        Assert.That(endpoint?.Endpoint.AbsoluteUri, Does.EndWith($"?q={encoded}"));
+    }
+
+    [Test]
+    public async Task Decodes_The_Page_As_Utf8_When_No_Charset_Is_Declared_Or_It_Is_Unknown()
+    {
+        var html = LinkElement("https://provider.example/oembed?q=é");
+        var utf8 = System.Text.Encoding.UTF8.GetBytes(html);
+
+        foreach (var contentType in new[] { "text/html", "text/html; charset=no-such-charset" })
+        {
+            var handler = new StubHttpMessageHandler(_ => Bytes(utf8, contentType));
+
+            OEmbedApiEndpoint? endpoint = await Create(handler).DiscoverApiEndpointAsync(PageUrl);
+
+            Assert.That(endpoint?.Endpoint.AbsoluteUri, Does.EndWith("?q=%C3%A9"), contentType);
+        }
     }
 
     [Test]

@@ -39,6 +39,16 @@ public class IpAddressClassifierTests
     [TestCase("fd12:3456:789a::1")]
     [TestCase("fec0::1")]
     [TestCase("ff02::1")]
+    [TestCase("64:ff9b:1::a9fe:a9fe")]
+    [TestCase("64:ff9b:1::808:808")]
+    [TestCase("64:ff9b:1:1234::1")]
+    [TestCase("100::1")]
+    [TestCase("2001::1")]
+    [TestCase("2001:2::1")]
+    [TestCase("2001:1ff::1")]
+    [TestCase("3fff::1")]
+    [TestCase("3fff:fff::1")]
+    [TestCase("5f00::1")]
     [TestCase("2001:db8::1")]
     public void Rejects_Private_And_Reserved_IPv6(string address)
         => Assert.That(IpAddressClassifier.IsPublic(IPAddress.Parse(address)), Is.False);
@@ -79,6 +89,10 @@ public class IpAddressClassifierTests
     [TestCase("2a00:1450:4001:81c::200e")]
     [TestCase("::ffff:8.8.8.8")]
     [TestCase("64:ff9b::808:808")]
+    [TestCase("2001:200::1")]
+    [TestCase("3fff:1000::1")]
+    [TestCase("5f01::1")]
+    [TestCase("101::1")]
     [TestCase("2002:808:808::1")]
     public void Accepts_Public_IPv6_And_Embedded_Public_IPv4(string address)
         => Assert.That(IpAddressClassifier.IsPublic(IPAddress.Parse(address)), Is.True);

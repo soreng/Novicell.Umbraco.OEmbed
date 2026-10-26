@@ -40,10 +40,13 @@ internal class OEmbedService(
 
         using HttpClient client = httpClientFactory.CreateClient(OEmbedHttp.ClientName);
 
+        // One deadline for the request and for reading the body, see OEmbedHttp.CreateDeadline.
+        using CancellationTokenSource deadline = OEmbedHttp.CreateDeadline(cancellationToken);
+
         try
         {
             Uri endpointUrl = BuildEndpointUrl(apiEndpoint.Endpoint, request);
-            return await FetchOEmbedAsync(endpointUrl, client, cancellationToken);
+            return await FetchOEmbedAsync(endpointUrl, client, deadline.Token);
         }
         catch (Exception e)
         {

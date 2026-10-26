@@ -17,27 +17,38 @@ internal static class OEmbedHttpClientExtensions
         services
             .AddHttpClient(OEmbedHttp.ClientName, client =>
             {
-                client.Timeout = OEmbedHttp.Timeout;
+                // Covers the wait for the response headers; the body is bounded by OEmbedHttp.CreateDeadline.
+            client.Timeout = OEmbedHttp.Timeout;
                 _ = client.DefaultRequestHeaders.UserAgent.TryParseAdd(
                     global::Umbraco.Cms.Core.Constants.HttpClients.Headers.UserAgentProductName);
             })
-            .ConfigurePrimaryHttpMessageHandler(serviceProvider =>
-            {
-                var handler = new SocketsHttpHandler
-                {
-                    AllowAutoRedirect = true,
-                    MaxAutomaticRedirections = OEmbedHttp.MaxRedirects,
-                    PooledConnectionLifetime = TimeSpan.FromMinutes(2),
-                };
-
-                if (!serviceProvider.GetRequiredService<IOptions<OEmbedOptions>>().Value.AllowPrivateNetworks)
-                {
-                    handler.ConnectCallback = PublicNetworkConnector.ConnectAsync;
-                }
-
-                return handler;
-            });
+            .ConfigurePrimaryHttpMessageHandler(serviceProvider => CreateHandler(
+                serviceProvider.GetRequiredService<IOptions<OEmbedOptions>>().Value.AllowPrivateNetworks));
 
         return services;
+    }
+
+    /// <summary>
+    /// The handler behind the oEmbed client. Unless private networks are allowed it only connects to
+    /// public addresses, and it does not use a proxy: with a proxy the connect check would see the
+    /// proxy's address instead of the target's, so any proxy would pass it and forward the request
+    /// anywhere.
+    /// </summary>
+    internal static SocketsHttpHandler CreateHandler(bool allowPrivateNetworks)
+    {
+        var handler = new SocketsHttpHandler
+        {
+            AllowAutoRedirect = true,
+            MaxAutomaticRedirections = OEmbedHttp.MaxRedirects,
+            PooledConnectionLifetime = TimeSpan.FromMinutes(2),
+        };
+
+        if (!allowPrivateNetworks)
+        {
+            handler.UseProxy = false;
+            handler.ConnectCallback = PublicNetworkConnector.ConnectAsync;
+        }
+
+        return handler;
     }
 }

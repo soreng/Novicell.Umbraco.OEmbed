@@ -110,6 +110,37 @@ internal static class IpAddressClassifier
             return false;
         }
 
+        // Ranges that are never public, or that can carry an IPv4 address in a layout that is not fixed.
+        // 64:ff9b:1::/48 local-use NAT64 (RFC 8215): the operator chooses how an IPv4 address is embedded.
+        if (b[0] == 0x00 && b[1] == 0x64 && b[2] == 0xff && b[3] == 0x9b && b[4] == 0x00 && b[5] == 0x01)
+        {
+            return false;
+        }
+
+        // 100::/64 discard-only
+        if (b[0] == 0x01 && b[1] == 0x00 && b[2..8].All(x => x == 0))
+        {
+            return false;
+        }
+
+        // 2001::/23 IETF protocol assignments: Teredo, benchmarking, ORCHID and similar
+        if (b[0] == 0x20 && b[1] == 0x01 && (b[2] & 0xFE) == 0)
+        {
+            return false;
+        }
+
+        // 3fff::/20 documentation
+        if (b[0] == 0x3f && b[1] == 0xff && (b[2] & 0xF0) == 0)
+        {
+            return false;
+        }
+
+        // 5f00::/16 segment routing SIDs
+        if (b[0] == 0x5f && b[1] == 0x00)
+        {
+            return false;
+        }
+
         // Addresses that embed an IPv4 address are only as public as that IPv4 address.
         // ::a.b.c.d (IPv4-compatible)
         if (b.Take(12).All(x => x == 0))

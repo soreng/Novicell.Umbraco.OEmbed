@@ -43,8 +43,15 @@ internal sealed class OEmbedUrlValidator : ITypedJsonValidator<List<OEmbedProper
             : [];
     }
 
-    private static bool IsInvalid(OEmbedPropertyValue item)
+    private static bool IsInvalid(OEmbedPropertyValue? item)
     {
+        // Posted JSON can contain explicit nulls (an item, or its oembed), which `required` does not
+        // stop. Such a value is not a valid embed.
+        if (item?.OEmbed is null)
+        {
+            return true;
+        }
+
         if (!Uri.TryCreate(item.Url, UriKind.Absolute, out Uri? entered) || !OEmbedHttp.IsHttpUrl(entered))
         {
             return true;

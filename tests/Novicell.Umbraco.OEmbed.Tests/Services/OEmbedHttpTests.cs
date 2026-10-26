@@ -99,6 +99,28 @@ public class OEmbedHttpTests
     }
 
     [Test]
+    public void Without_Private_Networks_The_Handler_Connects_Directly_And_Never_Uses_A_Proxy()
+    {
+        // A proxy would hide the real destination from the connect check: the check would see the
+        // proxy's address, so any public proxy would pass it and forward the request anywhere.
+        using SocketsHttpHandler handler = OEmbedHttpClientExtensions.CreateHandler(allowPrivateNetworks: false);
+
+        Assert.That(handler.UseProxy, Is.False);
+        Assert.That(handler.ConnectCallback, Is.Not.Null);
+        Assert.That(handler.MaxAutomaticRedirections, Is.EqualTo(OEmbedHttp.MaxRedirects));
+    }
+
+    [Test]
+    public void With_Private_Networks_Allowed_The_Handler_Has_No_Address_Check_And_Honours_The_Proxy_Settings()
+    {
+        using SocketsHttpHandler handler = OEmbedHttpClientExtensions.CreateHandler(allowPrivateNetworks: true);
+
+        Assert.That(handler.UseProxy, Is.True);
+        Assert.That(handler.ConnectCallback, Is.Null);
+        Assert.That(handler.MaxAutomaticRedirections, Is.EqualTo(OEmbedHttp.MaxRedirects));
+    }
+
+    [Test]
     public void Private_Networks_Are_Not_Allowed_Unless_Configured()
         => Assert.That(new OEmbedOptions().AllowPrivateNetworks, Is.False);
 
