@@ -23,5 +23,5 @@ public record OEmbedPropertyValue
     /// project's own tolerant <see cref="PropertyEditors.OEmbedPropertyValueJson"/> options).
     /// </remarks>
     [JsonPropertyName("oembed")]
-    public required OEmbedResponse OEmbed { get; init; }
+    public required OEmbedValue OEmbed { get; init; }
 }

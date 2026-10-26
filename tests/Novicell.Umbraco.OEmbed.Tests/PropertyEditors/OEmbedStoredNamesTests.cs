@@ -157,7 +157,7 @@ public class OEmbedStoredNamesTests
         object? saved = Editor().FromEditor(new ContentPropertyData(JsonNode.Parse(FromTheBackoffice), null), null);
         var stored = saved as string ?? JsonSerializer.Serialize(saved);
 
-        ConvertWithTheConverter(stored, out OEmbedResponse response);
+        ConvertWithTheConverter(stored, out OEmbedValue response);
 
         Assert.That(response.Version, Is.EqualTo("1.0"));
         Assert.That(response.AuthorName, Is.EqualTo("An author"));
@@ -166,6 +166,26 @@ public class OEmbedStoredNamesTests
         Assert.That(response.ThumbnailUrl, Is.EqualTo(new Uri("https://i.ytimg.com/vi/1/hq.jpg")));
         Assert.That(response.ThumbnailWidth, Is.EqualTo(480));
         Assert.That(response.CacheAge, Is.EqualTo(3600));
+    }
+
+    [Test]
+    public void The_Stored_Value_Has_The_Same_Fields_As_What_A_Provider_Returns()
+    {
+        // They are separate types on purpose, so a change in how providers are parsed cannot change the
+        // stored value, but the backoffice stores what the provider returned, so they must not drift.
+        static IEnumerable<string> Names(Type type) => type.GetProperties().Select(p => p.Name).OrderBy(n => n);
+
+        Assert.That(Names(typeof(OEmbedValue)), Is.EqualTo(Names(typeof(OEmbedResponse))));
+    }
+
+    [Test]
+    public void The_Stored_Value_Is_Written_With_The_Names_Of_The_oEmbed_Specification()
+    {
+        var value = new OEmbedValue { Type = OEmbedType.Video, AuthorName = "a", ThumbnailWidth = 1, CacheAge = 2 };
+
+        JsonObject json = JsonNode.Parse(JsonSerializer.Serialize(value))!.AsObject();
+
+        Assert.That(json.Select(p => p.Key), Is.SupersetOf(StoredNames));
     }
 
     [Test]
@@ -184,7 +204,7 @@ public class OEmbedStoredNamesTests
         Assert.That((string?)OEmbedOf(result)["author_name"], Is.EqualTo("Stored"));
     }
 
-    private static void ConvertWithTheConverter(string stored, out OEmbedResponse response)
+    private static void ConvertWithTheConverter(string stored, out OEmbedValue response)
     {
         IPublishedPropertyType propertyType = Substitute.For<IPublishedPropertyType>();
         propertyType.EditorAlias.Returns(Constants.PropertyEditors.OEmbedPicker);

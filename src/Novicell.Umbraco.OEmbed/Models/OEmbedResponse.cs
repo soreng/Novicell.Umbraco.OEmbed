@@ -1,5 +1,4 @@
 using System.Runtime.Serialization;
-using System.Text.Json.Serialization;
 
 namespace Novicell.Umbraco.OEmbed.Models;
 
@@ -7,6 +6,8 @@ namespace Novicell.Umbraco.OEmbed.Models;
 /// OEmbed Provider Response.
 /// </summary>
 /// <remarks>
+/// What a provider returned, as parsed by <see cref="Services.IOEmbedService"/>. The value that is stored in a property and
+/// given to Razor is an <see cref="OEmbedValue"/>.
 /// The response returned by the provider can be in either JSON or XML. Each format specifies a way of encoding
 /// name-value pairs which comprise the response data. Each format has an associated mime-type which must be
 /// returned in the Content-type header along with the response.</remarks>
@@ -23,9 +24,7 @@ public record OEmbedResponse
     /// The oEmbed version number. This must be 1.0.
     /// </summary>
     /// <remarks>
-    /// Optional rather than required: the Management API's <c>OEmbedResponseModel</c> doesn't
-    /// carry this field, so it's never present in the JSON round-tripped from the backoffice
-    /// when a property value is saved.
+    /// Optional rather than required: some providers leave it out, although the specification requires it.
     /// </remarks>
     [DataMember(Name = "version")]
     public string? Version { get; set; }
@@ -40,28 +39,24 @@ public record OEmbedResponse
     /// The name of the author/owner of the resource.
     /// </summary>
     [DataMember(Name = "author_name")]
-    [JsonPropertyName("author_name")]
     public string? AuthorName { get; set; }
 
     /// <summary>
     /// A URL for the author/owner of the resource.
     /// </summary>
     [DataMember(Name = "author_url")]
-    [JsonPropertyName("author_url")]
     public Uri? AuthorUrl { get; set; }
 
     /// <summary>
     /// The name of the resource provider.
     /// </summary>
     [DataMember(Name = "provider_name")]
-    [JsonPropertyName("provider_name")]
     public string? ProviderName { get; set; }
 
     /// <summary>
     /// The url of the resource provider.
     /// </summary>
     [DataMember(Name = "provider_url")]
-    [JsonPropertyName("provider_url")]
     public Uri? ProviderUrl { get; set; }
 
     /// <summary>
@@ -71,7 +66,6 @@ public record OEmbedResponse
     /// The thumbnail must respect any maxwidth and maxheight parameters. If this parameter is present, <see cref="ThumbnailWidth"/> and <see cref="ThumbnailHeight"/> must also be present.
     /// </remarks>
     [DataMember(Name = "thumbnail_url")]
-    [JsonPropertyName("thumbnail_url")]
     public Uri? ThumbnailUrl { get; set; }
 
     /// <summary>
@@ -81,7 +75,6 @@ public record OEmbedResponse
     /// If this parameter is present, <see cref="ThumbnailUrl" /> and <see cref="ThumbnailWidth"/> must also be present.
     /// </remarks>
     [DataMember(Name = "thumbnail_height")]
-    [JsonPropertyName("thumbnail_height")]
     public int? ThumbnailHeight { get; set; }
 
     /// <summary>
@@ -91,7 +84,6 @@ public record OEmbedResponse
     /// If this parameter is present, <see cref="ThumbnailUrl" /> and <see cref="ThumbnailHeight"/> must also be present.
     /// </remarks>
     [DataMember(Name = "thumbnail_width")]
-    [JsonPropertyName("thumbnail_width")]
     public int? ThumbnailWidth { get; set; }
 
     /// <summary>
@@ -126,6 +118,5 @@ public record OEmbedResponse
     /// The suggested cache lifetime for this resource, in seconds. Consumers may choose to use this value or not.
     /// </summary>
     [DataMember(Name = "cache_age")]
-    [JsonPropertyName("cache_age")]
     public int? CacheAge { get; set; }
 }

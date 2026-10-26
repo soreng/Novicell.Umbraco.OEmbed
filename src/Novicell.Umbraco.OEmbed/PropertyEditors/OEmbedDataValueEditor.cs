@@ -47,7 +47,7 @@ public class OEmbedDataValueEditor : DataValueEditor
 
     /// <summary>
     /// Validators run on the value the editor posted, before <see cref="FromEditor"/>. They are written
-    /// for the stored names (the value is deserialized into <see cref="OEmbedResponse"/>), so they get
+    /// for the stored names (the value is deserialized into <see cref="OEmbedValue"/>), so they get
     /// the value with those names.
     /// </summary>
     private sealed class StoredNamesValidator(IValueValidator inner) : IValueValidator

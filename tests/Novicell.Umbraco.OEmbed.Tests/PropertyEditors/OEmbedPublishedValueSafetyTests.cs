@@ -65,7 +65,7 @@ public class OEmbedPublishedValueSafetyTests
 
             Assert.That(result, Has.Count.EqualTo(1), $"{field}: {unsafeUrl}");
 
-            OEmbedResponse response = result[0].OEmbed;
+            OEmbedValue response = result[0].OEmbed;
             Uri? value = field switch
             {
                 "author_url" or "authorUrl" => response.AuthorUrl,
@@ -86,7 +86,7 @@ public class OEmbedPublishedValueSafetyTests
             "thumbnail_url": "/thumbs/1.jpg", "url": "https://example.com/photo.jpg"
             """));
 
-        OEmbedResponse response = result[0].OEmbed;
+        OEmbedValue response = result[0].OEmbed;
         Assert.That(response.AuthorUrl, Is.EqualTo(new Uri("https://example.com/author")));
         Assert.That(response.ProviderUrl, Is.EqualTo(new Uri("http://example.com/")));
         Assert.That(response.ThumbnailUrl?.OriginalString, Is.EqualTo("/thumbs/1.jpg"));

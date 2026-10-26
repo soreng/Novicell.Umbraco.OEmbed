@@ -36,7 +36,7 @@ public class OEmbedLegacyValueTests
         Assert.That(result, Has.Count.EqualTo(1));
         Assert.That(result[0].Url, Is.EqualTo("https://www.youtube.com/watch?v=dQw4w9WgXcQ"));
 
-        OEmbedResponse response = result[0].OEmbed;
+        OEmbedValue response = result[0].OEmbed;
         Assert.That(response.Type, Is.EqualTo(OEmbedType.Video));
         Assert.That(response.Version, Is.EqualTo("1.0"));
         Assert.That(response.Title, Is.EqualTo("Rick Astley - Never Gonna Give You Up (Official Music Video)"));
@@ -60,7 +60,7 @@ public class OEmbedLegacyValueTests
 
         Assert.That(result, Has.Count.EqualTo(1));
 
-        OEmbedResponse response = result[0].OEmbed;
+        OEmbedValue response = result[0].OEmbed;
         Assert.That(response.AuthorName, Is.EqualTo("Cambridge Car Audio"));
         Assert.That(response.AuthorUrl, Is.EqualTo(new Uri("https://www.youtube.com/@CambridgeCarAudio")));
         Assert.That(response.ProviderName, Is.EqualTo("YouTube"));

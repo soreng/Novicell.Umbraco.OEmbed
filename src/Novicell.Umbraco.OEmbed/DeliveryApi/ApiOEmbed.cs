@@ -11,17 +11,17 @@ namespace Novicell.Umbraco.OEmbed.DeliveryApi;
 /// Razor (<see cref="OEmbedPropertyValue"/>), so that renaming or reshaping that model cannot change
 /// what a site receives by accident. The property names are written out for the same reason, and are
 /// camelCase like the rest of the Delivery API. A property with several embeds is an array of these.
-/// The <see cref="ApiOEmbedResponse.Html"/> is what the provider returned when the editor picked the
+/// The <see cref="ApiOEmbedValue.Html"/> is what the provider returned when the editor picked the
 /// URL, and is not verified, so a site should treat it as editor-supplied content.
 /// </remarks>
 /// <param name="Url">The URL the editor entered.</param>
 /// <param name="OEmbed">The oEmbed response for <paramref name="Url"/>.</param>
 public sealed record ApiOEmbed(
     [property: JsonPropertyName("url")] string Url,
-    [property: JsonPropertyName("oembed")] ApiOEmbedResponse OEmbed)
+    [property: JsonPropertyName("oembed")] ApiOEmbedValue OEmbed)
 {
     internal static ApiOEmbed From(OEmbedPropertyValue value)
-        => new(value.Url, ApiOEmbedResponse.From(value.OEmbed));
+        => new(value.Url, ApiOEmbedValue.From(value.OEmbed));
 }
 
 /// <summary>
@@ -43,7 +43,7 @@ public sealed record ApiOEmbed(
 /// <param name="Height">The height of the resource, in pixels.</param>
 /// <param name="Width">The width of the resource, in pixels.</param>
 /// <param name="CacheAge">How long, in seconds, the provider suggests the response is cached.</param>
-public sealed record ApiOEmbedResponse(
+public sealed record ApiOEmbedValue(
     [property: JsonPropertyName("type")] string Type,
     [property: JsonPropertyName("version")] string? Version,
     [property: JsonPropertyName("title")] string? Title,
@@ -60,7 +60,7 @@ public sealed record ApiOEmbedResponse(
     [property: JsonPropertyName("width")] int? Width,
     [property: JsonPropertyName("cacheAge")] int? CacheAge)
 {
-    internal static ApiOEmbedResponse From(OEmbedResponse response)
+    internal static ApiOEmbedValue From(OEmbedValue response)
         => new(
             response.Type.ToApiValue(),
             response.Version,

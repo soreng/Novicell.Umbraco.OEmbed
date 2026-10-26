@@ -38,7 +38,7 @@ public class OEmbedPropertyValueConverterTests
         => urls.Select(url => new OEmbedPropertyValue
         {
             Url = url,
-            OEmbed = new OEmbedResponse { Type = OEmbedType.Video },
+            OEmbed = new OEmbedValue { Type = OEmbedType.Video },
         }).ToList();
 
     [Test]
@@ -168,7 +168,7 @@ public class OEmbedPropertyValueConverterTests
     public void ConvertSourceToIntermediate_Parses_Real_World_Shape_Without_A_Version_Field()
     {
         // The Management API's OEmbedResponseModel has no "version" field, so it's never present
-        // in what actually gets saved. Regression test: OEmbedResponse.Version used to be
+        // in what actually gets saved. Regression test: OEmbedValue.Version used to be
         // `required`, which made every real embed fail to deserialize silently.
         const string json = """
             [{ "url": "https://youtube.com/watch?v=123", "oembed": { "type": "video", "width": 200, "height": 113 } }]
@@ -203,7 +203,7 @@ public class OEmbedPropertyValueConverterTests
             new()
             {
                 Url = "https://youtube.com/watch?v=123",
-                OEmbed = new OEmbedResponse { Type = OEmbedType.Video, Version = "1.0" }
+                OEmbed = new OEmbedValue { Type = OEmbedType.Video, Version = "1.0" }
             }
         };
 

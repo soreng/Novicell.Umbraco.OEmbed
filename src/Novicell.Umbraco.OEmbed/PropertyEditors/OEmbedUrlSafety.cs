@@ -64,7 +64,7 @@ internal static class OEmbedUrlSafety
             return null;
         }
 
-        OEmbedResponse response = item.OEmbed;
+        OEmbedValue response = item.OEmbed;
 
         return item with
         {

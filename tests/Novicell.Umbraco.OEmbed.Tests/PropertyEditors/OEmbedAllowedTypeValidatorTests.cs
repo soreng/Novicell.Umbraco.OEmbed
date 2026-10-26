@@ -27,7 +27,7 @@ public class OEmbedAllowedTypeValidatorTests
     private static OEmbedPropertyValue Embed(OEmbedType type, string url) => new()
     {
         Url = url,
-        OEmbed = new OEmbedResponse { Type = type },
+        OEmbed = new OEmbedValue { Type = type },
     };
 
     private static OEmbedPickerConfiguration Config(string[]? allowedTypes = null) => new()

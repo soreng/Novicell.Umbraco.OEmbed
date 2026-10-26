@@ -25,9 +25,9 @@ public class OEmbedUrlValidatorTests
         _validator = new OEmbedUrlValidator(_localizedTextService);
     }
 
-    private static OEmbedPropertyValue Embed(string url = "https://youtube.com/watch?v=1", Action<OEmbedResponse>? configure = null)
+    private static OEmbedPropertyValue Embed(string url = "https://youtube.com/watch?v=1", Action<OEmbedValue>? configure = null)
     {
-        var response = new OEmbedResponse { Type = OEmbedType.Video };
+        var response = new OEmbedValue { Type = OEmbedType.Video };
         configure?.Invoke(response);
         return new OEmbedPropertyValue { Url = url, OEmbed = response };
     }
@@ -132,7 +132,7 @@ public class OEmbedUrlValidatorTests
         var nullResponse = new OEmbedPropertyValue { Url = "https://youtube.com/watch?v=1", OEmbed = null! };
         Assert.That(Validate(nullResponse), Is.Not.Empty);
 
-        var nullUrl = new OEmbedPropertyValue { Url = null!, OEmbed = new OEmbedResponse { Type = OEmbedType.Video } };
+        var nullUrl = new OEmbedPropertyValue { Url = null!, OEmbed = new OEmbedValue { Type = OEmbedType.Video } };
         Assert.That(Validate(nullUrl), Is.Not.Empty);
     }
 

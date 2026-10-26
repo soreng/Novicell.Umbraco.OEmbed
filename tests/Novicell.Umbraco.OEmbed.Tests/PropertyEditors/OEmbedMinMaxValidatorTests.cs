@@ -27,7 +27,7 @@ public class OEmbedMinMaxValidatorTests
     private static OEmbedPropertyValue Video(string url) => new()
     {
         Url = url,
-        OEmbed = new OEmbedResponse { Type = OEmbedType.Video },
+        OEmbed = new OEmbedValue { Type = OEmbedType.Video },
     };
 
     private static OEmbedPickerConfiguration Config(int? min = null, int? max = null, bool multiple = true) => new()
