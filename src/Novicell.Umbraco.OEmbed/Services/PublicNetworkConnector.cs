@@ -93,6 +93,9 @@ internal static class IpAddressClassifier
              || (b[0] == 172 && (b[1] & 0xF0) == 16)    // 172.16.0.0/12 private
              || (b[0] == 192 && b[1] == 0 && b[2] == 0) // 192.0.0.0/24 IETF protocol assignments
              || (b[0] == 192 && b[1] == 168)            // 192.168.0.0/16 private
+             || (b[0] == 192 && b[1] == 0 && b[2] == 2) // 192.0.2.0/24 documentation (TEST-NET-1)
+             || (b[0] == 198 && b[1] == 51 && b[2] == 100) // 198.51.100.0/24 documentation (TEST-NET-2)
+             || (b[0] == 203 && b[1] == 0 && b[2] == 113)  // 203.0.113.0/24 documentation (TEST-NET-3)
              || (b[0] == 198 && (b[1] & 0xFE) == 18)    // 198.18.0.0/15 benchmarking
              || b[0] >= 224);                           // 224.0.0.0/4 multicast, 240.0.0.0/4 reserved
 

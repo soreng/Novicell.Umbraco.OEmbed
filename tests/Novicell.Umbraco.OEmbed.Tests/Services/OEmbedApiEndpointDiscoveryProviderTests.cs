@@ -138,7 +138,10 @@ public class OEmbedApiEndpointDiscoveryProviderTests
     [TestCase("\"iso-8859-1\"", "é", "%C3%A9")]
     public async Task Decodes_The_Page_With_The_Charset_It_Declares(string charset, string character, string encoded)
     {
-        System.Text.Encoding encoding = System.Text.Encoding.GetEncoding(charset.Trim('"'));
+        // Straight from the code page provider, so the test does not depend on the production code having registered it first.
+        var name = charset.Trim('"');
+        System.Text.Encoding encoding = System.Text.CodePagesEncodingProvider.Instance.GetEncoding(name)
+                                        ?? System.Text.Encoding.GetEncoding(name);
         var html = LinkElement($"https://provider.example/oembed?q={character}");
         var handler = new StubHttpMessageHandler(_ => Bytes(encoding.GetBytes(html), $"text/html; charset={charset}"));
 
