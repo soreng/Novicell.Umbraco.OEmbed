@@ -94,6 +94,33 @@ public class OEmbedUrlValidatorTests
         Assert.That(Validate(Embed(configure: r => r.ThumbnailUrl = bad)), Is.Not.Empty);
     }
 
+    // Browsers strip tab, newline and carriage return anywhere in a URL, and leading control
+    // characters, so these become javascript: when rendered as a link even though System.Uri sees
+    // a relative URI.
+    [TestCase("java\nscript:alert(1)")]
+    [TestCase("java\tscript:alert(1)")]
+    [TestCase("jav\rascript:alert(1)")]
+    [TestCase("\u0001javascript:alert(1)")]
+    [TestCase("\u001fjavascript:alert(1)")]
+    [TestCase("\u007fjavascript:alert(1)")]
+    [TestCase("/path\n")]
+    [TestCase("data\n:text/html,x")]
+    public void A_Url_With_Control_Characters_Is_Rejected_Even_When_It_Looks_Relative(string url)
+    {
+        var uri = new Uri(url, UriKind.RelativeOrAbsolute);
+
+        Assert.That(Validate(Embed(configure: r => r.AuthorUrl = uri)), Is.Not.Empty);
+        Assert.That(Validate(Embed(configure: r => r.ProviderUrl = uri)), Is.Not.Empty);
+        Assert.That(Validate(Embed(configure: r => r.ThumbnailUrl = uri)), Is.Not.Empty);
+        Assert.That(Validate(Embed(configure: r => r.Url = uri)), Is.Not.Empty);
+    }
+
+    [TestCase("https://example.com/a\nb")]
+    [TestCase("https://example.com/\u0001")]
+    [TestCase("https://exam\tple.com/")]
+    public void The_Url_The_Editor_Entered_Cannot_Contain_Control_Characters(string url)
+        => Assert.That(Validate(Embed(url)), Is.Not.Empty);
+
     [Test]
     public void Explicit_Nulls_In_The_Posted_Value_Fail_The_Value_Without_Throwing()
     {

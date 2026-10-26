@@ -127,6 +127,15 @@ public class OEmbedValidationIntegrationTests
         Assert.That(results, Is.Not.Empty);
     }
 
+    [TestCase("""[{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "rich", "authorUrl": "java\nscript:alert(1)" } }]""")]
+    [TestCase("""[{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "rich", "thumbnailUrl": "\u0001javascript:alert(1)" } }]""")]
+    public void A_Control_Character_Url_In_The_Posted_Json_Is_Rejected_Through_The_Real_Runner(string json)
+    {
+        var results = BuildRunner().Validate(json, null, new OEmbedPickerConfiguration { Multiple = true }, Context());
+
+        Assert.That(results, Is.Not.Empty);
+    }
+
     [TestCase("[null]")]
     [TestCase("""[{ "url": "https://youtube.com/watch?v=1", "oembed": null }]""")]
     [TestCase("""[{ "url": null, "oembed": { "type": "video" } }]""")]
