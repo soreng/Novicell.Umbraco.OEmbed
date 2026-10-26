@@ -4,6 +4,26 @@ An [oEmbed](https://oembed.com/) integration for [Umbraco CMS](https://umbraco.c
 
 Built on .NET 10 and Umbraco's built-in embed provider infrastructure.
 
+> **Beta.** Requires Umbraco 17. It replaces the Umbraco 9 version of this package: the property editor alias, the stored value and the Razor model are different, see [Migrating from the Umbraco 9 version](#migrating-from-the-umbraco-9-version).
+
+## Installation
+
+```bash
+dotnet add package Novicell.Umbraco.OEmbed --prerelease
+```
+
+The package registers itself through a composer, so nothing else is needed. See [Getting started](#getting-started) for the options.
+
+## Versions
+
+The major version of the package is the lowest Umbraco major version it supports.
+
+| Package | Umbraco | .NET |
+| ------- | ------- | ---- |
+| 17.x    | 17.x    | 10   |
+
+Earlier versions of the package target Umbraco 9.
+
 ## Features
 
 - **OEmbed property editor** (`Novicell.OEmbed.Picker`) for storing embeds on documents, media and blocks.
@@ -89,8 +109,18 @@ npm run build
 ## Requirements
 
 - .NET 10 SDK
-- Umbraco CMS
+- Umbraco CMS 17
+
+## Migrating from the Umbraco 9 version
+
+The Umbraco 17 package is a rewrite, and existing data types and content are not converted automatically:
+
+- The property editor alias is `Novicell.OEmbed.Picker` (it was `Novicell.OEmbed`). Create new data types with the new editor.
+- A property stores an array of `{ url, oembed }` items (it was one object), and the Razor model is `IEnumerable<OEmbedPropertyValue>`. Each item has `.Url` and `.OEmbed` (type, html, title, thumbnail and so on). The old single-object shape is still read.
+- The data type has `Allowed types`, `Multiple` and `Min`/`Max` settings instead of one type setting.
+- `IOEmbedService.GetOEmbedAsync` now takes an `OEmbedRequest` and returns an `Attempt` with an `OEmbedOperationStatus`; it does not throw.
+- The `Novicell:OEmbed:Autodiscover` setting is unchanged.
 
 ## License
 
-Copyright © Novicell.
+MIT, see [LICENSE.md](LICENSE.md). Copyright © Novicell.
