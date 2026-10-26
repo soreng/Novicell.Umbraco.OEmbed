@@ -106,6 +106,37 @@ npm ci
 npm run build
 ```
 
+## Branches and releases
+
+| Branch | Purpose |
+|---|---|
+| `v17/dev` | Development for Umbraco 17. Pull requests go here. |
+| `v17/main` | Releases for Umbraco 17. Merge `v17/dev` into it when a version is ready. |
+
+The next Umbraco LTS gets its own pair, for example `v21/dev` and `v21/main`.
+
+**CI** (`.github/workflows/ci.yml`) runs on every pull request and on pushes to `v*/dev` and `v*/main`. It builds and tests the client (in a real browser) and the .NET solution, and uploads the NuGet package as an artifact, so it can be downloaded and tried before a release. The client has to be built before `dotnet build` or `dotnet pack`, because its output is not committed: run `npm ci && npm run build` in `src/Novicell.Umbraco.OEmbed/Client` first.
+
+**Releasing** (`.github/workflows/release.yml`):
+
+1. Merge `v17/dev` into `v17/main`.
+2. On GitHub, create a release from `v17/main` with a tag like `v17.0.0` or `v17.0.0-beta.1`. Tick **Set as a pre-release** for versions with `-beta` and the like.
+3. Approve the deployment to the `nuget` environment when GitHub asks.
+
+The workflow then builds with the version from the tag, publishes to NuGet.org and attaches the package to the release. The versions in the repository's files (the csproj, `package.json` and the backoffice manifest) don't need updating by hand; the tag is written into them, and into the manifest's cache-busting `?v=` parameters. It refuses to publish if:
+
+- the tag's major version doesn't match the Umbraco version in `Directory.Packages.props`
+- the tag isn't on `v<major>/main`
+- the release's pre-release setting doesn't match the version
+
+### One-off setup
+
+- **NuGet.org:** under the Novicell account, add a Trusted Publishing policy for repository owner `Novicell`, repository `Novicell.Umbraco.OEmbed`, workflow file `release.yml` and environment `nuget`.
+- **GitHub:**
+  - create the environment `nuget`, with required reviewers
+  - add the repository variable `NUGET_USER`, the NuGet.org user name that owns the policy
+  - protect `v17/dev` and `v17/main` with the CI check as required
+
 ## Requirements
 
 - .NET 10 SDK
