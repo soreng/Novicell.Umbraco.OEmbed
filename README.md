@@ -4,6 +4,26 @@ An [oEmbed](https://oembed.com/) integration for [Umbraco CMS](https://umbraco.c
 
 Built on .NET 10 and Umbraco's built-in embed provider infrastructure.
 
+> **Beta.** Requires Umbraco 17. It replaces the Umbraco 9 version of this package: the property editor alias, the stored value and the Razor model are different, see [Migrating from the Umbraco 9 version](#migrating-from-the-umbraco-9-version).
+
+## Installation
+
+```bash
+dotnet add package Novicell.Umbraco.OEmbed --prerelease
+```
+
+The package registers itself through a composer, so nothing else is needed. See [Getting started](#getting-started) for the options.
+
+## Versions
+
+The major version of the package is the lowest Umbraco major version it supports. It is built against Umbraco 17.0.0, so a site on any 17.x can install it; the demo site runs a newer Umbraco.
+
+| Package | Umbraco | .NET |
+| ------- | ------- | ---- |
+| 17.x    | 17.x    | 10   |
+
+Earlier versions of the package target Umbraco 9.
+
 ## Features
 
 - **OEmbed property editor** (`Novicell.OEmbed.Picker`) for storing embeds on documents, media and blocks.
@@ -86,11 +106,52 @@ npm ci
 npm run build
 ```
 
+## Branches and releases
+
+| Branch | Purpose |
+|---|---|
+| `v17/dev` | Development for Umbraco 17. Pull requests go here. |
+| `v17/main` | Releases for Umbraco 17. Merge `v17/dev` into it when a version is ready. |
+
+The next Umbraco LTS gets its own pair, for example `v21/dev` and `v21/main`.
+
+**CI** (`.github/workflows/ci.yml`) runs on every pull request and on pushes to `v*/dev` and `v*/main`. It builds and tests the client (in a real browser) and the .NET solution, and uploads the NuGet package as an artifact, so it can be downloaded and tried before a release. The client has to be built before `dotnet build` or `dotnet pack`, because its output is not committed: run `npm ci && npm run build` in `src/Novicell.Umbraco.OEmbed/Client` first.
+
+**Releasing** (`.github/workflows/release.yml`):
+
+1. Merge `v17/dev` into `v17/main`.
+2. On GitHub, create a release from `v17/main` with a tag like `v17.0.0` or `v17.0.0-beta.1`. Tick **Set as a pre-release** for versions with `-beta` and the like.
+3. Approve the deployment to the `nuget` environment when GitHub asks.
+
+The workflow then builds with the version from the tag, publishes to NuGet.org and attaches the package to the release. The versions in the repository's files (the csproj, `package.json` and the backoffice manifest) don't need updating by hand; the tag is written into them, and into the manifest's cache-busting `?v=` parameters. It refuses to publish if:
+
+- the tag's major version doesn't match the Umbraco version in `Directory.Packages.props`
+- the tag isn't on `v<major>/main`
+- the release's pre-release setting doesn't match the version
+
+### One-off setup
+
+- **NuGet.org:** under the Novicell account, add a Trusted Publishing policy for repository owner `Novicell`, repository `Novicell.Umbraco.OEmbed`, workflow file `release.yml` and environment `nuget`.
+- **GitHub:**
+  - create the environment `nuget`, with required reviewers
+  - add the repository variable `NUGET_USER`, the NuGet.org user name that owns the policy
+  - protect `v17/dev` and `v17/main` with the CI check as required
+
 ## Requirements
 
 - .NET 10 SDK
-- Umbraco CMS
+- Umbraco CMS 17
+
+## Migrating from the Umbraco 9 version
+
+The Umbraco 17 package is a rewrite, and existing data types and content are not converted automatically:
+
+- The property editor alias is `Novicell.OEmbed.Picker` (it was `Novicell.OEmbed`). Create new data types with the new editor.
+- A property stores an array of `{ url, oembed }` items (it was one object), and the Razor model is `IEnumerable<OEmbedPropertyValue>`. Each item has `.Url` and `.OEmbed` (type, html, title, thumbnail and so on). The old single-object shape is still read.
+- The data type has `Allowed types`, `Multiple` and `Min`/`Max` settings instead of one type setting.
+- `IOEmbedService.GetOEmbedAsync` now takes an `OEmbedRequest` and returns an `Attempt` with an `OEmbedOperationStatus`; it does not throw.
+- The `Novicell:OEmbed:Autodiscover` setting is unchanged.
 
 ## License
 
-Copyright © Novicell.
+MIT, see [LICENSE.md](LICENSE.md). Copyright © Novicell.

@@ -1,11 +1,36 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
     <PropertyGroup>
-        <Title>Novicell OEmbed</Title>
-        <Description>Novicell OEmbed</Description>
         <RootNamespace>Novicell.Umbraco.OEmbed</RootNamespace>
         <StaticWebAssetBasePath>/</StaticWebAssetBasePath>
         <AddRazorSupportForMvc>false</AddRazorSupportForMvc>
+    </PropertyGroup>
+
+    <!-- The package. Version is overwritten from the release tag in CI (-p:Version=). -->
+    <PropertyGroup>
+        <PackageId>Novicell.Umbraco.OEmbed</PackageId>
+        <Product>Novicell.Umbraco.OEmbed</Product>
+        <Title>Novicell OEmbed</Title>
+        <Version>17.0.0-beta.1</Version>
+        <Description>Beta. An oEmbed property editor for Umbraco 17. Editors paste a URL (YouTube, Vimeo, X, Spotify and more) and the embed is resolved and stored with its metadata.</Description>
+        <Authors>Novicell</Authors>
+        <Company>Novicell</Company>
+        <Copyright>Copyright © Novicell $([System.DateTime]::Today.ToString('yyyy'))</Copyright>
+        <PackageTags>umbraco;umbraco-marketplace;oembed;embed;video;property-editor</PackageTags>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageIcon>icon.png</PackageIcon>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageProjectUrl>https://github.com/Novicell/Novicell.Umbraco.OEmbed</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/Novicell/Novicell.Umbraco.OEmbed</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+    </PropertyGroup>
+
+    <!-- Source link and symbols, so a consumer can step into the package -->
+    <PropertyGroup>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     </PropertyGroup>
 
     <!-- Central package management - no versions -->
@@ -23,6 +48,9 @@
 
         <!-- However make the Umbraco-package.json included for dotnet pack or nuget package and visible to the solution -->
         <None Include="Client\public\umbraco-package.json" Pack="false" />
+
+        <None Include="..\..\README.md" Pack="true" PackagePath="\" Link="README.md" />
+        <None Include="..\..\assets\icon.png" Pack="true" PackagePath="\" Link="icon.png" />
     </ItemGroup>
 
     <ItemGroup>
