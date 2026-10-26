@@ -70,7 +70,7 @@ Whatever the server requests on an editor's behalf is limited: only `http` and `
 
 Set `AllowPrivateNetworks` to `true` if you need to call a provider on `localhost`, or if the server reaches the internet through an outbound proxy on a private address (the check then sees the proxy, not the target, and the proxy has to restrict what can be reached). The setting is read when the HTTP client is created, so changing it needs a restart.
 
-A saved value is different: the stored `oembed` JSON, including its `html`, is sent by the client and is not checked against the provider. The property editor therefore never runs it. Saved embeds are shown as a thumbnail or link card, and only the picker modal fetches a fresh response and runs it. Sites that render the stored `html` on the frontend should treat it as editor-supplied content.
+A saved value is different: the stored `oembed` JSON, including its `html`, is sent by the client and is not checked against the provider. The property editor therefore never runs it. Saved embeds are shown as a thumbnail or link card, and only the picker modal fetches a fresh response and runs it. The server rejects a saved value that has a URL other than http(s), but it does not verify the `html`. Sites that render the stored `html` on the frontend should treat it as editor-supplied content.
 
 ## Running the demo site
 

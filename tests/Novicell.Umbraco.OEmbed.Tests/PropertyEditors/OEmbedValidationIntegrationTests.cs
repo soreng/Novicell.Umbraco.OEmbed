@@ -38,7 +38,8 @@ public class OEmbedValidationIntegrationTests
         => new(
             _jsonSerializer,
             new OEmbedMinMaxValidator(_localizedTextService),
-            new OEmbedAllowedTypeValidator(_localizedTextService));
+            new OEmbedAllowedTypeValidator(_localizedTextService),
+            new OEmbedUrlValidator(_localizedTextService));
 
     private static PropertyValidationContext Context() => PropertyValidationContext.Empty();
 
@@ -112,5 +113,29 @@ public class OEmbedValidationIntegrationTests
         }, Context());
 
         Assert.That(results, Is.Not.Empty);
+    }
+
+    [Test]
+    public void A_Script_Url_In_The_Posted_Json_Is_Rejected_Through_The_Real_Runner()
+    {
+        const string withScriptUrl = """
+            [{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "rich", "version": "1.0", "authorUrl": "javascript:alert(1)", "thumbnailUrl": "https://example.com/t.jpg" } }]
+            """;
+
+        var results = BuildRunner().Validate(withScriptUrl, null, new OEmbedPickerConfiguration { Multiple = true }, Context());
+
+        Assert.That(results, Is.Not.Empty);
+    }
+
+    [Test]
+    public void Ordinary_Http_Urls_In_The_Posted_Json_Pass_Through_The_Real_Runner()
+    {
+        const string ordinary = """
+            [{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "video", "version": "1.0", "authorUrl": "https://youtube.com/@a", "providerUrl": "https://youtube.com/", "thumbnailUrl": "https://i.ytimg.com/vi/1/hq.jpg" } }]
+            """;
+
+        var results = BuildRunner().Validate(ordinary, null, new OEmbedPickerConfiguration { Multiple = true }, Context());
+
+        Assert.That(results, Is.Empty);
     }
 }

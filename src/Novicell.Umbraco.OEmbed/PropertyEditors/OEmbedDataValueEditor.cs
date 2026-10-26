@@ -23,7 +23,8 @@ public class OEmbedDataValueEditor : DataValueEditor
         var validators = new TypedJsonValidatorRunner<List<OEmbedPropertyValue>, OEmbedPickerConfiguration>(
             jsonSerializer,
             new OEmbedMinMaxValidator(localizedTextService),
-            new OEmbedAllowedTypeValidator(localizedTextService));
+            new OEmbedAllowedTypeValidator(localizedTextService),
+            new OEmbedUrlValidator(localizedTextService));
 
         Validators.Add(validators);
     }
