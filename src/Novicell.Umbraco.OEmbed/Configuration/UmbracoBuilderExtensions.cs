@@ -39,7 +39,7 @@ public static class UmbracoBuilderExtensions
         services.AddOptions<OEmbedOptions>()
             .Bind(config.GetSection(OEmbedOptions.SectionKey));
 
-        builder.PropertyValueConverters().Append<OEmbedValuePropertyValueConverter>();
+        builder.PropertyValueConverters().Append<OEmbedPropertyValueConverter>();
 
         builder.EmbedProviders()
             .Append<Reddit>()

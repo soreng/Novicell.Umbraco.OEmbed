@@ -8,10 +8,11 @@ using Umbraco.Cms.Core.Models.PublishedContent;
 namespace Novicell.Umbraco.OEmbed.Tests.PropertyEditors;
 
 /// <summary>
-/// Content saved with the Umbraco 9 version of the package. That version stored the oEmbed response
-/// with the names of the oEmbed specification (snake_case: author_name, thumbnail_url, ...) as one
-/// object, while this version stores camelCase names in an array. A site that still has such content
-/// must get the whole value back, not only the fields whose names happen to be the same.
+/// Content saved in an older shape. The Umbraco 9 version of the package stored one object, where this
+/// version stores an array, and pre-release builds of this version stored camelCase names (authorName,
+/// thumbnailUrl, ...) where the oEmbed specification, and now this version, use snake_case (author_name,
+/// thumbnail_url, ...). A site that still has such content must get the whole value back, not only the
+/// fields whose names happen to be the same.
 /// </summary>
 [TestFixture]
 public class OEmbedLegacyValueTests
@@ -23,7 +24,7 @@ public class OEmbedLegacyValueTests
         IPublishedPropertyType propertyType = Substitute.For<IPublishedPropertyType>();
         propertyType.EditorAlias.Returns(Constants.PropertyEditors.OEmbedPicker);
 
-        return ((IEnumerable<OEmbedPropertyValue>)new OEmbedValuePropertyValueConverter()
+        return ((IEnumerable<OEmbedPropertyValue>)new OEmbedPropertyValueConverter()
             .ConvertSourceToIntermediate(Substitute.For<IPublishedElement>(), propertyType, json, false)!).ToList();
     }
 
@@ -53,14 +54,31 @@ public class OEmbedLegacyValueTests
     }
 
     [Test]
-    public void The_Camel_Case_Name_Wins_When_Both_Spellings_Are_Present()
+    public void A_Value_Stored_By_A_Pre_Release_Build_Keeps_Every_Field()
+    {
+        List<OEmbedPropertyValue> result = Convert(StoredValues.PreRelease);
+
+        Assert.That(result, Has.Count.EqualTo(1));
+
+        OEmbedResponse response = result[0].OEmbed;
+        Assert.That(response.AuthorName, Is.EqualTo("Cambridge Car Audio"));
+        Assert.That(response.AuthorUrl, Is.EqualTo(new Uri("https://www.youtube.com/@CambridgeCarAudio")));
+        Assert.That(response.ProviderName, Is.EqualTo("YouTube"));
+        Assert.That(response.ProviderUrl, Is.EqualTo(new Uri("https://www.youtube.com/")));
+        Assert.That(response.ThumbnailUrl, Is.EqualTo(new Uri("https://i.ytimg.com/vi/XbWCjWBuTDU/hqdefault.jpg")));
+        Assert.That(response.ThumbnailWidth, Is.EqualTo(480));
+        Assert.That(response.ThumbnailHeight, Is.EqualTo(360));
+    }
+
+    [Test]
+    public void The_Stored_Name_Wins_When_Both_Spellings_Are_Present()
     {
         List<OEmbedPropertyValue> result = Convert("""
             { "url": "https://youtube.com/watch?v=1",
-              "oembed": { "type": "video", "author_name": "Old", "authorName": "New" } }
+              "oembed": { "type": "video", "authorName": "Camel", "author_name": "Stored" } }
             """);
 
-        Assert.That(result[0].OEmbed.AuthorName, Is.EqualTo("New"));
+        Assert.That(result[0].OEmbed.AuthorName, Is.EqualTo("Stored"));
     }
 
     [Test]
@@ -74,12 +92,13 @@ public class OEmbedLegacyValueTests
         Assert.That(result.Select(r => r.OEmbed.ProviderName), Is.EqualTo(new[] { "YouTube", "Vimeo" }));
     }
 
-    [Test]
-    public void A_Legacy_Name_Does_Not_Skip_The_Url_Safety_Check()
+    [TestCase("author_url", "thumbnail_url")]
+    [TestCase("authorUrl", "thumbnailUrl")]
+    public void Neither_Spelling_Skips_The_Url_Safety_Check(string authorUrl, string thumbnailUrl)
     {
-        List<OEmbedPropertyValue> result = Convert("""
+        List<OEmbedPropertyValue> result = Convert($$"""
             { "url": "https://youtube.com/watch?v=1",
-              "oembed": { "type": "video", "author_url": "javascript:alert(1)", "thumbnail_url": "data:text/html,x" } }
+              "oembed": { "type": "video", "{{authorUrl}}": "javascript:alert(1)", "{{thumbnailUrl}}": "data:text/html,x" } }
             """);
 
         Assert.That(result[0].OEmbed.AuthorUrl, Is.Null);

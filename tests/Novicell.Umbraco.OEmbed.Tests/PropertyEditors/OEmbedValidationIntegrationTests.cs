@@ -119,7 +119,7 @@ public class OEmbedValidationIntegrationTests
     public void A_Script_Url_In_The_Posted_Json_Is_Rejected_Through_The_Real_Runner()
     {
         const string withScriptUrl = """
-            [{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "rich", "version": "1.0", "authorUrl": "javascript:alert(1)", "thumbnailUrl": "https://example.com/t.jpg" } }]
+            [{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "rich", "version": "1.0", "author_url": "javascript:alert(1)", "thumbnail_url": "https://example.com/t.jpg" } }]
             """;
 
         var results = BuildRunner().Validate(withScriptUrl, null, new OEmbedPickerConfiguration { Multiple = true }, Context());
@@ -127,8 +127,9 @@ public class OEmbedValidationIntegrationTests
         Assert.That(results, Is.Not.Empty);
     }
 
-    [TestCase("""[{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "rich", "authorUrl": "java\nscript:alert(1)" } }]""")]
-    [TestCase("""[{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "rich", "thumbnailUrl": "\u0001javascript:alert(1)" } }]""")]
+    [TestCase("""[{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "rich", "author_url": "java\nscript:alert(1)" } }]""")]
+    [TestCase("""[{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "rich", "thumbnail_url": "\u0001javascript:alert(1)" } }]""")]
+    [TestCase("""[{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "rich", "provider_url": "data:text/html,x" } }]""")]
     public void A_Control_Character_Url_In_The_Posted_Json_Is_Rejected_Through_The_Real_Runner(string json)
     {
         var results = BuildRunner().Validate(json, null, new OEmbedPickerConfiguration { Multiple = true }, Context());
@@ -159,7 +160,7 @@ public class OEmbedValidationIntegrationTests
     public void Ordinary_Http_Urls_In_The_Posted_Json_Pass_Through_The_Real_Runner()
     {
         const string ordinary = """
-            [{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "video", "version": "1.0", "authorUrl": "https://youtube.com/@a", "providerUrl": "https://youtube.com/", "thumbnailUrl": "https://i.ytimg.com/vi/1/hq.jpg" } }]
+            [{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "video", "version": "1.0", "author_url": "https://youtube.com/@a", "provider_url": "https://youtube.com/", "thumbnail_url": "https://i.ytimg.com/vi/1/hq.jpg" } }]
             """;
 
         var results = BuildRunner().Validate(ordinary, null, new OEmbedPickerConfiguration { Multiple = true }, Context());

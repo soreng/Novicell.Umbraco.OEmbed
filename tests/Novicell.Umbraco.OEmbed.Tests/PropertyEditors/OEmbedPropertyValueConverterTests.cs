@@ -3,28 +3,43 @@ using Novicell.Umbraco.OEmbed.PropertyEditors;
 using NSubstitute;
 using NUnit.Framework;
 using Umbraco.Cms.Core.Models.PublishedContent;
+using Umbraco.Cms.Core.PropertyEditors;
 
 namespace Novicell.Umbraco.OEmbed.Tests.PropertyEditors;
 
 [TestFixture]
-public class OEmbedValuePropertyValueConverterTests
+public class OEmbedPropertyValueConverterTests
 {
-    private OEmbedValuePropertyValueConverter _converter = null!;
+    private OEmbedPropertyValueConverter _converter = null!;
     private IPublishedElement _owner = null!;
 
     [SetUp]
     public void SetUp()
     {
-        _converter = new OEmbedValuePropertyValueConverter();
+        _converter = new OEmbedPropertyValueConverter();
         _owner = Substitute.For<IPublishedElement>();
     }
 
-    private static IPublishedPropertyType PropertyType(string editorAlias)
+    private static IPublishedPropertyType PropertyType(string editorAlias, bool? multiple = null)
     {
         IPublishedPropertyType propertyType = Substitute.For<IPublishedPropertyType>();
         propertyType.EditorAlias.Returns(editorAlias);
+
+        if (multiple is not null)
+        {
+            var configuration = new OEmbedPickerConfiguration { Multiple = multiple.Value };
+            propertyType.DataType.Returns(new PublishedDataType(1, editorAlias, "Novicell.OEmbed.PropertyEditorUi", new Lazy<object?>(() => configuration)));
+        }
+
         return propertyType;
     }
+
+    private static List<OEmbedPropertyValue> Embeds(params string[] urls)
+        => urls.Select(url => new OEmbedPropertyValue
+        {
+            Url = url,
+            OEmbed = new OEmbedResponse { Type = OEmbedType.Video },
+        }).ToList();
 
     [Test]
     public void IsConverter_Matches_Only_The_OEmbedPicker_Alias()
@@ -34,10 +49,82 @@ public class OEmbedValuePropertyValueConverterTests
     }
 
     [Test]
-    public void GetPropertyValueType_Returns_IEnumerable_Of_OEmbedPropertyValue()
+    public void GetPropertyValueType_Is_A_Collection_When_The_Data_Type_Allows_Multiple()
     {
-        Assert.That(_converter.GetPropertyValueType(PropertyType(Constants.PropertyEditors.OEmbedPicker)),
+        Assert.That(_converter.GetPropertyValueType(PropertyType(Constants.PropertyEditors.OEmbedPicker, multiple: true)),
             Is.EqualTo(typeof(IEnumerable<OEmbedPropertyValue>)));
+    }
+
+    [TestCase(false)]
+    [TestCase(null)]
+    public void GetPropertyValueType_Is_A_Single_Value_When_The_Data_Type_Does_Not_Allow_Multiple(bool? multiple)
+    {
+        Assert.That(_converter.GetPropertyValueType(PropertyType(Constants.PropertyEditors.OEmbedPicker, multiple)),
+            Is.EqualTo(typeof(OEmbedPropertyValue)));
+    }
+
+    [Test]
+    public void Razor_Value_Is_The_Collection_When_Multiple()
+    {
+        List<OEmbedPropertyValue> value = Embeds("https://a.test/1", "https://a.test/2");
+
+        object? result = _converter.ConvertIntermediateToObject(
+            _owner, PropertyType(Constants.PropertyEditors.OEmbedPicker, multiple: true), PropertyCacheLevel.Element, value, false);
+
+        Assert.That(result, Is.SameAs(value));
+    }
+
+    [Test]
+    public void Razor_Value_Is_An_Empty_Collection_When_Multiple_And_Nothing_Was_Picked()
+    {
+        object? result = _converter.ConvertIntermediateToObject(
+            _owner, PropertyType(Constants.PropertyEditors.OEmbedPicker, multiple: true), PropertyCacheLevel.Element, Embeds(), false);
+
+        Assert.That(result, Is.InstanceOf<IEnumerable<OEmbedPropertyValue>>().And.Empty);
+    }
+
+    [Test]
+    public void Razor_Value_Is_One_Item_When_Not_Multiple()
+    {
+        List<OEmbedPropertyValue> value = Embeds("https://a.test/1");
+
+        object? result = _converter.ConvertIntermediateToObject(
+            _owner, PropertyType(Constants.PropertyEditors.OEmbedPicker, multiple: false), PropertyCacheLevel.Element, value, false);
+
+        Assert.That(result, Is.SameAs(value[0]));
+    }
+
+    [Test]
+    public void Razor_Value_Is_Null_When_Not_Multiple_And_Nothing_Was_Picked()
+    {
+        object? result = _converter.ConvertIntermediateToObject(
+            _owner, PropertyType(Constants.PropertyEditors.OEmbedPicker, multiple: false), PropertyCacheLevel.Element, Embeds(), false);
+
+        Assert.That(result, Is.Null);
+    }
+
+    [Test]
+    public void Razor_Value_Is_The_First_Item_When_A_Data_Type_Was_Changed_To_Single_After_Several_Were_Saved()
+    {
+        List<OEmbedPropertyValue> value = Embeds("https://a.test/1", "https://a.test/2");
+
+        object? result = _converter.ConvertIntermediateToObject(
+            _owner, PropertyType(Constants.PropertyEditors.OEmbedPicker, multiple: false), PropertyCacheLevel.Element, value, false);
+
+        Assert.That(result, Is.SameAs(value[0]));
+    }
+
+    [TestCase(true)]
+    [TestCase(false)]
+    public void The_Delivery_Api_Is_An_Array_Whatever_The_Setting_Is(bool multiple)
+    {
+        var converter = (global::Umbraco.Cms.Core.PropertyEditors.DeliveryApi.IDeliveryApiPropertyValueConverter)_converter;
+        IPublishedPropertyType propertyType = PropertyType(Constants.PropertyEditors.OEmbedPicker, multiple);
+
+        Assert.That(converter.GetDeliveryApiPropertyValueType(propertyType), Is.EqualTo(typeof(IEnumerable<Novicell.Umbraco.OEmbed.DeliveryApi.ApiOEmbed>)));
+        Assert.That(
+            converter.ConvertIntermediateToDeliveryApiObject(_owner, propertyType, PropertyCacheLevel.Element, Embeds("https://a.test/1"), false, false),
+            Is.InstanceOf<Novicell.Umbraco.OEmbed.DeliveryApi.ApiOEmbed[]>().And.Length.EqualTo(1));
     }
 
     [Test]
@@ -122,7 +209,7 @@ public class OEmbedValuePropertyValueConverterTests
 
         var result = _converter.ConvertIntermediateToObject(
             _owner,
-            PropertyType(Constants.PropertyEditors.OEmbedPicker),
+            PropertyType(Constants.PropertyEditors.OEmbedPicker, multiple: true),
             global::Umbraco.Cms.Core.PropertyEditors.PropertyCacheLevel.Element,
             value,
             false);

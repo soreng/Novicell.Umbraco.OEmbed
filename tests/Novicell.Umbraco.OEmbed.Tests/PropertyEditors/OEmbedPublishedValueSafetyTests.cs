@@ -7,17 +7,17 @@ using Umbraco.Cms.Core.Models.PublishedContent;
 namespace Novicell.Umbraco.OEmbed.Tests.PropertyEditors;
 
 /// <summary>
-/// What a site sees is whatever <see cref="OEmbedValuePropertyValueConverter"/> produces from the stored
+/// What a site sees is whatever <see cref="OEmbedPropertyValueConverter"/> produces from the stored
 /// JSON, and the stored JSON does not only come through the save validators: it is also written by
 /// uSync, by a direct database change, or by an older version. The converter parses case-insensitively,
 /// while the save validators use Umbraco's serializer, so the two can read different URLs from the same
-/// JSON (for example "authorUrl" and "AuthorUrl" in one object). The converter is therefore what makes
+/// JSON (for example "author_url" and "AUTHOR_URL" in one object). The converter is therefore what makes
 /// sure a site is never handed a script-capable URL.
 /// </summary>
 [TestFixture]
 public class OEmbedPublishedValueSafetyTests
 {
-    private readonly OEmbedValuePropertyValueConverter _converter = new();
+    private readonly OEmbedPropertyValueConverter _converter = new();
     private readonly IPublishedElement _owner = Substitute.For<IPublishedElement>();
 
     private List<OEmbedPropertyValue> Convert(string json)
@@ -34,16 +34,15 @@ public class OEmbedPublishedValueSafetyTests
     [Test]
     public void The_Same_Property_In_Two_Casings_Cannot_Smuggle_In_A_Script_Url()
     {
-        // The last one wins when parsing case-insensitively, but the save validators only see "authorUrl".
-        List<OEmbedPropertyValue> result = Convert(Embed(""" "authorUrl": "https://example.com/", "AuthorUrl": "javascript:alert(1)" """));
+        // The last one wins when parsing case-insensitively, but the save validators only see "author_url".
+        List<OEmbedPropertyValue> result = Convert(Embed(""" "author_url": "https://example.com/", "AUTHOR_URL": "javascript:alert(1)" """));
 
         Assert.That(result, Has.Count.EqualTo(1));
         Assert.That(result[0].OEmbed.AuthorUrl, Is.Null);
     }
 
-    [TestCase("AuthorUrl")]
-    [TestCase("AUTHORURL")]
-    [TestCase("authorurl")]
+    [TestCase("Author_Url")]
+    [TestCase("AUTHOR_URL")]
     public void A_Wrongly_Cased_Property_Name_Is_Still_Checked(string name)
     {
         List<OEmbedPropertyValue> result = Convert(Embed($$""" "{{name}}": "javascript:alert(1)" """));
@@ -51,6 +50,9 @@ public class OEmbedPublishedValueSafetyTests
         Assert.That(result[0].OEmbed.AuthorUrl, Is.Null);
     }
 
+    [TestCase("author_url")]
+    [TestCase("provider_url")]
+    [TestCase("thumbnail_url")]
     [TestCase("authorUrl")]
     [TestCase("providerUrl")]
     [TestCase("thumbnailUrl")]
@@ -66,9 +68,9 @@ public class OEmbedPublishedValueSafetyTests
             OEmbedResponse response = result[0].OEmbed;
             Uri? value = field switch
             {
-                "authorUrl" => response.AuthorUrl,
-                "providerUrl" => response.ProviderUrl,
-                "thumbnailUrl" => response.ThumbnailUrl,
+                "author_url" or "authorUrl" => response.AuthorUrl,
+                "provider_url" or "providerUrl" => response.ProviderUrl,
+                "thumbnail_url" or "thumbnailUrl" => response.ThumbnailUrl,
                 _ => response.Url,
             };
 
@@ -80,8 +82,8 @@ public class OEmbedPublishedValueSafetyTests
     public void Http_Https_And_Relative_Urls_Are_Kept()
     {
         List<OEmbedPropertyValue> result = Convert(Embed("""
-            "authorUrl": "https://example.com/author", "providerUrl": "http://example.com/",
-            "thumbnailUrl": "/thumbs/1.jpg", "url": "https://example.com/photo.jpg"
+            "author_url": "https://example.com/author", "provider_url": "http://example.com/",
+            "thumbnail_url": "/thumbs/1.jpg", "url": "https://example.com/photo.jpg"
             """));
 
         OEmbedResponse response = result[0].OEmbed;
@@ -95,7 +97,7 @@ public class OEmbedPublishedValueSafetyTests
     public void The_Legacy_Single_Object_Shape_Is_Checked_Too()
     {
         List<OEmbedPropertyValue> result = Convert("""
-            { "url": "https://youtube.com/watch?v=1", "oembed": { "type": "rich", "ThumbnailUrl": "javascript:alert(1)" } }
+            { "url": "https://youtube.com/watch?v=1", "oembed": { "type": "rich", "Thumbnail_Url": "javascript:alert(1)" } }
             """);
 
         Assert.That(result, Has.Count.EqualTo(1));

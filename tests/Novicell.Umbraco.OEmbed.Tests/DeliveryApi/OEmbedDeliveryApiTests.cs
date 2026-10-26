@@ -20,7 +20,7 @@ namespace Novicell.Umbraco.OEmbed.Tests.DeliveryApi;
 [TestFixture]
 public class OEmbedDeliveryApiTests
 {
-    private readonly OEmbedValuePropertyValueConverter _converter = new();
+    private readonly OEmbedPropertyValueConverter _converter = new();
     private readonly IPublishedElement _owner = Substitute.For<IPublishedElement>();
     private readonly IPublishedPropertyType _propertyType = Substitute.For<IPublishedPropertyType>();
 
@@ -63,7 +63,38 @@ public class OEmbedDeliveryApiTests
     }
 
     [Test]
-    public void A_Value_Saved_By_This_Version_Is_Returned_As_Stored_With_Nulls_For_What_Was_Not_Returned()
+    public void A_Value_Saved_By_This_Version_Is_Returned_In_Camel_Case_With_Nulls_For_What_Was_Not_Returned()
+    {
+        AssertSameJson(
+            """
+            [
+              {
+                "url": "https://www.youtube.com/watch?v=XbWCjWBuTDU",
+                "oembed": {
+                  "type": "video",
+                  "version": "1.0",
+                  "title": "BMW 840i Harman Kardon Upgrade",
+                  "authorName": "Cambridge Car Audio",
+                  "authorUrl": "https://www.youtube.com/@CambridgeCarAudio",
+                  "providerName": "YouTube",
+                  "providerUrl": "https://www.youtube.com/",
+                  "thumbnailUrl": "https://i.ytimg.com/vi/XbWCjWBuTDU/hqdefault.jpg",
+                  "thumbnailHeight": 360,
+                  "thumbnailWidth": 480,
+                  "html": "<iframe width=\"200\" height=\"113\" src=\"https://www.youtube.com/embed/XbWCjWBuTDU?feature=oembed\" frameborder=\"0\" allowfullscreen></iframe>",
+                  "url": null,
+                  "height": 113,
+                  "width": 200,
+                  "cacheAge": null
+                }
+              }
+            ]
+            """,
+            Json(StoredValues.Current));
+    }
+
+    [Test]
+    public void A_Value_Saved_By_A_Pre_Release_Build_Is_Returned_With_The_Same_Names_As_Any_Other()
     {
         AssertSameJson(
             """
@@ -90,13 +121,13 @@ public class OEmbedDeliveryApiTests
               }
             ]
             """,
-            Json(StoredValues.Current));
+            Json(StoredValues.PreRelease));
     }
 
     [Test]
     public void A_Value_Saved_By_The_Umbraco_9_Package_Is_Returned_With_The_Same_Names_As_Any_Other()
     {
-        // One object in, an array out, and the names of this version, not the old snake_case.
+        // One object in, an array out, and camelCase names like every other value.
         AssertSameJson(
             """
             [
@@ -164,7 +195,7 @@ public class OEmbedDeliveryApiTests
     {
         var stored = """
             [{ "url": "https://example.com/x",
-               "oembed": { "type": "rich", "authorUrl": "javascript:alert(1)", "thumbnail_url": "data:text/html,x", "providerUrl": "java\nscript:alert(1)" } }]
+               "oembed": { "type": "rich", "author_url": "javascript:alert(1)", "thumbnail_url": "data:text/html,x", "provider_url": "java\nscript:alert(1)" } }]
             """;
 
         JsonNode oembed = JsonNode.Parse(Json(stored))!.AsArray()[0]!["oembed"]!;
@@ -191,6 +222,9 @@ public class OEmbedDeliveryApiTests
     [Test]
     public void The_Value_Used_In_Razor_Is_Unchanged()
     {
+        var configuration = new OEmbedPickerConfiguration { Multiple = true };
+        _propertyType.DataType.Returns(new PublishedDataType(1, Constants.PropertyEditors.OEmbedPicker, "Novicell.OEmbed.PropertyEditorUi", new Lazy<object?>(() => configuration)));
+
         object? razor = _converter.ConvertIntermediateToObject(
             _owner,
             _propertyType,

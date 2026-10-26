@@ -47,6 +47,7 @@ public class OEmbedApiController(IOEmbedService oembedService)
     {
         return new OEmbedResponseModel(
             response.Type,
+            response.Version,
             response.Width,
             response.Height,
             response.Url,
@@ -58,7 +59,8 @@ public class OEmbedApiController(IOEmbedService oembedService)
             response.ProviderName,
             response.ThumbnailUrl,
             response.ThumbnailWidth,
-            response.ThumbnailHeight);
+            response.ThumbnailHeight,
+            response.CacheAge);
     }
 
 }

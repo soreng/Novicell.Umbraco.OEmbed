@@ -7,16 +7,19 @@ using Umbraco.Cms.Core.PropertyEditors.DeliveryApi;
 namespace Novicell.Umbraco.OEmbed.PropertyEditors;
 
 /// <summary>
-/// Converts OEmbed picker property values to a strongly typed collection of <see cref="OEmbedPropertyValue"/>.
+/// Converts OEmbed picker property values to <see cref="OEmbedPropertyValue"/>: a single value, or null
+/// when there is none, when the data type does not allow multiple embeds, and a collection when it does
+/// (like Umbraco's media picker).
 /// </summary>
 /// <remarks>
 /// The property value is stored as JSON: <c>[{ "url": "...", "oembed": { ... } }, ...]</c>. Legacy
 /// content stored before multi-value support (a single <c>{ "url": ..., "oembed": ... }</c> object)
-/// is tolerated transparently via <see cref="OEmbedPropertyValueJson.Deserialize"/>.
-/// For the Delivery API the value is an array of <see cref="ApiOEmbed"/>, a contract of its own that
-/// does not follow the Razor model.
+/// is tolerated transparently via <see cref="OEmbedPropertyValueJson.Deserialize"/>. If a data type was
+/// changed from multiple to single after content was saved, the first embed is the value.
+/// For the Delivery API the value is always an array of <see cref="ApiOEmbed"/>, a contract of its own
+/// that does not follow the Razor model, so changing the setting does not change what a site receives.
 /// </remarks>
-public class OEmbedValuePropertyValueConverter : PropertyValueConverterBase, IDeliveryApiPropertyValueConverter
+public class OEmbedPropertyValueConverter : PropertyValueConverterBase, IDeliveryApiPropertyValueConverter
 {
     /// <inheritdoc />
     public override bool IsConverter(IPublishedPropertyType propertyType)
@@ -24,7 +27,7 @@ public class OEmbedValuePropertyValueConverter : PropertyValueConverterBase, IDe
 
     /// <inheritdoc />
     public override Type GetPropertyValueType(IPublishedPropertyType propertyType)
-        => typeof(IEnumerable<OEmbedPropertyValue>);
+        => IsMultiple(propertyType) ? typeof(IEnumerable<OEmbedPropertyValue>) : typeof(OEmbedPropertyValue);
 
     /// <inheritdoc />
     public override PropertyCacheLevel GetPropertyCacheLevel(IPublishedPropertyType propertyType)
@@ -45,7 +48,12 @@ public class OEmbedValuePropertyValueConverter : PropertyValueConverterBase, IDe
         PropertyCacheLevel referenceCacheLevel,
         object? inter,
         bool preview)
-        => inter as IEnumerable<OEmbedPropertyValue>;
+        => inter is IEnumerable<OEmbedPropertyValue> values
+            ? IsMultiple(propertyType) ? values : values.FirstOrDefault()
+            : null;
+
+    private static bool IsMultiple(IPublishedPropertyType propertyType)
+        => propertyType.DataType?.ConfigurationAs<OEmbedPickerConfiguration>()?.Multiple ?? false;
 
     /// <inheritdoc />
     public PropertyCacheLevel GetDeliveryApiPropertyCacheLevel(IPublishedPropertyType propertyType)

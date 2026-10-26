@@ -31,7 +31,7 @@ src/Novicell.Umbraco.OEmbed/
 - `OEmbedApiEndpointDiscoveryProvider` – auto-discovery via HTTP `Link` header or `<link rel="alternate"|"alternative" type="application/json+oembed">` in the page HTML
 - `OEmbedOptions` – configuration (`Autodiscover`)
 - `OEmbedDataEditor` / `OEmbedDataValueEditor` / `OEmbedMinMaxValidator` / `OEmbedAllowedTypeValidator` / `OEmbedUrlValidator` – property editor definition and validation (the last one rejects non-http(s) URLs in a saved value)
-- `OEmbedValuePropertyValueConverter` – converts the stored property JSON into a strongly-typed `OEmbedPropertyValue` for Razor views
+- `OEmbedPropertyValueConverter` – converts the stored property JSON into a strongly-typed `OEmbedPropertyValue` for Razor views
 - `OEmbedApiController` – `GET {ApiName}/api/v{version}/oembed?url=&maxwidth=&maxheight=`; `OEmbedApiControllerBase` maps `OEmbedOperationStatus` to problem-details responses
 - `UmbracoBuilderExtensions.AddNovicellOEmbed()` – the single entry point, called by `OEmbedComposer`
 
@@ -92,7 +92,7 @@ Two complementary providers:
 
 ### Property Value Converter
 
-`OEmbedValuePropertyValueConverter` converts the property editor's stored JSON (an array of `{ "url": "...", "oembed": { ... } }`, or the legacy single-object shape) into `OEmbedPropertyValue` records, so the value is usable from Razor views rather than being exposed as a raw JSON string. It also implements `IDeliveryApiPropertyValueConverter`: for the Delivery API the value is an array of `ApiOEmbed` (`DeliveryApi/ApiOEmbed.cs`), a contract of its own with explicit camelCase names, so renaming the Razor model cannot change what a headless site receives. The JSON is pinned by `OEmbedDeliveryApiTests`. The stored JSON may also be what the Umbraco 9 version wrote (one object, snake_case names such as `author_name`); `OEmbedPropertyValueJson` reads both spellings. The converter also applies the URL rule (`OEmbedUrlSafety`) to what it returns: a URL that is not http(s), or has a control character, is removed, and an unusable item is left out, because the save validator is not the only way a value reaches the database and parses the JSON differently (case-sensitively) from the converter.
+`OEmbedPropertyValueConverter` converts the property editor's stored JSON (an array of `{ "url": "...", "oembed": { ... } }`, or the legacy single-object shape) into `OEmbedPropertyValue` records, so the value is usable from Razor views rather than being exposed as a raw JSON string. Like Umbraco's media picker, the Razor value is a single `OEmbedPropertyValue?` (the first item, or null) when the data type's `Multiple` setting is off, and an `IEnumerable<OEmbedPropertyValue>` when it is on; the Delivery API is an array either way. It also implements `IDeliveryApiPropertyValueConverter`: for the Delivery API the value is an array of `ApiOEmbed` (`DeliveryApi/ApiOEmbed.cs`), a contract of its own with explicit camelCase names, so renaming the Razor model cannot change what a headless site receives. The JSON is pinned by `OEmbedDeliveryApiTests`. The stored `oembed` object uses the names of the oEmbed specification (`author_name`, `thumbnail_url`, ...) so that it is as close as possible to what the provider returned, while the backoffice and the Management API use camelCase (`authorName`, `thumbnailUrl`, ...). `OEmbedDataValueEditor` converts between the two (`FromEditor` on save, `ToEditor` on load) using the table in `OEmbedJsonNames`, and wraps the validators so they see the stored names: they deserialize into `OEmbedResponse`, whose `JsonPropertyName` attributes match the stored names (Umbraco's serializer does not use `DataMember`). The Umbraco 9 version wrote the same names as one object instead of an array, and pre-release builds of this version wrote camelCase; `OEmbedPropertyValueJson` reads all of these, using the same table. The converter also applies the URL rule (`OEmbedUrlSafety`) to what it returns: a URL that is not http(s), or has a control character, is removed, and an unusable item is left out, because the save validator is not the only way a value reaches the database and parses the JSON differently (case-sensitively) from the converter.
 
 ---
 
@@ -172,7 +172,7 @@ Use the `add-embed-provider` skill (`.claude/skills/add-embed-provider`).
 
 ### Backend Tests (`tests/Novicell.Umbraco.OEmbed.Tests`)
 
-- Cover `OEmbedService` (provider matching/fallthrough, HTTP status mapping, JSON/XML parsing, XXE-hardening regression), `OEmbedValuePropertyValueConverter`, `OEmbedMinMaxValidator` and `OEmbedAllowedTypeValidator`
+- Cover `OEmbedService` (provider matching/fallthrough, HTTP status mapping, JSON/XML parsing, XXE-hardening regression), `OEmbedPropertyValueConverter`, `OEmbedMinMaxValidator` and `OEmbedAllowedTypeValidator`
 - Approach: mock `HttpMessageHandler` responses via `IHttpClientFactory`, assert typed `OEmbedOperationStatus` outcomes
 - Internal types are reachable through `InternalsVisibleTo`
 
@@ -206,7 +206,7 @@ Override components in `Client/src/oembed/` or `property-editors/`, or create ne
 | `Novicell.Umbraco.OEmbed/Configuration/UmbracoBuilderExtensions.cs` | DI entry point              |
 | `Novicell.Umbraco.OEmbed/Composers/OEmbedComposer.cs`        | Umbraco composer            |
 | `Novicell.Umbraco.OEmbed/Services/OEmbedService.cs`          | Core service implementation |
-| `Novicell.Umbraco.OEmbed/PropertyEditors/OEmbedValuePropertyValueConverter.cs` | Property value converter    |
+| `Novicell.Umbraco.OEmbed/PropertyEditors/OEmbedPropertyValueConverter.cs` | Property value converter    |
 | `Novicell.Umbraco.OEmbed/Api/Controllers/OEmbedApiController.cs` | REST endpoint               |
 | `Novicell.Umbraco.OEmbed/Client/src/oembed/`                 | Frontend components & logic |
 | `Novicell.Umbraco.OEmbed/Client/public/umbraco-package.json` | Extension manifest          |

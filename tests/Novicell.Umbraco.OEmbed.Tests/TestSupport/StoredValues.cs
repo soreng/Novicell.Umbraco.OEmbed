@@ -29,9 +29,36 @@ internal static class StoredValues
         }
         """;
 
-    // What this version stores, as saved from the backoffice (see the demo site's content): an array,
-    // camelCase names, and no version or cache age.
+    // What this version stores, as saved from the backoffice: an array of the same items, with the
+    // names of the oEmbed specification, as the provider returned them.
     internal const string Current = """
+        [
+          {
+            "url": "https://www.youtube.com/watch?v=XbWCjWBuTDU",
+            "oembed": {
+              "type": "video",
+              "version": "1.0",
+              "width": 200,
+              "height": 113,
+              "url": null,
+              "html": "<iframe width=\"200\" height=\"113\" src=\"https://www.youtube.com/embed/XbWCjWBuTDU?feature=oembed\" frameborder=\"0\" allowfullscreen></iframe>",
+              "title": "BMW 840i Harman Kardon Upgrade",
+              "author_url": "https://www.youtube.com/@CambridgeCarAudio",
+              "author_name": "Cambridge Car Audio",
+              "provider_url": "https://www.youtube.com/",
+              "provider_name": "YouTube",
+              "thumbnail_url": "https://i.ytimg.com/vi/XbWCjWBuTDU/hqdefault.jpg",
+              "thumbnail_width": 480,
+              "thumbnail_height": 360,
+              "cache_age": null
+            }
+          }
+        ]
+        """;
+
+    // What pre-release builds of this version stored (see the demo site's earlier content): camelCase
+    // names, and no version or cache age.
+    internal const string PreRelease = """
         [
           {
             "url": "https://www.youtube.com/watch?v=XbWCjWBuTDU",

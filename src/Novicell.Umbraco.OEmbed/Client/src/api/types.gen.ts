@@ -6,6 +6,7 @@ export type ClientOptions = {
 
 export type OEmbedResponseModel = {
     type: OEmbedType;
+    version?: string | null;
     width?: number | null;
     height?: number | null;
     url?: string | null;
@@ -18,6 +19,7 @@ export type OEmbedResponseModel = {
     thumbnailUrl?: string | null;
     thumbnailWidth?: number | null;
     thumbnailHeight?: number | null;
+    cacheAge?: number | null;
 };
 
 export type OEmbedType = 'video' | 'photo' | 'link' | 'rich';
