@@ -16,7 +16,7 @@ The package registers itself through a composer, so nothing else is needed. See 
 
 ## Versions
 
-The major version of the package is the lowest Umbraco major version it supports.
+The major version of the package is the lowest Umbraco major version it supports. It is built against Umbraco 17.0.0, so a site on any 17.x can install it; the demo site runs a newer Umbraco.
 
 | Package | Umbraco | .NET |
 | ------- | ------- | ---- |

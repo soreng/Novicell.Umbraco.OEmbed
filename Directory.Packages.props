@@ -3,7 +3,11 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
-    <UmbracoVersion>17.4.0</UmbracoVersion>
+    <!--
+      The lowest Umbraco version the package supports (its major version is the package's major version),
+      so a site on any 17.x can install it. The demo site runs a newer Umbraco, see its own props file.
+    -->
+    <UmbracoVersion>17.0.0</UmbracoVersion>
   </PropertyGroup>
   <!-- Global packages (private, build-time packages for all projects) -->
   <ItemGroup>
@@ -13,8 +17,6 @@
     <PackageVersion Include="Microsoft.OpenApi" Version="2.7.5" />
     <PackageVersion Include="System.Security.Cryptography.Xml" Version="10.0.13" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.6" />
-    <PackageVersion Include="uSync" Version="17.3.2" />
-    <PackageVersion Include="Umbraco.Cms" Version="$(UmbracoVersion)" />
     <PackageVersion Include="Umbraco.Cms.Core" Version="$(UmbracoVersion)" />
     <PackageVersion Include="Umbraco.Cms.Web.Common" Version="$(UmbracoVersion)" />
     <PackageVersion Include="Umbraco.Cms.Api.Common" Version="$(UmbracoVersion)" />
