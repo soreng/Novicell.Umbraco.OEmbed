@@ -30,14 +30,21 @@ internal static class OEmbedPropertyValueJson
         try
         {
             using JsonDocument doc = JsonDocument.Parse(json);
-            return doc.RootElement.ValueKind switch
+            List<OEmbedPropertyValue?> parsed = doc.RootElement.ValueKind switch
             {
-                JsonValueKind.Array => JsonSerializer.Deserialize<List<OEmbedPropertyValue>>(json, Options) ?? [],
+                JsonValueKind.Array => JsonSerializer.Deserialize<List<OEmbedPropertyValue?>>(json, Options) ?? [],
                 JsonValueKind.Object => JsonSerializer.Deserialize<OEmbedPropertyValue>(json, Options) is { } single
                     ? [single]
                     : [],
                 _ => [],
             };
+
+            // What a site is handed: nothing unusable, and no script-capable URL, however the value
+            // got into the database. See OEmbedUrlSafety.
+            return parsed
+                .Select(OEmbedUrlSafety.Sanitize)
+                .OfType<OEmbedPropertyValue>()
+                .ToList();
         }
         catch (JsonException)
         {

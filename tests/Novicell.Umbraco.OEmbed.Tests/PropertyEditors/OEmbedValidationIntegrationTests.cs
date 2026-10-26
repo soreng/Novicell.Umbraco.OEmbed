@@ -38,7 +38,8 @@ public class OEmbedValidationIntegrationTests
         => new(
             _jsonSerializer,
             new OEmbedMinMaxValidator(_localizedTextService),
-            new OEmbedAllowedTypeValidator(_localizedTextService));
+            new OEmbedAllowedTypeValidator(_localizedTextService),
+            new OEmbedUrlValidator(_localizedTextService));
 
     private static PropertyValidationContext Context() => PropertyValidationContext.Empty();
 
@@ -112,5 +113,57 @@ public class OEmbedValidationIntegrationTests
         }, Context());
 
         Assert.That(results, Is.Not.Empty);
+    }
+
+    [Test]
+    public void A_Script_Url_In_The_Posted_Json_Is_Rejected_Through_The_Real_Runner()
+    {
+        const string withScriptUrl = """
+            [{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "rich", "version": "1.0", "authorUrl": "javascript:alert(1)", "thumbnailUrl": "https://example.com/t.jpg" } }]
+            """;
+
+        var results = BuildRunner().Validate(withScriptUrl, null, new OEmbedPickerConfiguration { Multiple = true }, Context());
+
+        Assert.That(results, Is.Not.Empty);
+    }
+
+    [TestCase("""[{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "rich", "authorUrl": "java\nscript:alert(1)" } }]""")]
+    [TestCase("""[{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "rich", "thumbnailUrl": "\u0001javascript:alert(1)" } }]""")]
+    public void A_Control_Character_Url_In_The_Posted_Json_Is_Rejected_Through_The_Real_Runner(string json)
+    {
+        var results = BuildRunner().Validate(json, null, new OEmbedPickerConfiguration { Multiple = true }, Context());
+
+        Assert.That(results, Is.Not.Empty);
+    }
+
+    [TestCase("[null]")]
+    [TestCase("""[{ "url": "https://youtube.com/watch?v=1", "oembed": null }]""")]
+    [TestCase("""[{ "url": null, "oembed": { "type": "video" } }]""")]
+    [TestCase("""[{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "video" } }, null]""")]
+    public void Explicit_Nulls_In_The_Posted_Json_Are_Rejected_Without_Throwing(string json)
+    {
+        // With and without an allowed-type restriction: both validators must cope with the shape.
+        foreach (string[] allowedTypes in new[] { Array.Empty<string>(), new[] { "video" } })
+        {
+            var results = BuildRunner().Validate(json, null, new OEmbedPickerConfiguration
+            {
+                Multiple = true,
+                AllowedTypes = allowedTypes,
+            }, Context()).ToList();
+
+            Assert.That(results, Is.Not.Empty, $"allowed types: {string.Join(",", allowedTypes)}");
+        }
+    }
+
+    [Test]
+    public void Ordinary_Http_Urls_In_The_Posted_Json_Pass_Through_The_Real_Runner()
+    {
+        const string ordinary = """
+            [{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "video", "version": "1.0", "authorUrl": "https://youtube.com/@a", "providerUrl": "https://youtube.com/", "thumbnailUrl": "https://i.ytimg.com/vi/1/hq.jpg" } }]
+            """;
+
+        var results = BuildRunner().Validate(ordinary, null, new OEmbedPickerConfiguration { Multiple = true }, Context());
+
+        Assert.That(results, Is.Empty);
     }
 }

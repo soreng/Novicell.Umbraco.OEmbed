@@ -35,9 +35,11 @@ internal sealed class OEmbedAllowedTypeValidator : ITypedJsonValidator<List<OEmb
         var allowed = new HashSet<string>(configuration.AllowedTypes, StringComparer.OrdinalIgnoreCase);
         var results = new List<ValidationResult>();
 
-        foreach (OEmbedPropertyValue item in value)
+        // Posted JSON can contain explicit nulls (an item, or its oembed), which `required` does
+        // not stop; they have no type, so they are not allowed.
+        foreach (OEmbedPropertyValue? item in value)
         {
-            if (!allowed.Contains(item.OEmbed.Type.ToApiValue()))
+            if (item?.OEmbed is null || !allowed.Contains(item.OEmbed.Type.ToApiValue()))
             {
                 results.Add(new ValidationResult(
                     _localizedTextService.Localize("validation", "invalidObjectType"),

@@ -320,6 +320,96 @@ public class OEmbedServiceTests
         Assert.That(query["url"], Is.Not.Null);
     }
 
+    // --- Limits on what is requested and how much is read ---
+
+    [TestCase("ftp://example.com/video")]
+    [TestCase("file:///etc/passwd")]
+    [TestCase("javascript:alert(1)")]
+    public async Task Rejects_A_Request_Url_That_Is_Not_Http_Or_Https_Without_Looking_For_A_Provider(string url)
+    {
+        var handler = new StubHttpMessageHandler(_ => throw new InvalidOperationException("No request expected."));
+        OEmbedService service = CreateService(handler, autodiscover: true);
+
+        Attempt<OEmbedResponse?, OEmbedOperationStatus> result =
+            await service.GetOEmbedAsync(Request(url), CancellationToken.None);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Status, Is.EqualTo(OEmbedOperationStatus.ProviderNotSupported));
+        await _endpointProvider.DidNotReceive().GetApiEndpointAsync(Arg.Any<Uri>());
+        await _discoveryProvider.DidNotReceive().DiscoverApiEndpointAsync(Arg.Any<Uri>());
+    }
+
+    [Test]
+    public async Task Json_Response_Larger_Than_The_Limit_Maps_To_InvalidResponse()
+    {
+        _endpointProvider.GetApiEndpointAsync(Arg.Any<Uri>()).Returns(ApiEndpoint);
+        var tooLarge = ValidJsonResponse() + new string(' ', (int)OEmbedHttp.MaxResponseBytes);
+        var handler = new StubHttpMessageHandler(_ => StubHttpMessageHandler.JsonResponse(HttpStatusCode.OK, tooLarge));
+        OEmbedService service = CreateService(handler);
+
+        Attempt<OEmbedResponse?, OEmbedOperationStatus> result =
+            await service.GetOEmbedAsync(Request(), CancellationToken.None);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Status, Is.EqualTo(OEmbedOperationStatus.InvalidResponse));
+    }
+
+    [Test]
+    public async Task Json_Response_Of_Unknown_Length_That_Turns_Out_Too_Large_Maps_To_InvalidResponse()
+    {
+        _endpointProvider.GetApiEndpointAsync(Arg.Any<Uri>()).Returns(ApiEndpoint);
+        var tooLarge = ValidJsonResponse() + new string(' ', (int)OEmbedHttp.MaxResponseBytes);
+        var handler = new StubHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new UnknownLengthContent(System.Text.Encoding.UTF8.GetBytes(tooLarge), "application/json"),
+        });
+        OEmbedService service = CreateService(handler);
+
+        Attempt<OEmbedResponse?, OEmbedOperationStatus> result =
+            await service.GetOEmbedAsync(Request(), CancellationToken.None);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Status, Is.EqualTo(OEmbedOperationStatus.InvalidResponse));
+    }
+
+    [Test]
+    public async Task Xml_Response_Of_Unknown_Length_That_Turns_Out_Too_Large_Maps_To_InvalidResponse()
+    {
+        _endpointProvider.GetApiEndpointAsync(Arg.Any<Uri>()).Returns(ApiEndpoint);
+        var tooLarge = "<oembed><type>video</type><title>"
+                       + new string('a', (int)OEmbedHttp.MaxResponseBytes)
+                       + "</title></oembed>";
+        var handler = new StubHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new UnknownLengthContent(System.Text.Encoding.UTF8.GetBytes(tooLarge), "text/xml"),
+        });
+        OEmbedService service = CreateService(handler);
+
+        Attempt<OEmbedResponse?, OEmbedOperationStatus> result =
+            await service.GetOEmbedAsync(Request(), CancellationToken.None);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Status, Is.EqualTo(OEmbedOperationStatus.InvalidResponse));
+    }
+
+    [Test]
+    public async Task Json_Response_Just_Under_The_Limit_Is_Accepted()
+    {
+        _endpointProvider.GetApiEndpointAsync(Arg.Any<Uri>()).Returns(ApiEndpoint);
+        var json = ValidJsonResponse();
+        var padded = json + new string(' ', (int)OEmbedHttp.MaxResponseBytes - json.Length);
+        var handler = new StubHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new UnknownLengthContent(System.Text.Encoding.UTF8.GetBytes(padded), "application/json"),
+        });
+        OEmbedService service = CreateService(handler);
+
+        Attempt<OEmbedResponse?, OEmbedOperationStatus> result =
+            await service.GetOEmbedAsync(Request(), CancellationToken.None);
+
+        Assert.That(result.Success, Is.True);
+    }
+
     private static string ValidJsonResponse() =>
         """{"type":"video","version":"1.0","title":"A test video","html":"<iframe src=\"https://example.com\"></iframe>"}""";
 }

@@ -32,6 +32,7 @@ public static class UmbracoBuilderExtensions
         IServiceCollection services = builder.Services;
         IConfiguration config = builder.Config;
 
+        services.AddOEmbedHttpClient();
         services.AddTransient<IOEmbedApiEndpointProvider, OEmbedApiEndpointProvider>();
         services.AddTransient<IOEmbedApiEndpointDiscoveryProvider, OEmbedApiEndpointDiscoveryProvider>();
         services.AddTransient<IOEmbedService, OEmbedService>();

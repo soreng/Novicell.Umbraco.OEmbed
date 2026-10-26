@@ -30,12 +30,14 @@ src/Novicell.Umbraco.OEmbed/
 - `OEmbedApiEndpointProvider` – matches a URL against Umbraco's registered `EmbedProvidersCollection`
 - `OEmbedApiEndpointDiscoveryProvider` – auto-discovery via HTTP `Link` header or `<link rel="alternate"|"alternative" type="application/json+oembed">` in the page HTML
 - `OEmbedOptions` – configuration (`Autodiscover`)
-- `OEmbedDataEditor` / `OEmbedDataValueEditor` / `OEmbedMinMaxValidator` / `OEmbedAllowedTypeValidator` – property editor definition and validation
+- `OEmbedDataEditor` / `OEmbedDataValueEditor` / `OEmbedMinMaxValidator` / `OEmbedAllowedTypeValidator` / `OEmbedUrlValidator` – property editor definition and validation (the last one rejects non-http(s) URLs in a saved value)
 - `OEmbedValuePropertyValueConverter` – converts the stored property JSON into a strongly-typed `OEmbedPropertyValue` for Razor views
 - `OEmbedApiController` – `GET {ApiName}/api/v{version}/oembed?url=&maxwidth=&maxheight=`; `OEmbedApiControllerBase` maps `OEmbedOperationStatus` to problem-details responses
 - `UmbracoBuilderExtensions.AddNovicellOEmbed()` – the single entry point, called by `OEmbedComposer`
 
 **DI pattern**: all services are registered as `Transient`.
+
+**Outbound HTTP**: all calls go through the named client `OEmbedHttp.ClientName` (`AddOEmbedHttpClient`): http(s) only, 10 second timeout, 3 redirects, 1 MiB responses (`OEmbedHttp`). Unless `AllowPrivateNetworks` is set, `PublicNetworkConnector` connects only to public addresses (`IpAddressClassifier`).
 
 **Frontend**: the Vite build writes to `wwwroot/App_Plugins/NovicellUmbracoOEmbed` and `StaticWebAssetBasePath` is `/`, so the files are served from `/App_Plugins/NovicellUmbracoOEmbed/`. The client must be built (`npm ci && npm run build` in `Client/`) before `dotnet build` or `dotnet pack`.
 
@@ -90,7 +92,7 @@ Two complementary providers:
 
 ### Property Value Converter
 
-`OEmbedValuePropertyValueConverter` converts the property editor's stored JSON (an array of `{ "url": "...", "oembed": { ... } }`, or the legacy single-object shape) into `OEmbedPropertyValue` records, so the value is usable from Razor views rather than being exposed as a raw JSON string. It does not implement the Delivery API converter interface yet.
+`OEmbedValuePropertyValueConverter` converts the property editor's stored JSON (an array of `{ "url": "...", "oembed": { ... } }`, or the legacy single-object shape) into `OEmbedPropertyValue` records, so the value is usable from Razor views rather than being exposed as a raw JSON string. It does not implement the Delivery API converter interface yet. The converter also applies the URL rule (`OEmbedUrlSafety`) to what it returns: a URL that is not http(s), or has a control character, is removed, and an unusable item is left out, because the save validator is not the only way a value reaches the database and parses the JSON differently (case-sensitively) from the converter.
 
 ---
 

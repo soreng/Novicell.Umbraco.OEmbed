@@ -25,21 +25,28 @@ internal class OEmbedService(
         OEmbedRequest request,
         CancellationToken cancellationToken)
     {
-        OEmbedApiEndpoint? apiEndpoint = await FindApiEndpoint(request);
-
-        if (apiEndpoint == null)
+        // Only http(s) URLs are looked up, and nothing else is ever requested on an editor's behalf.
+        if (!OEmbedHttp.IsHttpUrl(request.Url))
         {
             return Attempt<OEmbedResponse?, OEmbedOperationStatus>.Fail(OEmbedOperationStatus.ProviderNotSupported);
         }
 
-        using HttpClient client = httpClientFactory.CreateClient();
-        _ = client.DefaultRequestHeaders.UserAgent.TryParseAdd(global::Umbraco.Cms.Core.Constants.HttpClients.Headers
-            .UserAgentProductName);
+        OEmbedApiEndpoint? apiEndpoint = await FindApiEndpoint(request);
+
+        if (apiEndpoint == null || !OEmbedHttp.IsHttpUrl(apiEndpoint.Endpoint))
+        {
+            return Attempt<OEmbedResponse?, OEmbedOperationStatus>.Fail(OEmbedOperationStatus.ProviderNotSupported);
+        }
+
+        using HttpClient client = httpClientFactory.CreateClient(OEmbedHttp.ClientName);
+
+        // One deadline for the request and for reading the body, see OEmbedHttp.CreateDeadline.
+        using CancellationTokenSource deadline = OEmbedHttp.CreateDeadline(cancellationToken);
 
         try
         {
             Uri endpointUrl = BuildEndpointUrl(apiEndpoint.Endpoint, request);
-            return await FetchOEmbedAsync(endpointUrl, client, cancellationToken);
+            return await FetchOEmbedAsync(endpointUrl, client, deadline.Token);
         }
         catch (Exception e)
         {
@@ -87,7 +94,11 @@ internal class OEmbedService(
         CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
-        using HttpResponseMessage response = await client.SendAsync(request, cancellationToken);
+        // ResponseHeadersRead: the body is not buffered here, it is read with a size limit below.
+        using HttpResponseMessage response = await client.SendAsync(
+            request,
+            HttpCompletionOption.ResponseHeadersRead,
+            cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -116,7 +127,7 @@ internal class OEmbedService(
 
         try
         {
-            await using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            await using Stream stream = await OEmbedHttp.ReadLimitedStreamAsync(response.Content, cancellationToken);
 
             var settings = new XmlReaderSettings
             {
@@ -165,7 +176,7 @@ internal class OEmbedService(
         HttpResponseMessage response,
         CancellationToken cancellationToken)
     {
-        var json = await response.Content.ReadAsStringAsync(cancellationToken);
+        var json = await OEmbedHttp.ReadLimitedStringAsync(response.Content, cancellationToken);
 
         if (string.IsNullOrWhiteSpace(json))
         {

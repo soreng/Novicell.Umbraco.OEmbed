@@ -87,6 +87,18 @@ public class OEmbedAllowedTypeValidatorTests
     }
 
     [Test]
+    public void Explicit_Nulls_In_The_Posted_Value_Are_Not_Allowed_And_Do_Not_Throw()
+    {
+        // `required` does not stop an explicit JSON null: [null], or "oembed": null.
+        var nullResponse = new OEmbedPropertyValue { Url = "https://youtube.com/watch?v=1", OEmbed = null! };
+        List<OEmbedPropertyValue> value = [null!, nullResponse];
+
+        var results = _validator.Validate(value, Config(allowedTypes: ["video"]), null, Context()).ToList();
+
+        Assert.That(results, Has.Count.EqualTo(2));
+    }
+
+    [Test]
     public void Empty_AllowedTypes_Means_Unrestricted()
     {
         List<OEmbedPropertyValue> value = [Embed(OEmbedType.Photo, "https://flickr.com/photo/1")];

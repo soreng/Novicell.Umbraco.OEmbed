@@ -58,6 +58,7 @@ Configure options under the `Novicell:OEmbed` section in `appsettings.json`:
 | Setting        | Default | Description                                                                                                             |
 | -------------- | ------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `Autodiscover` | `false` | When enabled, attempts to discover an oEmbed endpoint from the target page when no registered provider matches the URL. |
+| `AllowPrivateNetworks` | `false` | Allows the server to call loopback and private network addresses. Off by default, see the security note below. |
 
 ### Security note on providers and Autodiscover
 
@@ -65,7 +66,11 @@ The live preview in the picker modal shows the HTML that an oEmbed provider has 
 
 Enabling `Autodiscover` extends that trust to any site an editor pastes, and makes the server request the URLs it finds. Leave it off unless you trust the editors with that.
 
-A saved value is different: the stored `oembed` JSON, including its `html`, is sent by the client and is not checked against the provider. The property editor therefore never runs it. Saved embeds are shown as a thumbnail or link card, and only the picker modal fetches a fresh response and runs it. Sites that render the stored `html` on the frontend should treat it as editor-supplied content.
+Whatever the server requests on an editor's behalf is limited: only `http` and `https`, a 10 second limit for the whole request including reading the body, at most 3 redirects and a 1 MiB response. The server also only connects to publicly routable addresses. Loopback, private (RFC 1918), link-local (including cloud metadata at `169.254.169.254`), carrier-grade NAT, multicast and reserved ranges are refused, and the check is made on the address actually connected to, so redirects and DNS rebinding cannot get around it.
+
+Set `AllowPrivateNetworks` to `true` if you need to call a provider on `localhost`, or if the server can only reach the internet through an outbound proxy. With the setting off, the server connects directly and ignores proxy settings, because a proxy would hide the real destination from the address check. With it on, no address check is made and the normal proxy settings apply, so the proxy has to restrict what can be reached. The setting is read when the HTTP client is created, so changing it needs a restart.
+
+A saved value is different: the stored `oembed` JSON, including its `html`, is sent by the client and is not checked against the provider. The property editor therefore never runs it. Saved embeds are shown as a thumbnail or link card, and only the picker modal fetches a fresh response and runs it. The server rejects a saved value that has a URL other than http(s), and the published value converter removes any such URL from what a site receives (and leaves out an item whose own URL is not http(s)), so values written by uSync, a database change or an older version are covered too. Neither verifies the `html`. Sites that render the stored `html` on the frontend should treat it as editor-supplied content.
 
 ## Running the demo site
 

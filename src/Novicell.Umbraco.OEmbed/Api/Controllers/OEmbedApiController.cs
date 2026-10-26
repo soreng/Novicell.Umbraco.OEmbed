@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -14,14 +15,17 @@ namespace Novicell.Umbraco.OEmbed.Api.Controllers;
 public class OEmbedApiController(IOEmbedService oembedService)
     : OEmbedApiControllerBase
 {
+    // Passed on to the provider as maxwidth/maxheight; no embed needs more than this.
+    private const int MaxDimension = 4096;
+
     [HttpGet("oembed")]
     [ProducesResponseType<OEmbedResponseModel>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetOEmbedAsync(
         Uri url,
-        int? maxwidth,
-        int? maxheight,
+        [Range(1, MaxDimension)] int? maxwidth,
+        [Range(1, MaxDimension)] int? maxheight,
         CancellationToken cancellationToken)
     {
         var request = new OEmbedRequest
