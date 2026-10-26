@@ -92,7 +92,7 @@ Two complementary providers:
 
 ### Property Value Converter
 
-`OEmbedValuePropertyValueConverter` converts the property editor's stored JSON (an array of `{ "url": "...", "oembed": { ... } }`, or the legacy single-object shape) into `OEmbedPropertyValue` records, so the value is usable from Razor views rather than being exposed as a raw JSON string. It does not implement the Delivery API converter interface yet.
+`OEmbedValuePropertyValueConverter` converts the property editor's stored JSON (an array of `{ "url": "...", "oembed": { ... } }`, or the legacy single-object shape) into `OEmbedPropertyValue` records, so the value is usable from Razor views rather than being exposed as a raw JSON string. It does not implement the Delivery API converter interface yet. The converter also applies the URL rule (`OEmbedUrlSafety`) to what it returns: a URL that is not http(s), or has a control character, is removed, and an unusable item is left out, because the save validator is not the only way a value reaches the database and parses the JSON differently (case-sensitively) from the converter.
 
 ---
 
