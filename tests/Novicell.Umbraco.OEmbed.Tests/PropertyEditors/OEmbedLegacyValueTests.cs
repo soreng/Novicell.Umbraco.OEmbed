@@ -1,5 +1,6 @@
 using Novicell.Umbraco.OEmbed.Models;
 using Novicell.Umbraco.OEmbed.PropertyEditors;
+using Novicell.Umbraco.OEmbed.Tests.TestSupport;
 using NSubstitute;
 using NUnit.Framework;
 using Umbraco.Cms.Core.Models.PublishedContent;
@@ -15,30 +16,7 @@ namespace Novicell.Umbraco.OEmbed.Tests.PropertyEditors;
 [TestFixture]
 public class OEmbedLegacyValueTests
 {
-    // Copied from the stored value in the Umbraco 9 package's demo content
-    // (Novicell.Umbraco.OEmbed.Website/uSync/v9/Content/home1.config).
-    private const string StoredByTheUmbraco9Package = """
-        {
-          "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-          "oembed": {
-            "type": "video",
-            "version": "1.0",
-            "title": "Rick Astley - Never Gonna Give You Up (Official Music Video)",
-            "author_name": "Rick Astley",
-            "author_url": "https://www.youtube.com/c/RickastleyCoUkOfficial",
-            "provider_name": "YouTube",
-            "provider_url": "https://www.youtube.com/",
-            "thumbnail_url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
-            "thumbnail_height": 360,
-            "thumbnail_width": 480,
-            "html": "<iframe width=\"200\" height=\"113\" src=\"https://www.youtube.com/embed/dQw4w9WgXcQ?feature=oembed\" frameborder=\"0\" allowfullscreen></iframe>",
-            "url": null,
-            "height": 113,
-            "width": 200,
-            "cache_age": 3600
-          }
-        }
-        """;
+    private const string StoredByTheUmbraco9Package = StoredValues.Umbraco9;
 
     private static List<OEmbedPropertyValue> Convert(string json)
     {

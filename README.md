@@ -92,6 +92,40 @@ Set `AllowPrivateNetworks` to `true` if you need to call a provider on `localhos
 
 A saved value is different: the stored `oembed` JSON, including its `html`, is sent by the client and is not checked against the provider. The property editor therefore never runs it. Saved embeds are shown as a thumbnail or link card, and only the picker modal fetches a fresh response and runs it. The server rejects a saved value that has a URL other than http(s), and the published value converter removes any such URL from what a site receives (and leaves out an item whose own URL is not http(s)), so values written by uSync, a database change or an older version are covered too. Neither verifies the `html`. Sites that render the stored `html` on the frontend should treat it as editor-supplied content.
 
+## Delivery API
+
+With Umbraco's [Delivery API](https://docs.umbraco.com/umbraco-cms/reference/content-delivery-api) enabled, an OEmbed picker property is an array with one object per embed. The names are camelCase and fixed, whatever the Razor model looks like, and a field the provider did not return is `null`:
+
+```json
+"video": [
+  {
+    "url": "https://vimeo.com/371827688",
+    "oembed": {
+      "type": "video",
+      "version": null,
+      "title": "Umbraco The Friendly CMS",
+      "authorName": "Umbraco",
+      "authorUrl": "https://vimeo.com/umbraco",
+      "providerName": "Vimeo",
+      "providerUrl": "https://vimeo.com/",
+      "thumbnailUrl": "https://i.vimeocdn.com/video/829453327-f06c….jpg",
+      "thumbnailHeight": 166,
+      "thumbnailWidth": 295,
+      "html": "<iframe src=\"https://player.vimeo.com/video/371827688\" …></iframe>",
+      "url": null,
+      "height": 240,
+      "width": 426,
+      "cacheAge": null
+    }
+  }
+]
+```
+
+- `type` is `video`, `photo`, `link` or `rich`. `html` is for `video` and `rich`; `url` is the image for `photo`.
+- A property with nothing usable is `[]`, never `null`.
+- A URL that is not http(s) is returned as `null`.
+- `html` is what the provider returned when the editor picked the URL and is not verified, so a headless site should treat it as editor-supplied content, as with the Razor model.
+
 ## Running the demo site
 
 ```bash
@@ -147,7 +181,7 @@ The workflow then builds with the version from the tag, publishes to NuGet.org a
 The Umbraco 17 package is a rewrite, and existing data types and content are not converted automatically:
 
 - The property editor alias is `Novicell.OEmbed.Picker` (it was `Novicell.OEmbed`). Create new data types with the new editor.
-- A property stores an array of `{ url, oembed }` items (it was one object), and the Razor model is `IEnumerable<OEmbedPropertyValue>`. Each item has `.Url` and `.OEmbed` (type, html, title, thumbnail and so on). The old single-object shape is still read.
+- A property stores an array of `{ url, oembed }` items (it was one object), and the Razor model is `IEnumerable<OEmbedPropertyValue>`. Each item has `.Url` and `.OEmbed` (type, html, title, thumbnail and so on). Content saved by the old version is still read: the single-object shape, and the old snake_case names (`author_name`, `thumbnail_url` and so on), so it keeps its author, provider and thumbnail in Razor and in the Delivery API. The stored JSON is not rewritten: it becomes the new shape when an editor picks the embed again. Until then the backoffice card for such an embed shows without its thumbnail.
 - The data type has `Allowed types`, `Multiple` and `Min`/`Max` settings instead of one type setting.
 - `IOEmbedService.GetOEmbedAsync` now takes an `OEmbedRequest` and returns an `Attempt` with an `OEmbedOperationStatus`; it does not throw.
 - The `Novicell:OEmbed:Autodiscover` setting is unchanged.
