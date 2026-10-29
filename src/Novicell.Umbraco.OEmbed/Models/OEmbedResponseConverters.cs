@@ -117,14 +117,17 @@ internal sealed class OEmbedTypeConverter : JsonConverter<OEmbedType>
 {
     public override OEmbedType Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        // Numbers are not accepted: Enum.TryParse would take "1" as a value.
-        if (reader.TokenType == JsonTokenType.String
-            && reader.GetString() is { Length: > 0 } text
-            && !char.IsDigit(text[0])
-            && Enum.TryParse(text, ignoreCase: true, out OEmbedType type)
-            && Enum.IsDefined(type))
+        // Only a name, in any casing. Enum.TryParse is not used because it also takes numbers (with a sign or
+        // a space), combinations such as "video, photo" and padded text.
+        if (reader.TokenType == JsonTokenType.String && reader.GetString() is { } text)
         {
-            return type;
+            foreach (OEmbedType type in Enum.GetValues<OEmbedType>())
+            {
+                if (string.Equals(type.ToString(), text, StringComparison.OrdinalIgnoreCase))
+                {
+                    return type;
+                }
+            }
         }
 
         throw new JsonException("The oEmbed type is missing or is not video, photo, link or rich.");
