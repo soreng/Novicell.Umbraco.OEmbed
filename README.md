@@ -133,12 +133,11 @@ With Umbraco's [Delivery API](https://docs.umbraco.com/umbraco-cms/reference/con
 The backoffice client is built into `wwwroot/App_Plugins/NovicellUmbracoOEmbed` and is not committed, so build it before running the test site (and before `dotnet pack`):
 
 ```bash
-cd src/Novicell.Umbraco.OEmbed/Client
-npm ci
-npm run build
+npm --prefix src/Novicell.Umbraco.OEmbed/Client ci
+npm --prefix src/Novicell.Umbraco.OEmbed/Client run build
 ```
 
-Then run the test site:
+Then run the test site, also from the repository root:
 
 ```bash
 dotnet run --project src/Novicell.Umbraco.OEmbed.TestSite
