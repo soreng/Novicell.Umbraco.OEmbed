@@ -1,6 +1,9 @@
+using System.Text.Json;
 using Novicell.Umbraco.OEmbed.Migrations;
 using Novicell.Umbraco.OEmbed.PropertyEditors;
+using NSubstitute;
 using NUnit.Framework;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.PropertyEditors;
 
 namespace Novicell.Umbraco.OEmbed.Tests.PropertyEditors;
@@ -13,15 +16,20 @@ namespace Novicell.Umbraco.OEmbed.Tests.PropertyEditors;
 public class OEmbedUmbraco9DataTypeTests
 {
     private const string OldUiAliasFallback = "Novicell.OEmbed";
+    private const string CurrentUiAlias = "Novicell.PropertyEditorUi.OEmbedPicker";
 
-    private static DataTypeRow Row(string? uiAlias, string? configuration) => new()
+    // The configuration as Umbraco hands it over: the stored JSON as a dictionary, with its values as read.
+    private static IDataType DataType(string? uiAlias, string configuration)
     {
-        NodeId = 1,
-        EditorAlias = Constants.PropertyEditors.OEmbedPicker,
-        EditorUiAlias = uiAlias,
-        DbType = "Ntext",
-        Configuration = configuration,
-    };
+        IDataType dataType = Substitute.For<IDataType>();
+        dataType.EditorAlias.Returns(Constants.PropertyEditors.OEmbedPicker);
+        dataType.EditorUiAlias = uiAlias;
+        dataType.ConfigurationData = JsonSerializer.Deserialize<Dictionary<string, object>>(configuration)!;
+        return dataType;
+    }
+
+    private static string AllowedTypes(IDataType dataType)
+        => string.Join(",", (string[])dataType.ConfigurationData["allowedTypes"]);
 
     [Test]
     public void The_Alias_Is_The_One_Of_The_Umbraco_9_Version()
@@ -34,21 +42,33 @@ public class OEmbedUmbraco9DataTypeTests
             Is.EqualTo("Novicell.OEmbed"));
     }
 
-    [TestCase("""{"Type":"Video"}""", """{"allowedTypes":["video"]}""")]
-    [TestCase("""{"Type":"Photo"}""", """{"allowedTypes":["photo"]}""")]
-    [TestCase("""{"Type":"Rich"}""", """{"allowedTypes":["rich"]}""")]
-    [TestCase("""{"Type":"Link"}""", """{"allowedTypes":["link"]}""")]
-    [TestCase("""{ "type": "video" }""", """{"allowedTypes":["video"]}""")]
-    [TestCase("""{"Type":""}""", """{"allowedTypes":[]}""")]
-    [TestCase("""{"Type":null}""", """{"allowedTypes":[]}""")]
-    [TestCase("""{"Type":3}""", """{"allowedTypes":[]}""")]
-    [TestCase("""{"Type":"movie"}""", """{"allowedTypes":[]}""")]
+    [TestCase("""{"Type":"Video"}""", "video")]
+    [TestCase("""{"Type":"Photo"}""", "photo")]
+    [TestCase("""{"Type":"Rich"}""", "rich")]
+    [TestCase("""{"Type":"Link"}""", "link")]
+    [TestCase("""{ "type": "video" }""", "video")]
+    [TestCase("""{"Type":""}""", "")]
+    [TestCase("""{"Type":null}""", "")]
+    [TestCase("""{"Type":3}""", "")]
+    [TestCase("""{"Type":"movie"}""", "")]
     public void The_Type_Setting_Becomes_The_Allowed_Types(string stored, string expected)
     {
-        DataTypeRow row = Row("Novicell.PropertyEditorUi.OEmbedPicker", stored);
+        IDataType dataType = DataType(CurrentUiAlias, stored);
 
-        Assert.That(Umbraco9DataTypes.Convert(row), Is.True);
-        Assert.That(row.Configuration, Is.EqualTo(expected));
+        Assert.That(Umbraco9DataTypes.Convert(dataType), Is.True);
+        Assert.That(AllowedTypes(dataType), Is.EqualTo(expected));
+        Assert.That(dataType.ConfigurationData, Has.Count.EqualTo(1), "the old setting is gone");
+    }
+
+    [Test]
+    public void The_Type_Is_Read_Whether_Umbraco_Gives_It_As_A_String_Or_As_JSON()
+    {
+        IDataType dataType = DataType(CurrentUiAlias, """{"Type":"Video"}""");
+        dataType.ConfigurationData = new Dictionary<string, object> { ["Type"] = "Photo" };
+
+        Umbraco9DataTypes.Convert(dataType);
+
+        Assert.That(AllowedTypes(dataType), Is.EqualTo("photo"));
     }
 
     [TestCase(null)]
@@ -56,56 +76,54 @@ public class OEmbedUmbraco9DataTypeTests
     [TestCase(OldUiAliasFallback)]
     public void A_Data_Type_Without_An_Editor_UI_Gets_Ours(string? uiAlias)
     {
-        DataTypeRow row = Row(uiAlias, """{"allowedTypes":["video"]}""");
+        IDataType dataType = DataType(uiAlias, """{"allowedTypes":["video"]}""");
 
-        Assert.That(Umbraco9DataTypes.Convert(row), Is.True);
-        Assert.That(row.EditorUiAlias, Is.EqualTo("Novicell.PropertyEditorUi.OEmbedPicker"));
-        Assert.That(row.Configuration, Is.EqualTo("""{"allowedTypes":["video"]}"""), "the configuration is already in the current shape");
+        Assert.That(Umbraco9DataTypes.Convert(dataType), Is.True);
+        Assert.That(dataType.EditorUiAlias, Is.EqualTo(CurrentUiAlias));
+        Assert.That(dataType.ConfigurationData.Keys, Is.EquivalentTo(new[] { "allowedTypes" }), "the configuration is already in the current shape");
     }
 
     [Test]
     public void An_Editor_UI_That_Was_Chosen_Is_Not_Replaced()
     {
-        DataTypeRow row = Row("Some.Other.PropertyEditorUi", """{"Type":"Video"}""");
+        IDataType dataType = DataType("Some.Other.PropertyEditorUi", """{"Type":"Video"}""");
 
-        Umbraco9DataTypes.Convert(row);
+        Umbraco9DataTypes.Convert(dataType);
 
-        Assert.That(row.EditorUiAlias, Is.EqualTo("Some.Other.PropertyEditorUi"));
-        Assert.That(row.Configuration, Is.EqualTo("""{"allowedTypes":["video"]}"""));
+        Assert.That(dataType.EditorUiAlias, Is.EqualTo("Some.Other.PropertyEditorUi"));
+        Assert.That(AllowedTypes(dataType), Is.EqualTo("video"));
     }
 
     [Test]
     public void A_Data_Type_From_The_Old_Version_Is_Converted_Once()
     {
-        DataTypeRow row = Row(null, """{"Type":"Video"}""");
+        IDataType dataType = DataType(null, """{"Type":"Video"}""");
 
-        Assert.That(Umbraco9DataTypes.Convert(row), Is.True);
-        Assert.That(Umbraco9DataTypes.Convert(row), Is.False, "nothing is left to convert");
-        Assert.That(row.EditorUiAlias, Is.EqualTo("Novicell.PropertyEditorUi.OEmbedPicker"));
-        Assert.That(row.Configuration, Is.EqualTo("""{"allowedTypes":["video"]}"""));
+        Assert.That(Umbraco9DataTypes.Convert(dataType), Is.True);
+        Assert.That(Umbraco9DataTypes.Convert(dataType), Is.False, "nothing is left to convert");
+        Assert.That(dataType.EditorUiAlias, Is.EqualTo(CurrentUiAlias));
+        Assert.That(AllowedTypes(dataType), Is.EqualTo("video"));
     }
 
     [TestCase("""{"allowedTypes":["video","rich"],"multiple":true,"validationLimit":{"min":1,"max":3}}""")]
     [TestCase("""{"Type":"Video","allowedTypes":["photo"],"multiple":false}""")]
+    [TestCase("""{"multiple":true}""")]
     [TestCase("""{}""")]
-    [TestCase("""[]""")]
-    [TestCase("not json")]
-    [TestCase("")]
-    [TestCase(null)]
-    public void A_Data_Type_In_The_Current_Shape_Is_Left_As_It_Is(string? configuration)
+    public void A_Data_Type_In_The_Current_Shape_Is_Left_As_It_Is(string configuration)
     {
-        DataTypeRow row = Row("Novicell.PropertyEditorUi.OEmbedPicker", configuration);
+        IDataType dataType = DataType(CurrentUiAlias, configuration);
+        Dictionary<string, object> before = new(dataType.ConfigurationData);
 
-        Assert.That(Umbraco9DataTypes.Convert(row), Is.False);
-        Assert.That(row.Configuration, Is.EqualTo(configuration));
-        Assert.That(row.EditorUiAlias, Is.EqualTo("Novicell.PropertyEditorUi.OEmbedPicker"));
+        Assert.That(Umbraco9DataTypes.Convert(dataType), Is.False);
+        Assert.That(dataType.ConfigurationData, Is.EqualTo(before));
+        Assert.That(dataType.EditorUiAlias, Is.EqualTo(CurrentUiAlias));
     }
 
     [Test]
     public void The_Editor_UI_Alias_Is_The_One_In_The_Client_Manifest()
     {
         // A different alias here would point the migrated data types at an editor UI that does not exist.
-        var manifest = File.ReadAllText(Path.Combine(
+        var manifest = System.IO.File.ReadAllText(Path.Combine(
             AppContext.BaseDirectory, "..", "..", "..", "..", "..",
             "src", "Novicell.Umbraco.OEmbed", "Client", "src", "property-editors", "oembed-picker", "manifests.ts"));
 

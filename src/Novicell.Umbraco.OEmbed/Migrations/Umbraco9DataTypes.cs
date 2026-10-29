@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Novicell.Umbraco.OEmbed.Models;
+using Umbraco.Cms.Core.Models;
 
 namespace Novicell.Umbraco.OEmbed.Migrations;
 
@@ -13,23 +14,23 @@ internal static class Umbraco9DataTypes
     public const string EditorUiAlias = "Novicell.PropertyEditorUi.OEmbedPicker";
 
     /// <summary>
-    /// Updates the row, and returns whether anything changed. It changes nothing a second time, and nothing
-    /// that is already in the current shape.
+    /// Updates the data type, and returns whether anything changed. It changes nothing a second time, and
+    /// nothing that is already in the current shape.
     /// </summary>
-    public static bool Convert(DataTypeRow row)
+    public static bool Convert(IDataType dataType)
     {
         var changed = false;
 
         // Without a UI alias Umbraco falls back to the editor alias, and no UI is registered under that name.
-        if (string.IsNullOrWhiteSpace(row.EditorUiAlias) || row.EditorUiAlias == row.EditorAlias)
+        if (string.IsNullOrWhiteSpace(dataType.EditorUiAlias) || dataType.EditorUiAlias == dataType.EditorAlias)
         {
-            row.EditorUiAlias = EditorUiAlias;
+            dataType.EditorUiAlias = EditorUiAlias;
             changed = true;
         }
 
-        if (ConvertConfiguration(row.Configuration) is { } configuration)
+        if (ConvertConfiguration(dataType.ConfigurationData) is { } configuration)
         {
-            row.Configuration = configuration;
+            dataType.ConfigurationData = configuration;
             changed = true;
         }
 
@@ -40,57 +41,53 @@ internal static class Umbraco9DataTypes
     /// Converts the setting of the old version, <c>{ "Type": "Video" }</c>, to the allowed types, or returns
     /// null when the configuration is anything else (including the current shape).
     /// </summary>
-    internal static string? ConvertConfiguration(string? configuration)
+    internal static IDictionary<string, object>? ConvertConfiguration(IDictionary<string, object>? configuration)
     {
-        if (string.IsNullOrWhiteSpace(configuration))
+        if (configuration is null)
         {
             return null;
         }
 
-        try
+        object? type = null;
+        var hasType = false;
+
+        foreach ((string key, object value) in configuration)
         {
-            using var document = JsonDocument.Parse(configuration);
-
-            if (document.RootElement.ValueKind != JsonValueKind.Object)
+            if (key.Equals("allowedTypes", StringComparison.OrdinalIgnoreCase)
+                || key.Equals("multiple", StringComparison.OrdinalIgnoreCase)
+                || key.Equals("validationLimit", StringComparison.OrdinalIgnoreCase))
             {
                 return null;
             }
 
-            string? type = null;
-            var hasType = false;
-
-            foreach (JsonProperty property in document.RootElement.EnumerateObject())
+            if (key.Equals("type", StringComparison.OrdinalIgnoreCase))
             {
-                if (property.NameEquals("allowedTypes") || property.NameEquals("multiple") || property.NameEquals("validationLimit"))
-                {
-                    return null;
-                }
-
-                if (property.Name.Equals("type", StringComparison.OrdinalIgnoreCase))
-                {
-                    hasType = true;
-                    type = property.Value.ValueKind == JsonValueKind.String ? property.Value.GetString() : null;
-                }
+                hasType = true;
+                type = value;
             }
-
-            if (!hasType)
-            {
-                return null;
-            }
-
-            // Empty, the old "(Any)", and anything that is not one of the four types means no restriction.
-            OEmbedType? allowed = Enum.GetValues<OEmbedType>()
-                .Cast<OEmbedType?>()
-                .FirstOrDefault(candidate => string.Equals(candidate.ToString(), type, StringComparison.OrdinalIgnoreCase));
-
-            return JsonSerializer.Serialize(new Dictionary<string, string[]>
-            {
-                ["allowedTypes"] = allowed is { } value ? [value.ToApiValue()] : [],
-            });
         }
-        catch (JsonException)
+
+        if (!hasType)
         {
             return null;
         }
+
+        // Umbraco gives the values as read from the JSON, so a text can be a string or a JsonElement.
+        var text = type switch
+        {
+            string value => value,
+            JsonElement { ValueKind: JsonValueKind.String } element => element.GetString(),
+            _ => null,
+        };
+
+        // Empty, the old "(Any)", and anything that is not one of the four types means no restriction.
+        OEmbedType? allowed = Enum.GetValues<OEmbedType>()
+            .Cast<OEmbedType?>()
+            .FirstOrDefault(candidate => string.Equals(candidate.ToString(), text, StringComparison.OrdinalIgnoreCase));
+
+        return new Dictionary<string, object>
+        {
+            ["allowedTypes"] = allowed is { } value2 ? new[] { value2.ToApiValue() } : Array.Empty<string>(),
+        };
     }
 }
