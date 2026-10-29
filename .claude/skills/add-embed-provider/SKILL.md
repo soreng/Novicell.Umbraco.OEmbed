@@ -144,7 +144,7 @@ its own `AddNovicellOEmbed` builder extension as the composition root.
 
 - `dotnet build src/Novicell.Umbraco.OEmbed/Novicell.Umbraco.OEmbed.csproj`
 - Test a real, live URL for the platform end-to-end in the demo site
-  (`demo/OEmbed.Testsite`) — paste it into the oEmbed picker and confirm it
+  (`src/Novicell.Umbraco.OEmbed.TestSite`) — paste it into the oEmbed picker and confirm it
   resolves with the expected `type` (photo/video/link/rich).
 
 ## 6. If it doesn't work

@@ -4,7 +4,7 @@ updates:
     directories:
       - /
       - /tests
-      - /demo/OEmbed.Testsite
+      - /src/Novicell.Umbraco.OEmbed.TestSite
     target-branch: v17/dev
     schedule:
       interval: weekly

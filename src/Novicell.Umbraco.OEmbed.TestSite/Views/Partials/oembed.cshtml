@@ -1,0 +1,33 @@
+@using Novicell.Umbraco.OEmbed.Models
+@model OEmbedValue
+@{
+    // Url is what the editor entered. OEmbed is what the provider returned, with typed properties (Type, Title,
+    // Html, Url, ThumbnailUrl, ...).
+    OEmbedResponse oembed = Model.OEmbed;
+}
+<figure data-type="@oembed.Type.ToString().ToLowerInvariant()">
+    @if (!string.IsNullOrWhiteSpace(oembed.Html))
+    {
+        @* The html is exactly what the provider returned when the editor picked the URL and it is not verified,
+           so treat it as editor-supplied content. *@
+        @Html.Raw(oembed.Html)
+    }
+    else if (oembed.Type == OEmbedType.Photo && oembed.Url is not null)
+    {
+        <img src="@oembed.Url" alt="@oembed.Title">
+    }
+    else
+    {
+        <a href="@Model.Url">@(oembed.Title ?? Model.Url.ToString())</a>
+    }
+
+    <figcaption>
+        @(oembed.Title ?? Model.Url.ToString())
+
+        @* A field the provider returned that has no property is read by its name, here one only Vimeo returns *@
+        @if (oembed.TryGetValue("video_id", out long videoId))
+        {
+            <span>(Vimeo video @videoId)</span>
+        }
+    </figcaption>
+</figure>
