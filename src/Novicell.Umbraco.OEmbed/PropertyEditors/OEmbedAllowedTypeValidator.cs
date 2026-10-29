@@ -14,7 +14,7 @@ namespace Novicell.Umbraco.OEmbed.PropertyEditors;
 /// <c>AllowedTypeValidator</c> and Multi Node Tree Picker <c>ObjectTypeValidator</c>
 /// (reusing its <c>validation_invalidObjectType</c> message for a per-item type mismatch).
 /// </summary>
-internal sealed class OEmbedAllowedTypeValidator : ITypedJsonValidator<List<OEmbedPropertyValue>, OEmbedPickerConfiguration>
+internal sealed class OEmbedAllowedTypeValidator : ITypedJsonValidator<List<OEmbedDto>, OEmbedPickerConfiguration>
 {
     private readonly ILocalizedTextService _localizedTextService;
 
@@ -22,7 +22,7 @@ internal sealed class OEmbedAllowedTypeValidator : ITypedJsonValidator<List<OEmb
         => _localizedTextService = localizedTextService;
 
     public IEnumerable<ValidationResult> Validate(
-        List<OEmbedPropertyValue>? value,
+        List<OEmbedDto>? value,
         OEmbedPickerConfiguration? configuration,
         string? valueType,
         PropertyValidationContext validationContext)
@@ -37,9 +37,11 @@ internal sealed class OEmbedAllowedTypeValidator : ITypedJsonValidator<List<OEmb
 
         // Posted JSON can contain explicit nulls (an item, or its oembed), which `required` does
         // not stop; they have no type, so they are not allowed.
-        foreach (OEmbedPropertyValue? item in value)
+        foreach (OEmbedDto? stored in value)
         {
-            if (item?.OEmbed is null || !allowed.Contains(item.OEmbed.Type.ToApiValue()))
+            OEmbedResponse? response = stored?.OEmbed;
+
+            if (response is null || !allowed.Contains(response.Type.ToApiValue()))
             {
                 results.Add(new ValidationResult(
                     _localizedTextService.Localize("validation", "invalidObjectType"),

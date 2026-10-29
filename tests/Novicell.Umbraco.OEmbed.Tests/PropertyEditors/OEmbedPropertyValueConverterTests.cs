@@ -34,11 +34,11 @@ public class OEmbedPropertyValueConverterTests
         return propertyType;
     }
 
-    private static List<OEmbedPropertyValue> Embeds(params string[] urls)
-        => urls.Select(url => new OEmbedPropertyValue
+    private static List<OEmbedValue> Embeds(params string[] urls)
+        => urls.Select(url => new OEmbedValue
         {
-            Url = url,
-            OEmbed = new OEmbedValue { Type = OEmbedType.Video },
+            Url = new Uri(url),
+            OEmbed = new OEmbedResponse { Type = OEmbedType.Video },
         }).ToList();
 
     [Test]
@@ -52,7 +52,7 @@ public class OEmbedPropertyValueConverterTests
     public void GetPropertyValueType_Is_A_Collection_When_The_Data_Type_Allows_Multiple()
     {
         Assert.That(_converter.GetPropertyValueType(PropertyType(Constants.PropertyEditors.OEmbedPicker, multiple: true)),
-            Is.EqualTo(typeof(IEnumerable<OEmbedPropertyValue>)));
+            Is.EqualTo(typeof(IEnumerable<OEmbedValue>)));
     }
 
     [TestCase(false)]
@@ -60,13 +60,13 @@ public class OEmbedPropertyValueConverterTests
     public void GetPropertyValueType_Is_A_Single_Value_When_The_Data_Type_Does_Not_Allow_Multiple(bool? multiple)
     {
         Assert.That(_converter.GetPropertyValueType(PropertyType(Constants.PropertyEditors.OEmbedPicker, multiple)),
-            Is.EqualTo(typeof(OEmbedPropertyValue)));
+            Is.EqualTo(typeof(OEmbedValue)));
     }
 
     [Test]
     public void Razor_Value_Is_The_Collection_When_Multiple()
     {
-        List<OEmbedPropertyValue> value = Embeds("https://a.test/1", "https://a.test/2");
+        List<OEmbedValue> value = Embeds("https://a.test/1", "https://a.test/2");
 
         object? result = _converter.ConvertIntermediateToObject(
             _owner, PropertyType(Constants.PropertyEditors.OEmbedPicker, multiple: true), PropertyCacheLevel.Element, value, false);
@@ -80,13 +80,13 @@ public class OEmbedPropertyValueConverterTests
         object? result = _converter.ConvertIntermediateToObject(
             _owner, PropertyType(Constants.PropertyEditors.OEmbedPicker, multiple: true), PropertyCacheLevel.Element, Embeds(), false);
 
-        Assert.That(result, Is.InstanceOf<IEnumerable<OEmbedPropertyValue>>().And.Empty);
+        Assert.That(result, Is.InstanceOf<IEnumerable<OEmbedValue>>().And.Empty);
     }
 
     [Test]
     public void Razor_Value_Is_One_Item_When_Not_Multiple()
     {
-        List<OEmbedPropertyValue> value = Embeds("https://a.test/1");
+        List<OEmbedValue> value = Embeds("https://a.test/1");
 
         object? result = _converter.ConvertIntermediateToObject(
             _owner, PropertyType(Constants.PropertyEditors.OEmbedPicker, multiple: false), PropertyCacheLevel.Element, value, false);
@@ -106,7 +106,7 @@ public class OEmbedPropertyValueConverterTests
     [Test]
     public void Razor_Value_Is_The_First_Item_When_A_Data_Type_Was_Changed_To_Single_After_Several_Were_Saved()
     {
-        List<OEmbedPropertyValue> value = Embeds("https://a.test/1", "https://a.test/2");
+        List<OEmbedValue> value = Embeds("https://a.test/1", "https://a.test/2");
 
         object? result = _converter.ConvertIntermediateToObject(
             _owner, PropertyType(Constants.PropertyEditors.OEmbedPicker, multiple: false), PropertyCacheLevel.Element, value, false);
@@ -121,10 +121,10 @@ public class OEmbedPropertyValueConverterTests
         var converter = (global::Umbraco.Cms.Core.PropertyEditors.DeliveryApi.IDeliveryApiPropertyValueConverter)_converter;
         IPublishedPropertyType propertyType = PropertyType(Constants.PropertyEditors.OEmbedPicker, multiple);
 
-        Assert.That(converter.GetDeliveryApiPropertyValueType(propertyType), Is.EqualTo(typeof(IEnumerable<Novicell.Umbraco.OEmbed.DeliveryApi.ApiOEmbed>)));
+        Assert.That(converter.GetDeliveryApiPropertyValueType(propertyType), Is.EqualTo(typeof(IEnumerable<Novicell.Umbraco.OEmbed.DeliveryApi.ApiOEmbedValue>)));
         Assert.That(
             converter.ConvertIntermediateToDeliveryApiObject(_owner, propertyType, PropertyCacheLevel.Element, Embeds("https://a.test/1"), false, false),
-            Is.InstanceOf<Novicell.Umbraco.OEmbed.DeliveryApi.ApiOEmbed[]>().And.Length.EqualTo(1));
+            Is.InstanceOf<Novicell.Umbraco.OEmbed.DeliveryApi.ApiOEmbedValue[]>().And.Length.EqualTo(1));
     }
 
     [Test]
@@ -138,10 +138,10 @@ public class OEmbedPropertyValueConverterTests
             """;
 
         var result = (_converter.ConvertSourceToIntermediate(_owner, PropertyType(Constants.PropertyEditors.OEmbedPicker), json, false)
-            as IEnumerable<OEmbedPropertyValue>)!.ToList();
+            as IEnumerable<OEmbedValue>)!.ToList();
 
         Assert.That(result, Has.Count.EqualTo(2));
-        Assert.That(result[0].Url, Is.EqualTo("https://youtube.com/watch?v=123"));
+        Assert.That(result[0].Url, Is.EqualTo(new Uri("https://youtube.com/watch?v=123")));
         Assert.That(result[0].OEmbed.Type, Is.EqualTo(OEmbedType.Video));
         Assert.That(result[1].OEmbed.Title, Is.EqualTo("Another video"));
     }
@@ -157,25 +157,24 @@ public class OEmbedPropertyValueConverterTests
             """;
 
         var result = (_converter.ConvertSourceToIntermediate(_owner, PropertyType(Constants.PropertyEditors.OEmbedPicker), json, false)
-            as IEnumerable<OEmbedPropertyValue>)!.ToList();
+            as IEnumerable<OEmbedValue>)!.ToList();
 
         Assert.That(result, Has.Count.EqualTo(1));
-        Assert.That(result[0].Url, Is.EqualTo("https://youtube.com/watch?v=123"));
+        Assert.That(result[0].Url, Is.EqualTo(new Uri("https://youtube.com/watch?v=123")));
         Assert.That(result[0].OEmbed.Title, Is.EqualTo("A test video"));
     }
 
     [Test]
     public void ConvertSourceToIntermediate_Parses_Real_World_Shape_Without_A_Version_Field()
     {
-        // The Management API's OEmbedResponseModel has no "version" field, so it's never present
-        // in what actually gets saved. Regression test: OEmbedValue.Version used to be
-        // `required`, which made every real embed fail to deserialize silently.
+        // A provider can leave the version out, so it is not always in what gets saved. Regression test:
+        // the version used to be `required`, which made every such embed fail to deserialize silently.
         const string json = """
             [{ "url": "https://youtube.com/watch?v=123", "oembed": { "type": "video", "width": 200, "height": 113 } }]
             """;
 
         var result = (_converter.ConvertSourceToIntermediate(_owner, PropertyType(Constants.PropertyEditors.OEmbedPicker), json, false)
-            as IEnumerable<OEmbedPropertyValue>)!.ToList();
+            as IEnumerable<OEmbedValue>)!.ToList();
 
         Assert.That(result, Has.Count.EqualTo(1));
         Assert.That(result[0].OEmbed.Type, Is.EqualTo(OEmbedType.Video));
@@ -189,7 +188,7 @@ public class OEmbedPropertyValueConverterTests
     public void ConvertSourceToIntermediate_Returns_Empty_For_Null_Empty_Or_Malformed_Value(string? source)
     {
         var result = _converter.ConvertSourceToIntermediate(_owner, PropertyType(Constants.PropertyEditors.OEmbedPicker), source, false)
-            as IEnumerable<OEmbedPropertyValue>;
+            as IEnumerable<OEmbedValue>;
 
         Assert.That(result, Is.Not.Null);
         Assert.That(result, Is.Empty);
@@ -198,12 +197,12 @@ public class OEmbedPropertyValueConverterTests
     [Test]
     public void ConvertIntermediateToObject_Returns_The_Parsed_Value_Unchanged()
     {
-        var value = new List<OEmbedPropertyValue>
+        var value = new List<OEmbedValue>
         {
             new()
             {
-                Url = "https://youtube.com/watch?v=123",
-                OEmbed = new OEmbedValue { Type = OEmbedType.Video, Version = "1.0" }
+                Url = new Uri("https://youtube.com/watch?v=123"),
+                OEmbed = new OEmbedResponse { Type = OEmbedType.Video, Version = "1.0" }
             }
         };
 

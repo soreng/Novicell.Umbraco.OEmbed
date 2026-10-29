@@ -4,7 +4,7 @@ export type ClientOptions = {
     baseUrl: 'https://localhost:44366' | (string & {});
 };
 
-export type OEmbedResponseModel = {
+export type OEmbedResponse = {
     type: OEmbedType;
     version?: string | null;
     width?: number | null;
@@ -12,14 +12,14 @@ export type OEmbedResponseModel = {
     url?: string | null;
     html?: string | null;
     title?: string | null;
-    authorUrl?: string | null;
-    authorName?: string | null;
-    providerUrl?: string | null;
-    providerName?: string | null;
-    thumbnailUrl?: string | null;
-    thumbnailWidth?: number | null;
-    thumbnailHeight?: number | null;
-    cacheAge?: number | null;
+    author_url?: string | null;
+    author_name?: string | null;
+    provider_url?: string | null;
+    provider_name?: string | null;
+    thumbnail_url?: string | null;
+    thumbnail_width?: number | null;
+    thumbnail_height?: number | null;
+    cache_age?: number | null;
 };
 
 export type OEmbedType = 'video' | 'photo' | 'link' | 'rich';
@@ -69,7 +69,7 @@ export type GetOEmbedResponses = {
     /**
      * OK
      */
-    200: OEmbedResponseModel;
+    200: OEmbedResponse;
 };
 
 export type GetOEmbedResponse = GetOEmbedResponses[keyof GetOEmbedResponses];

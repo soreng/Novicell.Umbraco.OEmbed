@@ -14,7 +14,7 @@ namespace Novicell.Umbraco.OEmbed.Tests.PropertyEditors;
 
 /// <summary>
 /// Exercises <see cref="OEmbedMinMaxValidator"/>/<see cref="OEmbedAllowedTypeValidator"/> the way
-/// <see cref="OEmbedDataValueEditor"/> actually wires them up - through the real
+/// <see cref="OEmbedPickerPropertyValueEditor"/> actually wires them up - through the real
 /// <see cref="TypedJsonValidatorRunner{TValue,TConfiguration}"/> and a real <see cref="IJsonSerializer"/>,
 /// mirroring <c>MediaPicker3PropertyValueEditor</c>'s own constructor exactly, with no extra normalization.
 /// </summary>
@@ -34,7 +34,7 @@ public class OEmbedValidationIntegrationTests
             .Returns("localized message");
     }
 
-    private TypedJsonValidatorRunner<List<OEmbedPropertyValue>, OEmbedPickerConfiguration> BuildRunner()
+    private TypedJsonValidatorRunner<List<OEmbedDto>, OEmbedPickerConfiguration> BuildRunner()
         => new(
             _jsonSerializer,
             new OEmbedMinMaxValidator(_localizedTextService),
@@ -84,7 +84,7 @@ public class OEmbedValidationIntegrationTests
         // Known, accepted limitation: Umbraco's own TypedJsonValidatorRunner/IJsonSerializer.TryDeserialize
         // has no tolerance for a bare JSON object where a JSON array is expected - the same class Media
         // Picker 3 relies on, unwrapped (MediaPicker3PropertyValueEditor's constructor adds it directly to
-        // Validators with no normalization either). This project's now-retired OEmbedPropertyValueJson
+        // Validators with no normalization either). An earlier, since removed, helper of this project
         // helper used to paper over this for legacy single-object content saved before multi-value support,
         // but we've deliberately chosen to match Media Picker 3's own risk profile here instead of keeping a
         // bespoke wrapper around Umbraco's shared validation infrastructure.

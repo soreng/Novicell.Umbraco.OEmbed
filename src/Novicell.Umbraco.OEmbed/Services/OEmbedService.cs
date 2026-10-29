@@ -1,11 +1,10 @@
 using System.Collections.Specialized;
 using System.Net;
+using System.Text.Json;
 using System.Web;
-using System.Xml;
-using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
+using Novicell.Umbraco.OEmbed.Configuration;
 using Novicell.Umbraco.OEmbed.Models;
 using Umbraco.Cms.Core;
 
@@ -17,7 +16,7 @@ internal class OEmbedService(
     IHttpClientFactory httpClientFactory,
     IOptions<OEmbedOptions> oembedOptions,
     ILogger<OEmbedService> logger)
-    : OEmbedServiceBase, IOEmbedService
+    : IOEmbedService
 {
     private readonly OEmbedOptions _options = oembedOptions.Value;
 
@@ -73,6 +72,8 @@ internal class OEmbedService(
 
         NameValueCollection query = HttpUtility.ParseQueryString(builder.Query);
         query.Set("url", request.Url.ToString());
+        // Only JSON is read. Some providers answer with XML unless they are asked for JSON (Flickr).
+        query.Set("format", "json");
         if (request.MaxWidth > 0)
         {
             query.Set("maxwidth", request.MaxWidth.ToString());
@@ -111,65 +112,9 @@ internal class OEmbedService(
 
         var mediaType = response.Content.Headers.ContentType?.MediaType;
 
-        return (IsJson(mediaType), IsXml(mediaType)) switch
-        {
-            (true, _) => await FromJsonResponseAsync(response, cancellationToken),
-            (_, true) => await FromXmlResponseAsync(response, cancellationToken),
-            _ => Attempt<OEmbedResponse?, OEmbedOperationStatus>.Fail(OEmbedOperationStatus.InvalidResponse)
-        };
-    }
-
-    private static async Task<Attempt<OEmbedResponse?, OEmbedOperationStatus>> FromXmlResponseAsync(
-        HttpResponseMessage response, CancellationToken cancellationToken)
-    {
-        Func<string?, int> i = (string? s) => s is not null && int.TryParse(s, out var n) ? n : 0;
-        Func<string?, Uri?> u = (string? s) => Uri.TryCreate(s, UriKind.RelativeOrAbsolute, out Uri? r) ? r : null;
-
-        try
-        {
-            await using Stream stream = await OEmbedHttp.ReadLimitedStreamAsync(response.Content, cancellationToken);
-
-            var settings = new XmlReaderSettings
-            {
-                Async = true,
-                DtdProcessing = DtdProcessing.Prohibit,
-                XmlResolver = null,
-                CloseInput = true
-            };
-
-            using var reader = XmlReader.Create(stream, settings);
-            XDocument xml = await XDocument.LoadAsync(reader, LoadOptions.None, cancellationToken);
-            XElement? oembed = xml.Element("oembed");
-
-            if (oembed == null || !Enum.TryParse(oembed.Element("type")?.Value, true, out OEmbedType type))
-            {
-                return Attempt<OEmbedResponse?, OEmbedOperationStatus>.Fail(OEmbedOperationStatus.InvalidResponse);
-            }
-
-            var result = new OEmbedResponse
-            {
-                Type = type,
-                Version = oembed.Element("version")?.Value ?? "1.0",
-                Title = oembed.Element("title")?.Value,
-                AuthorName = oembed.Element("author_name")?.Value,
-                AuthorUrl = u(oembed.Element("author_url")?.Value),
-                Height = i(oembed.Element("height")?.Value),
-                Width = i(oembed.Element("width")?.Value),
-                ProviderName = oembed.Element("provider_name")?.Value,
-                ProviderUrl = u(oembed.Element("provider_url")?.Value),
-                ThumbnailHeight = i(oembed.Element("thumbnail_height")?.Value),
-                ThumbnailWidth = i(oembed.Element("thumbnail_width")?.Value),
-                ThumbnailUrl = u(oembed.Element("thumbnail_url")?.Value),
-                Url = u(oembed.Element("url")?.Value),
-                Html = type == OEmbedType.Photo ? null : oembed.Element("html")?.Value
-            };
-
-            return Attempt<OEmbedResponse?, OEmbedOperationStatus>.Succeed(OEmbedOperationStatus.Success, result);
-        }
-        catch
-        {
-            return Attempt<OEmbedResponse?, OEmbedOperationStatus>.Fail(OEmbedOperationStatus.InvalidResponse);
-        }
+        return OEmbedMediaTypes.IsJson(mediaType)
+            ? await FromJsonResponseAsync(response, cancellationToken)
+            : Attempt<OEmbedResponse?, OEmbedOperationStatus>.Fail(OEmbedOperationStatus.InvalidResponse);
     }
 
     private static async Task<Attempt<OEmbedResponse?, OEmbedOperationStatus>> FromJsonResponseAsync(
@@ -183,25 +128,22 @@ internal class OEmbedService(
             return Attempt<OEmbedResponse?, OEmbedOperationStatus>.Fail(OEmbedOperationStatus.InvalidResponse);
         }
 
-        var settings = new JsonSerializerSettings
-        {
-            //MissingMemberHandling = MissingMemberHandling.Ignore,
-            Error = (_, args) => { args.ErrorContext.Handled = true; },
-        };
-
         try
         {
-            OEmbedResponse? result = JsonConvert.DeserializeObject<OEmbedResponse>(json, settings);
-
-            return Attempt<OEmbedResponse?, OEmbedOperationStatus>.If(
-                result is not null,
-                OEmbedOperationStatus.Success,
-                OEmbedOperationStatus.InvalidResponse,
-                result);
+            // An unexpected value in one field does not fail the response (it is read as null), and what
+            // has no property is kept in OEmbedResponse.Extra. Only a missing or invalid type does.
+            return ToAttempt(JsonSerializer.Deserialize<OEmbedResponse>(json));
         }
-        catch
+        catch (JsonException)
         {
             return Attempt<OEmbedResponse?, OEmbedOperationStatus>.Fail(OEmbedOperationStatus.InvalidResponse);
         }
     }
+
+    private static Attempt<OEmbedResponse?, OEmbedOperationStatus> ToAttempt(OEmbedResponse? result)
+        => Attempt<OEmbedResponse?, OEmbedOperationStatus>.If(
+            result is not null,
+            OEmbedOperationStatus.Success,
+            OEmbedOperationStatus.InvalidResponse,
+            result);
 }

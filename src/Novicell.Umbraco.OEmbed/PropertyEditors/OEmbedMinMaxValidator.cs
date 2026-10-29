@@ -15,7 +15,7 @@ namespace Novicell.Umbraco.OEmbed.PropertyEditors;
 /// (<c>MediaPicker3PropertyEditor.MediaPicker3PropertyValueEditor.MinMaxValidator</c>), including its
 /// <c>validation_multipleMediaNotAllowed</c>/<c>validation_entriesShort</c>/<c>validation_entriesExceed</c> checks.
 /// </summary>
-internal sealed class OEmbedMinMaxValidator : ITypedJsonValidator<List<OEmbedPropertyValue>, OEmbedPickerConfiguration>
+internal sealed class OEmbedMinMaxValidator : ITypedJsonValidator<List<OEmbedDto>, OEmbedPickerConfiguration>
 {
     private readonly ILocalizedTextService _localizedTextService;
 
@@ -23,7 +23,7 @@ internal sealed class OEmbedMinMaxValidator : ITypedJsonValidator<List<OEmbedPro
         => _localizedTextService = localizedTextService;
 
     public IEnumerable<ValidationResult> Validate(
-        List<OEmbedPropertyValue>? value,
+        List<OEmbedDto>? value,
         OEmbedPickerConfiguration? configuration,
         string? valueType,
         PropertyValidationContext validationContext)

@@ -57,9 +57,9 @@ public class OEmbedDeliveryApiTests
     {
         var converter = (IDeliveryApiPropertyValueConverter)_converter;
 
-        Assert.That(converter.GetDeliveryApiPropertyValueType(_propertyType), Is.EqualTo(typeof(IEnumerable<ApiOEmbed>)));
+        Assert.That(converter.GetDeliveryApiPropertyValueType(_propertyType), Is.EqualTo(typeof(IEnumerable<ApiOEmbedValue>)));
         Assert.That(converter.GetDeliveryApiPropertyCacheLevel(_propertyType), Is.EqualTo(PropertyCacheLevel.Element));
-        Assert.That(DeliveryApiValue(StoredValues.Current), Is.InstanceOf<IEnumerable<ApiOEmbed>>());
+        Assert.That(DeliveryApiValue(StoredValues.Current), Is.InstanceOf<IEnumerable<ApiOEmbedValue>>());
     }
 
     [Test]
@@ -93,36 +93,6 @@ public class OEmbedDeliveryApiTests
             Json(StoredValues.Current));
     }
 
-    [Test]
-    public void A_Value_Saved_By_A_Pre_Release_Build_Is_Returned_With_The_Same_Names_As_Any_Other()
-    {
-        AssertSameJson(
-            """
-            [
-              {
-                "url": "https://www.youtube.com/watch?v=XbWCjWBuTDU",
-                "oembed": {
-                  "type": "video",
-                  "version": null,
-                  "title": "BMW 840i Harman Kardon Upgrade",
-                  "authorName": "Cambridge Car Audio",
-                  "authorUrl": "https://www.youtube.com/@CambridgeCarAudio",
-                  "providerName": "YouTube",
-                  "providerUrl": "https://www.youtube.com/",
-                  "thumbnailUrl": "https://i.ytimg.com/vi/XbWCjWBuTDU/hqdefault.jpg",
-                  "thumbnailHeight": 360,
-                  "thumbnailWidth": 480,
-                  "html": "<iframe width=\"200\" height=\"113\" src=\"https://www.youtube.com/embed/XbWCjWBuTDU?feature=oembed\" frameborder=\"0\" allowfullscreen></iframe>",
-                  "url": null,
-                  "height": 113,
-                  "width": 200,
-                  "cacheAge": null
-                }
-              }
-            ]
-            """,
-            Json(StoredValues.PreRelease));
-    }
 
     [Test]
     public void A_Value_Saved_By_The_Umbraco_9_Package_Is_Returned_With_The_Same_Names_As_Any_Other()
@@ -190,6 +160,49 @@ public class OEmbedDeliveryApiTests
         Assert.That((string?)oembed["type"], Is.EqualTo(type));
     }
 
+    private const string StoredWithExtras = """
+        [{ "url": "https://vimeo.com/1",
+           "oembed": { "type": "video", "title": "A", "video_id": 1, "is_plus": "0",
+                       "upload_date": "2019-10-02 10:10:10", "nested": { "a_b": [1, 2] } } }]
+        """;
+
+    [Test]
+    public void What_The_Provider_Returned_Without_A_Property_Is_Returned_In_Extra_With_The_Providers_Names()
+    {
+        JsonNode oembed = JsonNode.Parse(Json(StoredWithExtras))!.AsArray()[0]!["oembed"]!;
+
+        Assert.That(oembed["extra"]!.AsObject().Select(field => field.Key),
+            Is.EquivalentTo(new[] { "video_id", "is_plus", "upload_date", "nested" }));
+        Assert.That((int?)oembed["extra"]!["video_id"], Is.EqualTo(1), "a number stays a number");
+        Assert.That((string?)oembed["extra"]!["is_plus"], Is.EqualTo("0"), "text stays text");
+        Assert.That((int?)oembed["extra"]!["nested"]!["a_b"]![1], Is.EqualTo(2), "nothing is renamed or flattened");
+        Assert.That(oembed.AsObject().ContainsKey("video_id"), Is.False, "the typed fields are not mixed with the extras");
+    }
+
+    [Test]
+    public void Extra_Is_Left_Out_When_The_Provider_Returned_Nothing_More()
+    {
+        JsonNode oembed = JsonNode.Parse(Json(StoredValues.Current))!.AsArray()[0]!["oembed"]!;
+
+        Assert.That(oembed.AsObject().ContainsKey("extra"), Is.False);
+    }
+
+    [Test]
+    public void The_Names_In_Extra_Do_Not_Depend_On_The_Serializer_Settings()
+    {
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        };
+
+        JsonNode oembed = JsonNode.Parse(Json(StoredWithExtras, options))!.AsArray()[0]!["oembed"]!;
+
+        Assert.That(oembed["extra"]!.AsObject().ContainsKey("video_id"), Is.True);
+        Assert.That(oembed["extra"]!.AsObject().ContainsKey("videoId"), Is.False);
+    }
+
     [Test]
     public void A_Script_Capable_Url_Never_Reaches_The_Api()
     {
@@ -232,6 +245,6 @@ public class OEmbedDeliveryApiTests
             _converter.ConvertSourceToIntermediate(_owner, _propertyType, StoredValues.Current, false),
             false);
 
-        Assert.That(razor, Is.InstanceOf<IEnumerable<OEmbedPropertyValue>>());
+        Assert.That(razor, Is.InstanceOf<IEnumerable<OEmbedValue>>());
     }
 }

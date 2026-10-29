@@ -31,7 +31,7 @@ Earlier versions of the package target Umbraco 9.
 - **Provider matching** via Umbraco's `EmbedProvidersCollection`, with optional **auto-discovery** for providers that advertise an oEmbed endpoint via `<link>` tags.
 - **Management API endpoint** for the backoffice to request embeds.
 - **Backoffice UI** delivered as static assets (Lit + Vite + TypeScript).
-- Handles both **JSON** and **XML** oEmbed responses.
+- Reads **JSON** oEmbed responses: the request asks the provider for JSON (`format=json`), and keeps everything the provider returned.
 
 ## Project structure
 
@@ -48,7 +48,7 @@ Inside the package, namespaces mirror folders: `Api`, `Composers`, `Configuratio
 1. A URL is submitted (from the backoffice or via `IOEmbedService.GetOEmbedAsync`).
 2. `OEmbedApiEndpointProvider` matches the URL against the registered `EmbedProvidersCollection` to find a provider's oEmbed API endpoint.
 3. If no provider matches and auto-discovery is enabled, `OEmbedApiEndpointDiscoveryProvider` inspects the target page for an advertised oEmbed endpoint.
-4. The endpoint is called and the JSON/XML response is parsed into an `OEmbedResponse`.
+4. The endpoint is called with `format=json` and the JSON response is read into an `OEmbedResponse`. A provider that can only answer with XML is not supported.
 5. The result is returned as an `Attempt<OEmbedResponse?, OEmbedOperationStatus>`, surfacing clear status outcomes (e.g. `ProviderNotSupported`, `EmbedNotFound`, `InvalidResponse`).
 
 ## Getting started
@@ -90,7 +90,7 @@ Whatever the server requests on an editor's behalf is limited: only `http` and `
 
 Set `AllowPrivateNetworks` to `true` if you need to call a provider on `localhost`, or if the server can only reach the internet through an outbound proxy. With the setting off, the server connects directly and ignores proxy settings, because a proxy would hide the real destination from the address check. With it on, no address check is made and the normal proxy settings apply, so the proxy has to restrict what can be reached. The setting is read when the HTTP client is created, so changing it needs a restart.
 
-A saved value is different: the stored `oembed` JSON, including its `html`, is sent by the client and is not checked against the provider. The property editor therefore never runs it. Saved embeds are shown as a thumbnail or link card, and only the picker modal fetches a fresh response and runs it. The server rejects a saved value that has a URL other than http(s), and the published value converter removes any such URL from what a site receives (and leaves out an item whose own URL is not http(s)), so values written by uSync, a database change or an older version are covered too. Neither verifies the `html`. Sites that render the stored `html` on the frontend should treat it as editor-supplied content.
+A saved value is different: the stored `oembed` JSON, including its `html`, is sent by the client and is not checked against the provider. The property editor therefore never runs it. Saved embeds are shown as a thumbnail or link card, and only the picker modal fetches a fresh response and runs it. The server rejects a saved value that has a URL other than http(s), and the published value converter removes any such URL from what a site receives (and leaves out an item whose own URL is not http(s)), so values written by uSync, a database change or an older version are covered too. Neither verifies the `html`. Sites that render the stored `html` on the frontend should treat it as editor-supplied content. The same goes for the fields that have no property on `OEmbedResponse` (`Extra`, read with `TryGetValue`): they are exactly what the provider sent, and unlike the known URL fields they are not checked.
 
 ## Delivery API
 
@@ -115,13 +115,15 @@ With Umbraco's [Delivery API](https://docs.umbraco.com/umbraco-cms/reference/con
       "url": null,
       "height": 240,
       "width": 426,
-      "cacheAge": null
+      "cacheAge": null,
+      "extra": { "video_id": 371827688, "is_plus": "0", "account_type": "enterprise" }
     }
   }
 ]
 ```
 
 - `type` is `video`, `photo`, `link` or `rich`. `html` is for `video` and `rich`; `url` is the image for `photo`.
+- `extra` holds everything else the provider returned, with the provider's own names (they are not camelCased), and is left out when there is nothing more. Like `html`, it is exactly what the provider sent and is not checked, so treat it as editor-supplied content.
 - A property with nothing usable is `[]`, never `null`.
 - A URL that is not http(s) is returned as `null`.
 - `html` is what the provider returned when the editor picked the URL and is not verified, so a headless site should treat it as editor-supplied content, as with the Razor model.
@@ -181,7 +183,7 @@ The workflow then builds with the version from the tag, publishes to NuGet.org a
 The Umbraco 17 package is a rewrite, and existing data types and content are not converted automatically:
 
 - The property editor alias is `Novicell.OEmbed.Picker` (it was `Novicell.OEmbed`). Create new data types with the new editor.
-- A property stores an array of `{ url, oembed }` items (it was one object), and the Razor model is `OEmbedPropertyValue?` when the data type does not allow multiple embeds and `IEnumerable<OEmbedPropertyValue>` when it does, like Umbraco's media picker (the Delivery API is always an array). Each item has `.Url` and `.OEmbed` (type, html, title, thumbnail and so on). The `oembed` object is stored with the names of the oEmbed specification (`author_name`, `thumbnail_url` and so on), as the provider returned it and as the old version stored it, so the only difference in the database is the array around the items. The backoffice itself works with camelCase names and the property editor converts them when a value is saved and loaded. Content saved by the old version is read as it is, the single-object shape included, and shows in the backoffice, in Razor and in the Delivery API without being converted.
+- A property stores an array of `{ url, oembed }` items (it was one object), and the Razor model is `OEmbedValue?` when the data type does not allow multiple embeds and `IEnumerable<OEmbedValue>` when it does, like Umbraco's media picker (the Delivery API is always an array). Each item has `.Url` and `.OEmbed`, which is the `OEmbedResponse` (type, html, title, thumbnail and so on, as typed properties). The `oembed` object in the database is the response as the provider returned it, with the provider's names (`author_name`, `thumbnail_url` and so on) and every other field it sent, which is also what the old version stored, so the only difference in the database is the array around the items. Fields without a property are kept and read with `OEmbedResponse.TryGetValue<T>("name", out value)`. The property value converter reads the stored object leniently (a width sent as text is still a number, a URL that cannot be read is null), so one odd value never makes the whole property empty. Content saved by the old version is read as it is, the single-object shape included, and shows in the backoffice, in Razor and in the Delivery API without being converted.
 - The data type has `Allowed types`, `Multiple` and `Min`/`Max` settings instead of one type setting.
 - `IOEmbedService.GetOEmbedAsync` now takes an `OEmbedRequest` and returns an `Attempt` with an `OEmbedOperationStatus`; it does not throw.
 - The `Novicell:OEmbed:Autodiscover` setting is unchanged.

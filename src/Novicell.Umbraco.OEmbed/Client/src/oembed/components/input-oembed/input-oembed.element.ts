@@ -198,15 +198,15 @@ export class InputOEmbedElement
   }
 
   #detail(oembed: OEmbedValueModel["oembed"]): string {
-    return [oembed.providerName, oembed.authorName].filter(Boolean).join(" · ");
+    return [oembed.provider_name, oembed.author_name].filter(Boolean).join(" · ");
   }
 
   #dimensions(oembed: OEmbedValueModel["oembed"]): {
     width?: number;
     height?: number;
   } {
-    if (oembed.thumbnailWidth && oembed.thumbnailHeight) {
-      return { width: oembed.thumbnailWidth, height: oembed.thumbnailHeight };
+    if (oembed.thumbnail_width && oembed.thumbnail_height) {
+      return { width: oembed.thumbnail_width, height: oembed.thumbnail_height };
     }
     if (oembed.width && oembed.height) {
       return { width: oembed.width, height: oembed.height };
@@ -226,9 +226,9 @@ export class InputOEmbedElement
   }
 
   #renderPreview(value: OEmbedValueModel) {
-    if (value.oembed.thumbnailUrl) {
+    if (value.oembed.thumbnail_url) {
       return html`<img
-        src=${value.oembed.thumbnailUrl}
+        src=${value.oembed.thumbnail_url}
         alt=${value.oembed.title ?? value.url}
       />`;
     }

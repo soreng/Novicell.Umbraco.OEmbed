@@ -1,6 +1,7 @@
 using System.Globalization;
 using Novicell.Umbraco.OEmbed.Models;
 using Novicell.Umbraco.OEmbed.PropertyEditors;
+using Novicell.Umbraco.OEmbed.Tests.TestSupport;
 using NSubstitute;
 using NUnit.Framework;
 using Umbraco.Cms.Core.Models.Validation;
@@ -24,10 +25,10 @@ public class OEmbedAllowedTypeValidatorTests
         _validator = new OEmbedAllowedTypeValidator(_localizedTextService);
     }
 
-    private static OEmbedPropertyValue Embed(OEmbedType type, string url) => new()
+    private static OEmbedValue Embed(OEmbedType type, string url) => new()
     {
-        Url = url,
-        OEmbed = new OEmbedValue { Type = type },
+        Url = new Uri(url),
+        OEmbed = new OEmbedResponse { Type = type },
     };
 
     private static OEmbedPickerConfiguration Config(string[]? allowedTypes = null) => new()
@@ -42,15 +43,15 @@ public class OEmbedAllowedTypeValidatorTests
     public void Null_Value_Or_Configuration_Is_Not_Validated()
     {
         Assert.That(_validator.Validate(null, Config(allowedTypes: ["video"]), null, Context()), Is.Empty);
-        Assert.That(_validator.Validate([Embed(OEmbedType.Video, "https://youtube.com/watch?v=1")], null, null, Context()), Is.Empty);
+        Assert.That(_validator.Validate(OEmbedDtos.Of([Embed(OEmbedType.Video, "https://youtube.com/watch?v=1")]), null, null, Context()), Is.Empty);
     }
 
     [Test]
     public void Allowed_Type_Passes()
     {
-        List<OEmbedPropertyValue> value = [Embed(OEmbedType.Photo, "https://flickr.com/photo/1")];
+        List<OEmbedValue> value = [Embed(OEmbedType.Photo, "https://flickr.com/photo/1")];
 
-        var results = _validator.Validate(value, Config(allowedTypes: ["photo", "video"]), null, Context());
+        var results = _validator.Validate(OEmbedDtos.Of(value), Config(allowedTypes: ["photo", "video"]), null, Context());
 
         Assert.That(results, Is.Empty);
     }
@@ -60,9 +61,9 @@ public class OEmbedAllowedTypeValidatorTests
     {
         // Reuses Umbraco's own "validation"/"invalidObjectType" key, same as the Multi Node
         // Tree Picker's ObjectTypeValidator, instead of a hardcoded English string.
-        List<OEmbedPropertyValue> value = [Embed(OEmbedType.Photo, "https://flickr.com/photo/1")];
+        List<OEmbedValue> value = [Embed(OEmbedType.Photo, "https://flickr.com/photo/1")];
 
-        var results = _validator.Validate(value, Config(allowedTypes: ["video"]), null, Context());
+        var results = _validator.Validate(OEmbedDtos.Of(value), Config(allowedTypes: ["video"]), null, Context());
 
         Assert.That(results, Is.Not.Empty);
         _localizedTextService.Received(1).Localize(
@@ -75,13 +76,13 @@ public class OEmbedAllowedTypeValidatorTests
     [Test]
     public void Disallowed_Type_Produces_One_Result_Per_Invalid_Item()
     {
-        List<OEmbedPropertyValue> value =
+        List<OEmbedValue> value =
         [
             Embed(OEmbedType.Video, "https://youtube.com/watch?v=1"),
             Embed(OEmbedType.Photo, "https://flickr.com/photo/1"),
         ];
 
-        var results = _validator.Validate(value, Config(allowedTypes: ["video"]), null, Context());
+        var results = _validator.Validate(OEmbedDtos.Of(value), Config(allowedTypes: ["video"]), null, Context());
 
         Assert.That(results.Count(), Is.EqualTo(1));
     }
@@ -90,10 +91,10 @@ public class OEmbedAllowedTypeValidatorTests
     public void Explicit_Nulls_In_The_Posted_Value_Are_Not_Allowed_And_Do_Not_Throw()
     {
         // `required` does not stop an explicit JSON null: [null], or "oembed": null.
-        var nullResponse = new OEmbedPropertyValue { Url = "https://youtube.com/watch?v=1", OEmbed = null! };
-        List<OEmbedPropertyValue> value = [null!, nullResponse];
+        var nullResponse = new OEmbedValue { Url = new Uri("https://youtube.com/watch?v=1"), OEmbed = null! };
+        List<OEmbedValue> value = [null!, nullResponse];
 
-        var results = _validator.Validate(value, Config(allowedTypes: ["video"]), null, Context()).ToList();
+        var results = _validator.Validate(OEmbedDtos.Of(value), Config(allowedTypes: ["video"]), null, Context()).ToList();
 
         Assert.That(results, Has.Count.EqualTo(2));
     }
@@ -101,9 +102,9 @@ public class OEmbedAllowedTypeValidatorTests
     [Test]
     public void Empty_AllowedTypes_Means_Unrestricted()
     {
-        List<OEmbedPropertyValue> value = [Embed(OEmbedType.Photo, "https://flickr.com/photo/1")];
+        List<OEmbedValue> value = [Embed(OEmbedType.Photo, "https://flickr.com/photo/1")];
 
-        var results = _validator.Validate(value, Config(allowedTypes: []), null, Context());
+        var results = _validator.Validate(OEmbedDtos.Of(value), Config(allowedTypes: []), null, Context());
 
         Assert.That(results, Is.Empty);
     }
@@ -111,9 +112,9 @@ public class OEmbedAllowedTypeValidatorTests
     [Test]
     public void Allowed_Type_Check_Is_Case_Insensitive()
     {
-        List<OEmbedPropertyValue> value = [Embed(OEmbedType.Photo, "https://flickr.com/photo/1")];
+        List<OEmbedValue> value = [Embed(OEmbedType.Photo, "https://flickr.com/photo/1")];
 
-        var results = _validator.Validate(value, Config(allowedTypes: ["PHOTO"]), null, Context());
+        var results = _validator.Validate(OEmbedDtos.Of(value), Config(allowedTypes: ["PHOTO"]), null, Context());
 
         Assert.That(results, Is.Empty);
     }

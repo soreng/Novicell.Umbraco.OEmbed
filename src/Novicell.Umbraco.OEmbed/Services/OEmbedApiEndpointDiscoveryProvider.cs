@@ -9,7 +9,7 @@ namespace Novicell.Umbraco.OEmbed.Services;
 internal class OEmbedApiEndpointDiscoveryProvider(
     IHttpClientFactory httpClientFactory,
     ILogger<OEmbedApiEndpointDiscoveryProvider> logger) :
-    OEmbedServiceBase, IOEmbedApiEndpointDiscoveryProvider
+    IOEmbedApiEndpointDiscoveryProvider
 {
     internal record Link(string Href, string Type);
 
@@ -132,7 +132,7 @@ internal class OEmbedApiEndpointDiscoveryProvider(
                 .Select(x => x[(RelAttributeName.Length + 1)..].Trim('"'))
                 .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
 
-            if (!IsAlternateOrAlternative(rel))
+            if (!OEmbedMediaTypes.IsAlternateOrAlternative(rel))
             {
                 continue;
             }
@@ -168,7 +168,7 @@ internal class OEmbedApiEndpointDiscoveryProvider(
         foreach (HtmlNode? node in nodes)
         {
             var rel = HttpUtility.HtmlDecode(node.GetAttributeValue(RelAttributeName, string.Empty));
-            if (!IsAlternateOrAlternative(rel))
+            if (!OEmbedMediaTypes.IsAlternateOrAlternative(rel))
             {
                 continue;
             }
@@ -182,23 +182,9 @@ internal class OEmbedApiEndpointDiscoveryProvider(
 
     private static Uri? GetEndpointFromLinks(ICollection<Link> links)
     {
-        if (!links.Any())
-        {
-            return null;
-        }
+        // Only the JSON endpoint is used: that is the only format the service reads.
+        Link? json = links.FirstOrDefault(x => OEmbedMediaTypes.IsJsonOEmbed(x.Type));
 
-        Link? json = links.FirstOrDefault(x => IsJsonAndOEmbed(x.Type));
-        if (Uri.TryCreate(json?.Href, UriKind.RelativeOrAbsolute, out Uri? jsonUrl))
-        {
-            return jsonUrl;
-        }
-
-        Link? xml = links.FirstOrDefault(x => IsXmlAndOEmbed(x.Type));
-        if (Uri.TryCreate(xml?.Href, UriKind.RelativeOrAbsolute, out Uri? xmlUrl))
-        {
-            return xmlUrl;
-        }
-
-        return null;
+        return Uri.TryCreate(json?.Href, UriKind.RelativeOrAbsolute, out Uri? url) ? url : null;
     }
 }

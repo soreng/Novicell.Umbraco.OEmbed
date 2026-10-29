@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 using Novicell.Umbraco.OEmbed;
 using Novicell.Umbraco.OEmbed.Models;
 using Novicell.Umbraco.OEmbed.Services;
-using Novicell.Umbraco.OEmbed.Api.Models;
 
 namespace Novicell.Umbraco.OEmbed.Api.Controllers;
 
@@ -19,7 +18,7 @@ public class OEmbedApiController(IOEmbedService oembedService)
     private const int MaxDimension = 4096;
 
     [HttpGet("oembed")]
-    [ProducesResponseType<OEmbedResponseModel>(StatusCodes.Status200OK)]
+    [ProducesResponseType<OEmbedResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetOEmbedAsync(
@@ -39,28 +38,7 @@ public class OEmbedApiController(IOEmbedService oembedService)
             .GetOEmbedAsync(request, cancellationToken);
 
         return response.Success
-            ? Ok(MapToModel(response.Result!))
+            ? Ok(response.Result)
             : OEmbedOperationStatusResult(response.Status);
     }
-
-    private static OEmbedResponseModel MapToModel(OEmbedResponse response)
-    {
-        return new OEmbedResponseModel(
-            response.Type,
-            response.Version,
-            response.Width,
-            response.Height,
-            response.Url,
-            response.Html,
-            response.Title,
-            response.AuthorUrl,
-            response.AuthorName,
-            response.ProviderUrl,
-            response.ProviderName,
-            response.ThumbnailUrl,
-            response.ThumbnailWidth,
-            response.ThumbnailHeight,
-            response.CacheAge);
-    }
-
 }

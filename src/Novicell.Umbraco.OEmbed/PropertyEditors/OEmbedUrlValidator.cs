@@ -22,7 +22,7 @@ namespace Novicell.Umbraco.OEmbed.PropertyEditors;
 /// This is the early, friendly check. The published value converter applies the same rule to what it
 /// produces, because a value does not only reach the database through this validator.
 /// </remarks>
-internal sealed class OEmbedUrlValidator : ITypedJsonValidator<List<OEmbedPropertyValue>, OEmbedPickerConfiguration>
+internal sealed class OEmbedUrlValidator : ITypedJsonValidator<List<OEmbedDto>, OEmbedPickerConfiguration>
 {
     private readonly ILocalizedTextService _localizedTextService;
 
@@ -30,7 +30,7 @@ internal sealed class OEmbedUrlValidator : ITypedJsonValidator<List<OEmbedProper
         => _localizedTextService = localizedTextService;
 
     public IEnumerable<ValidationResult> Validate(
-        List<OEmbedPropertyValue>? value,
+        List<OEmbedDto>? value,
         OEmbedPickerConfiguration? configuration,
         string? valueType,
         PropertyValidationContext validationContext)
@@ -42,7 +42,7 @@ internal sealed class OEmbedUrlValidator : ITypedJsonValidator<List<OEmbedProper
 
         // Posted JSON can contain explicit nulls (an item, or its oembed), which `required` does not
         // stop; IsSafe treats those as invalid.
-        return value.Any(item => !OEmbedUrlSafety.IsSafe(item))
+        return value.Any(item => !OEmbedUrlSafety.IsSafe(item?.ToValue()))
             ? [new ValidationResult(_localizedTextService.Localize("validation", "invalidPattern"), ["value"])]
             : [];
     }

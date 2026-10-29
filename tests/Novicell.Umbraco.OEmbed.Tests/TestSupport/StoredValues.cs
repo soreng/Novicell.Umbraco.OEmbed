@@ -55,29 +55,4 @@ internal static class StoredValues
           }
         ]
         """;
-
-    // What pre-release builds of this version stored (see the demo site's earlier content): camelCase
-    // names, and no version or cache age.
-    internal const string PreRelease = """
-        [
-          {
-            "url": "https://www.youtube.com/watch?v=XbWCjWBuTDU",
-            "oembed": {
-              "type": "video",
-              "width": 200,
-              "height": 113,
-              "url": null,
-              "html": "<iframe width=\"200\" height=\"113\" src=\"https://www.youtube.com/embed/XbWCjWBuTDU?feature=oembed\" frameborder=\"0\" allowfullscreen></iframe>",
-              "title": "BMW 840i Harman Kardon Upgrade",
-              "authorUrl": "https://www.youtube.com/@CambridgeCarAudio",
-              "authorName": "Cambridge Car Audio",
-              "providerUrl": "https://www.youtube.com/",
-              "providerName": "YouTube",
-              "thumbnailUrl": "https://i.ytimg.com/vi/XbWCjWBuTDU/hqdefault.jpg",
-              "thumbnailWidth": 480,
-              "thumbnailHeight": 360
-            }
-          }
-        ]
-        """;
 }

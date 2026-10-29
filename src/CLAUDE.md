@@ -12,13 +12,12 @@ One Razor class library, `src/Novicell.Umbraco.OEmbed`, shipped as the NuGet pac
 src/Novicell.Umbraco.OEmbed/
 ├── Api/
 │   ├── Controllers/       OEmbedApiController, OEmbedApiControllerBase
-│   ├── Models/            OEmbedResponseModel (API-shape DTO)
 │   └── Configuration/     OEmbedApiOperationIdHandler, OEmbedApiOperationSecurityFilter
 ├── Composers/             OEmbedComposer
-├── Configuration/         UmbracoBuilderExtensions (AddNovicellOEmbed)
+├── Configuration/         UmbracoBuilderExtensions (AddNovicellOEmbed), OEmbedOptions, OEmbedHttpClientExtensions
 ├── EmbedProviders/        Reddit, Spotify, TikTok (added to Umbraco's EmbedProvidersCollection)
-├── Models/                OEmbedResponse (what a provider returned), OEmbedValue (what is stored and given to Razor), OEmbedPropertyValue, OEmbedRequest, OEmbedType, OEmbedOptions, ...
-├── PropertyEditors/       OEmbedDataEditor, OEmbedDataValueEditor, validators, value converter
+├── Models/                OEmbedResponse (what a provider returned, and what is stored), OEmbedValue (one embed as Razor gets it), OEmbedRequest, OEmbedType, the lenient JSON converters, ...
+├── PropertyEditors/       OEmbedPickerPropertyEditor, OEmbedPickerPropertyValueEditor, validators, value converter
 ├── Services/              IOEmbedService, OEmbedService, endpoint and discovery providers, OEmbedOperationStatus
 ├── Client/                Lit/TypeScript backoffice UI (Vite), see Client/ARCHITECTURE.md
 └── wwwroot/App_Plugins/NovicellUmbracoOEmbed/   build output of Client/, git-ignored
@@ -26,12 +25,12 @@ src/Novicell.Umbraco.OEmbed/
 
 **Key types**:
 
-- `IOEmbedService` / `OEmbedService` – Resolves URLs to oEmbed metadata (JSON/XML handling, auto-discovery)
+- `IOEmbedService` / `OEmbedService` – Resolves URLs to oEmbed metadata (JSON handling, auto-discovery)
 - `OEmbedApiEndpointProvider` – matches a URL against Umbraco's registered `EmbedProvidersCollection`
 - `OEmbedApiEndpointDiscoveryProvider` – auto-discovery via HTTP `Link` header or `<link rel="alternate"|"alternative" type="application/json+oembed">` in the page HTML
-- `OEmbedOptions` – configuration (`Autodiscover`)
-- `OEmbedDataEditor` / `OEmbedDataValueEditor` / `OEmbedMinMaxValidator` / `OEmbedAllowedTypeValidator` / `OEmbedUrlValidator` – property editor definition and validation (the last one rejects non-http(s) URLs in a saved value)
-- `OEmbedPropertyValueConverter` – converts the stored property JSON into a strongly-typed `OEmbedPropertyValue` for Razor views
+- `OEmbedOptions` (`Configuration/`) – configuration (`Autodiscover`, `AllowPrivateNetworks`)
+- `OEmbedPickerPropertyEditor` / `OEmbedPickerPropertyValueEditor` / `OEmbedMinMaxValidator` / `OEmbedAllowedTypeValidator` / `OEmbedUrlValidator` – property editor definition and validation (the last one rejects non-http(s) URLs in a saved value)
+- `OEmbedPropertyValueConverter` – converts the stored property JSON into a strongly-typed `OEmbedValue` for Razor views
 - `OEmbedApiController` – `GET {ApiName}/api/v{version}/oembed?url=&maxwidth=&maxheight=`; `OEmbedApiControllerBase` maps `OEmbedOperationStatus` to problem-details responses
 - `UmbracoBuilderExtensions.AddNovicellOEmbed()` – the single entry point, called by `OEmbedComposer`
 
@@ -64,8 +63,7 @@ public interface IOEmbedService
 **Implementation** (`OEmbedService`):
 
 - Fetches oEmbed metadata from external providers
-- Supports JSON (Newtonsoft, error-tolerant) and XML responses
-- XML parsing is XXE-hardened (`XmlReaderSettings` with `DtdProcessing.Prohibit`, `XmlResolver = null`)
+- Reads JSON only: the request is sent with `format=json` (some providers, such as Flickr, answer with XML otherwise), and a response that is not `application/json` is `InvalidResponse`. The response is deserialized straight into `OEmbedResponse`, whose properties carry the provider's names and lenient converters (`OEmbedResponseConverters.cs`): a field of an unexpected kind is read as null, a width sent as text and a version sent as a number are read, and every field that has no property is kept in `OEmbedResponse.Extra` with the provider's name. Only a response without a valid `type` is `InvalidResponse`.
 - Auto-discovers providers via `OEmbedApiEndpointDiscoveryProvider` when no static provider matches and `Autodiscover` is enabled
 - Returns `Attempt<OEmbedResponse?, OEmbedOperationStatus>` – never throws, always returns a typed status
 
@@ -92,7 +90,9 @@ Two complementary providers:
 
 ### Property Value Converter
 
-`OEmbedPropertyValueConverter` converts the property editor's stored JSON (an array of `{ "url": "...", "oembed": { ... } }`, or the legacy single-object shape) into `OEmbedPropertyValue` records (each with an `OEmbedValue`, which is deliberately not the `OEmbedResponse` a provider returns, so a change in how providers are parsed cannot change the stored value), so the value is usable from Razor views rather than being exposed as a raw JSON string. Like Umbraco's media picker, the Razor value is a single `OEmbedPropertyValue?` (the first item, or null) when the data type's `Multiple` setting is off, and an `IEnumerable<OEmbedPropertyValue>` when it is on; the Delivery API is an array either way. It also implements `IDeliveryApiPropertyValueConverter`: for the Delivery API the value is an array of `ApiOEmbed` (`DeliveryApi/ApiOEmbed.cs`), a contract of its own with explicit camelCase names (`ApiOEmbed` and `ApiOEmbedValue`), so renaming the Razor model cannot change what a headless site receives. The JSON is pinned by `OEmbedDeliveryApiTests`. The stored `oembed` object uses the names of the oEmbed specification (`author_name`, `thumbnail_url`, ...) so that it is as close as possible to what the provider returned, while the backoffice and the Management API use camelCase (`authorName`, `thumbnailUrl`, ...). `OEmbedDataValueEditor` converts between the two (`FromEditor` on save, `ToEditor` on load) using the table in `OEmbedJsonNames`, and wraps the validators so they see the stored names: they deserialize into `OEmbedValue`, whose `JsonPropertyName` attributes are the stored names (Umbraco's serializer does not use `DataMember`). The Umbraco 9 version wrote the same names as one object instead of an array, and pre-release builds of this version wrote camelCase; `OEmbedPropertyValueJson` reads all of these, using the same table. The converter also applies the URL rule (`OEmbedUrlSafety`) to what it returns: a URL that is not http(s), or has a control character, is removed, and an unusable item is left out, because the save validator is not the only way a value reaches the database and parses the JSON differently (case-sensitively) from the converter.
+`OEmbedPropertyValueConverter` converts the property editor's stored JSON (an array of `{ "url": "...", "oembed": { ... } }`, or the legacy single-object shape) into `OEmbedValue` (`Url` is a `Uri`, `OEmbed` is the `OEmbedResponse`: typed properties, `Uri` for URLs, `OEmbedType`, `int`, and `TryGetValue<T>` for fields without a property), so the value is usable from Razor views rather than being exposed as a raw JSON string. Like Umbraco's media picker, the Razor value is a single `OEmbedValue?` (the first item, or null) when the data type's `Multiple` setting is off, and an `IEnumerable<OEmbedValue>` when it is on; the Delivery API is an array either way. It also implements `IDeliveryApiPropertyValueConverter`: for the Delivery API the value is an array of `ApiOEmbedValue` (`DeliveryApi/ApiOEmbedValue.cs`, with `ApiOEmbedResponse` in its own file), a contract of its own with explicit camelCase names (and an optional `extra` object with the provider fields that have no property, under the provider's own names), so renaming the Razor model cannot change what a headless site receives. The JSON is pinned by `OEmbedDeliveryApiTests`.
+
+**What is stored.** The database holds what the backoffice posted: the URL the editor entered and the provider's response with the provider's names (`author_name`, `thumbnail_url`, ... and every other field). The flow is: the service deserializes the provider's JSON into `OEmbedResponse` (typed fields, plus `Extra` for everything else the provider returned) → the Management API returns that `OEmbedResponse` as it is (it is the API's response type, and extension data keeps the provider's names whatever the serializer's naming policy is) → the backoffice client reads the provider names and stores the object untouched → `OEmbedPickerPropertyValueEditor` stores it as posted. There is no renaming and no mapping anywhere. The save validators and the converter read the stored value as `OEmbedDto` (`url` and `oembed` as an `OEmbedResponse`; a response without a valid type is null, so the item is reported as unusable instead of the whole value failing to read), and `OEmbedDto.ToValue()` builds the `OEmbedValue` from it. The Umbraco 9 version stored the same names as one object instead of an array; `OEmbedDto.Deserialize` reads both shapes. The converter also applies the URL rule (`OEmbedUrlSafety`) to the known URL fields it returns: a URL that is not http(s), or has a control character, is removed, and an unusable item (no URL, no response, no valid type) is left out, because the save validator is not the only way a value reaches the database. Fields without a property (`OEmbedResponse.Extra`) are exactly what the provider sent and are not checked.
 
 ---
 
@@ -100,18 +100,7 @@ Two complementary providers:
 
 **Entry point**: `Configuration/UmbracoBuilderExtensions.cs`
 
-```csharp
-public static IUmbracoBuilder AddNovicellOEmbed(this IUmbracoBuilder builder)
-{
-    builder.AddNovicellOEmbedCore();
-    builder.AddNovicellOEmbedWeb();
-    return builder;
-}
-```
-
-**Core registration** (private `AddNovicellOEmbedCore`): endpoint provider, discovery provider and service as `Transient`, `OEmbedOptions` bound to `Novicell:OEmbed`, the property value converter, and the Reddit, Spotify and TikTok embed providers.
-
-**Web registration** (`AddNovicellOEmbedWeb`): registers the versioned Management API (Swagger doc, operation-id handler, security filter) via `WithNovicellOEmbedManagementApi()`. There is no notification handler in this project.
+One method does all of it: `AddNovicellOEmbed()` registers the outbound HTTP client, the endpoint provider, the discovery provider and the service as `Transient`, binds `OEmbedOptions` to `Novicell:OEmbed`, adds the property value converter and the Reddit, Spotify and TikTok embed providers, and registers the Management API (its swagger document, the operation-id handler and the security filter). Calling it twice does not add the swagger document twice. There is no notification handler in this project.
 
 ---
 
@@ -129,7 +118,7 @@ public static IUmbracoBuilder AddNovicellOEmbed(this IUmbracoBuilder builder)
 }
 ```
 
-**Options class** (`Models/OEmbedOptions.cs`):
+**Options class** (`Configuration/OEmbedOptions.cs`):
 
 ```csharp
 public class OEmbedOptions
@@ -153,8 +142,8 @@ Accessed via `IOptions<OEmbedOptions>` in services.
 ### Add a New API Endpoint
 
 1. **Controller** in `Api/Controllers`: inherit from `OEmbedApiControllerBase`
-2. **Request/Response models**: add to `Api/Models`
-3. **Register**: wired up via `AddNovicellOEmbedWeb()` / `WithNovicellOEmbedManagementApi()`; regenerate the client with `npm run generate-client`
+2. **Request/Response models**: add them next to the controller, or in `Models` when they are also part of the public API
+3. **Register**: wired up by `AddNovicellOEmbed()`; regenerate the client with `npm run generate-client`
 
 ### Add a New Embed Provider
 
@@ -162,7 +151,7 @@ Use the `add-embed-provider` skill (`.claude/skills/add-embed-provider`).
 
 ### Add a New Property Editor
 
-1. **Editor definition** in `PropertyEditors`: `OEmbedDataEditor` (or a new one)
+1. **Editor definition** in `PropertyEditors`: `OEmbedPickerPropertyEditor` (or a new one)
 2. **Manifest** in `Client/src`
 3. **Lit components** in `Client/src`
 
@@ -172,7 +161,7 @@ Use the `add-embed-provider` skill (`.claude/skills/add-embed-provider`).
 
 ### Backend Tests (`tests/Novicell.Umbraco.OEmbed.Tests`)
 
-- Cover `OEmbedService` (provider matching/fallthrough, HTTP status mapping, JSON/XML parsing, XXE-hardening regression), `OEmbedPropertyValueConverter`, `OEmbedMinMaxValidator` and `OEmbedAllowedTypeValidator`
+- Cover `OEmbedService` (provider matching/fallthrough, HTTP status mapping, JSON reading, what is kept from the response), `OEmbedPropertyValueConverter`, `OEmbedMinMaxValidator` and `OEmbedAllowedTypeValidator`
 - Approach: mock `HttpMessageHandler` responses via `IHttpClientFactory`, assert typed `OEmbedOperationStatus` outcomes
 - Internal types are reachable through `InternalsVisibleTo`
 

@@ -1,6 +1,6 @@
 import { UmbStringState } from "@umbraco-cms/backoffice/observable-api";
 import { UmbObjectState } from "@umbraco-cms/backoffice/observable-api";
-import type { OEmbedResponseModel } from "../../../api";
+import type { OEmbedResponse } from "../../../api";
 import { UmbApiError, UmbCancelError } from "@umbraco-cms/backoffice/resources";
 
 /**
@@ -10,7 +10,7 @@ import { UmbApiError, UmbCancelError } from "@umbraco-cms/backoffice/resources";
 export class OEmbedPickerStore {
   // State observables
   readonly #urlState = new UmbStringState<string>("");
-  readonly #previewState = new UmbObjectState<OEmbedResponseModel | undefined>(
+  readonly #previewState = new UmbObjectState<OEmbedResponse | undefined>(
     undefined,
   );
   readonly #loadingState = new UmbStringState<
@@ -46,7 +46,7 @@ export class OEmbedPickerStore {
   /**
    * Set the preview data (successful fetch).
    */
-  setPreview(data: OEmbedResponseModel): void {
+  setPreview(data: OEmbedResponse): void {
     this.#previewState.setValue(data);
     this.#errorState.setValue(undefined);
     this.#loadingState.setValue("success");

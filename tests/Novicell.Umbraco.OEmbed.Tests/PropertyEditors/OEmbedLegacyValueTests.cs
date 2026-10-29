@@ -19,24 +19,24 @@ public class OEmbedLegacyValueTests
 {
     private const string StoredByTheUmbraco9Package = StoredValues.Umbraco9;
 
-    private static List<OEmbedPropertyValue> Convert(string json)
+    private static List<OEmbedValue> Convert(string json)
     {
         IPublishedPropertyType propertyType = Substitute.For<IPublishedPropertyType>();
         propertyType.EditorAlias.Returns(Constants.PropertyEditors.OEmbedPicker);
 
-        return ((IEnumerable<OEmbedPropertyValue>)new OEmbedPropertyValueConverter()
+        return ((IEnumerable<OEmbedValue>)new OEmbedPropertyValueConverter()
             .ConvertSourceToIntermediate(Substitute.For<IPublishedElement>(), propertyType, json, false)!).ToList();
     }
 
     [Test]
     public void A_Value_Stored_By_The_Umbraco_9_Package_Keeps_Every_Field()
     {
-        List<OEmbedPropertyValue> result = Convert(StoredByTheUmbraco9Package);
+        List<OEmbedValue> result = Convert(StoredByTheUmbraco9Package);
 
         Assert.That(result, Has.Count.EqualTo(1));
-        Assert.That(result[0].Url, Is.EqualTo("https://www.youtube.com/watch?v=dQw4w9WgXcQ"));
+        Assert.That(result[0].Url, Is.EqualTo(new Uri("https://www.youtube.com/watch?v=dQw4w9WgXcQ")));
 
-        OEmbedValue response = result[0].OEmbed;
+        OEmbedResponse response = result[0].OEmbed;
         Assert.That(response.Type, Is.EqualTo(OEmbedType.Video));
         Assert.That(response.Version, Is.EqualTo("1.0"));
         Assert.That(response.Title, Is.EqualTo("Rick Astley - Never Gonna Give You Up (Official Music Video)"));
@@ -53,52 +53,15 @@ public class OEmbedLegacyValueTests
         Assert.That(response.Html, Does.StartWith("<iframe"));
     }
 
-    [Test]
-    public void A_Value_Stored_By_A_Pre_Release_Build_Keeps_Every_Field()
-    {
-        List<OEmbedPropertyValue> result = Convert(StoredValues.PreRelease);
 
-        Assert.That(result, Has.Count.EqualTo(1));
 
-        OEmbedValue response = result[0].OEmbed;
-        Assert.That(response.AuthorName, Is.EqualTo("Cambridge Car Audio"));
-        Assert.That(response.AuthorUrl, Is.EqualTo(new Uri("https://www.youtube.com/@CambridgeCarAudio")));
-        Assert.That(response.ProviderName, Is.EqualTo("YouTube"));
-        Assert.That(response.ProviderUrl, Is.EqualTo(new Uri("https://www.youtube.com/")));
-        Assert.That(response.ThumbnailUrl, Is.EqualTo(new Uri("https://i.ytimg.com/vi/XbWCjWBuTDU/hqdefault.jpg")));
-        Assert.That(response.ThumbnailWidth, Is.EqualTo(480));
-        Assert.That(response.ThumbnailHeight, Is.EqualTo(360));
-    }
 
     [Test]
-    public void The_Stored_Name_Wins_When_Both_Spellings_Are_Present()
+    public void A_Value_In_The_Old_Shape_Does_Not_Skip_The_Url_Safety_Check()
     {
-        List<OEmbedPropertyValue> result = Convert("""
+        List<OEmbedValue> result = Convert("""
             { "url": "https://youtube.com/watch?v=1",
-              "oembed": { "type": "video", "authorName": "Camel", "author_name": "Stored" } }
-            """);
-
-        Assert.That(result[0].OEmbed.AuthorName, Is.EqualTo("Stored"));
-    }
-
-    [Test]
-    public void The_Values_In_An_Array_Of_Mixed_Spellings_Are_Each_Read()
-    {
-        List<OEmbedPropertyValue> result = Convert("""
-            [ { "url": "https://youtube.com/watch?v=1", "oembed": { "type": "video", "provider_name": "YouTube" } },
-              { "url": "https://vimeo.com/2", "oembed": { "type": "video", "providerName": "Vimeo" } } ]
-            """);
-
-        Assert.That(result.Select(r => r.OEmbed.ProviderName), Is.EqualTo(new[] { "YouTube", "Vimeo" }));
-    }
-
-    [TestCase("author_url", "thumbnail_url")]
-    [TestCase("authorUrl", "thumbnailUrl")]
-    public void Neither_Spelling_Skips_The_Url_Safety_Check(string authorUrl, string thumbnailUrl)
-    {
-        List<OEmbedPropertyValue> result = Convert($$"""
-            { "url": "https://youtube.com/watch?v=1",
-              "oembed": { "type": "video", "{{authorUrl}}": "javascript:alert(1)", "{{thumbnailUrl}}": "data:text/html,x" } }
+              "oembed": { "type": "video", "author_url": "javascript:alert(1)", "thumbnail_url": "data:text/html,x" } }
             """);
 
         Assert.That(result[0].OEmbed.AuthorUrl, Is.Null);

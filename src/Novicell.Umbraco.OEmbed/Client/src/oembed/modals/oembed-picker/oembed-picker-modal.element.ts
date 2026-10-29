@@ -19,7 +19,7 @@ import { UmbModalBaseElement } from "@umbraco-cms/backoffice/modal";
 import { UmbTextStyles } from "@umbraco-cms/backoffice/style";
 
 import "../../components/oembed-preview/oembed-preview.element.ts";
-import { OEmbedResponseModel } from "../../../api";
+import { OEmbedResponse } from "../../../api";
 import {
   umbBindToValidation,
   UmbValidationContext,
@@ -51,7 +51,7 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
   // Observables from context store (for rendering)
   private _currentUrl = "";
   private _currentLoading: string = "idle";
-  private _currentPreview: OEmbedResponseModel | undefined = undefined;
+  private _currentPreview: OEmbedResponse | undefined = undefined;
   private _currentError: UmbApiError | UmbCancelError | undefined = undefined;
 
   override connectedCallback() {
@@ -160,7 +160,7 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
     </div>`;
   }
 
-  #renderDetails(oembed: OEmbedResponseModel) {
+  #renderDetails(oembed: OEmbedResponse) {
     const dimensions =
       oembed.width && oembed.height
         ? `${oembed.width} \u00d7 ${oembed.height}`
@@ -171,13 +171,13 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
       this.#renderDetailRow(this.#label("general_type", "Type"), oembed.type),
       this.#renderDetailRow(
         this.#label("oembed_details_author", "Author"),
-        oembed.authorName,
-        oembed.authorUrl,
+        oembed.author_name,
+        oembed.author_url,
       ),
       this.#renderDetailRow(
         this.#label("oembed_details_provider", "Provider"),
-        oembed.providerName,
-        oembed.providerUrl,
+        oembed.provider_name,
+        oembed.provider_url,
       ),
       this.#renderDetailRow(
         this.#label("general_dimensions", "Dimensions"),
@@ -223,7 +223,7 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
     </umb-property-layout>`;
   }
 
-  #renderPreview(oembed: OEmbedResponseModel) {
+  #renderPreview(oembed: OEmbedResponse) {
     return html`
       <umb-property-layout
         label=${this.localize.term("general_preview")}
@@ -235,9 +235,9 @@ export class OembedPickerModalElement extends UmbModalBaseElement<
       </umb-property-layout>
       ${this.#renderDetails(oembed)}
       ${this.#renderThumbnail(
-        oembed.thumbnailUrl,
-        oembed.thumbnailWidth,
-        oembed.thumbnailHeight,
+        oembed.thumbnail_url,
+        oembed.thumbnail_width,
+        oembed.thumbnail_height,
         oembed.title,
       )}
     `;

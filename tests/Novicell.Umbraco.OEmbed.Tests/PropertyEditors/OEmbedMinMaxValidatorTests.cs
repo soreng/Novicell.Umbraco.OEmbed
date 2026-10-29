@@ -1,6 +1,7 @@
 using System.Globalization;
 using Novicell.Umbraco.OEmbed.Models;
 using Novicell.Umbraco.OEmbed.PropertyEditors;
+using Novicell.Umbraco.OEmbed.Tests.TestSupport;
 using NSubstitute;
 using NUnit.Framework;
 using Umbraco.Cms.Core.Models.Validation;
@@ -24,10 +25,10 @@ public class OEmbedMinMaxValidatorTests
         _validator = new OEmbedMinMaxValidator(_localizedTextService);
     }
 
-    private static OEmbedPropertyValue Video(string url) => new()
+    private static OEmbedValue Video(string url) => new()
     {
-        Url = url,
-        OEmbed = new OEmbedValue { Type = OEmbedType.Video },
+        Url = new Uri(url),
+        OEmbed = new OEmbedResponse { Type = OEmbedType.Video },
     };
 
     private static OEmbedPickerConfiguration Config(int? min = null, int? max = null, bool multiple = true) => new()
@@ -42,15 +43,15 @@ public class OEmbedMinMaxValidatorTests
     public void Null_Value_Or_Configuration_Is_Not_Validated()
     {
         Assert.That(_validator.Validate(null, Config(min: 1), null, Context()), Is.Empty);
-        Assert.That(_validator.Validate([Video("https://youtube.com/watch?v=1")], null, null, Context()), Is.Empty);
+        Assert.That(_validator.Validate(OEmbedDtos.Of([Video("https://youtube.com/watch?v=1")]), null, null, Context()), Is.Empty);
     }
 
     [Test]
     public void Item_Count_Within_Min_And_Max_Passes()
     {
-        List<OEmbedPropertyValue> value = [Video("https://youtube.com/watch?v=1"), Video("https://youtube.com/watch?v=2")];
+        List<OEmbedValue> value = [Video("https://youtube.com/watch?v=1"), Video("https://youtube.com/watch?v=2")];
 
-        var results = _validator.Validate(value, Config(min: 1, max: 2, multiple: true), null, Context());
+        var results = _validator.Validate(OEmbedDtos.Of(value), Config(min: 1, max: 2, multiple: true), null, Context());
 
         Assert.That(results, Is.Empty);
     }
@@ -60,9 +61,9 @@ public class OEmbedMinMaxValidatorTests
     {
         // Reuses Umbraco's own "validation"/"entriesShort" key/tokens (min, shortfall),
         // same as Media Picker 3's MinMaxValidator, instead of a hardcoded English string.
-        List<OEmbedPropertyValue> value = [Video("https://youtube.com/watch?v=1")];
+        List<OEmbedValue> value = [Video("https://youtube.com/watch?v=1")];
 
-        var results = _validator.Validate(value, Config(min: 2), null, Context());
+        var results = _validator.Validate(OEmbedDtos.Of(value), Config(min: 2), null, Context());
 
         Assert.That(results, Is.Not.Empty);
         _localizedTextService.Received(1).Localize(
@@ -77,9 +78,9 @@ public class OEmbedMinMaxValidatorTests
     {
         // Reuses Umbraco's own "validation"/"entriesExceed" key/tokens (max, excess),
         // same as Media Picker 3's MinMaxValidator, instead of a hardcoded English string.
-        List<OEmbedPropertyValue> value = [Video("https://youtube.com/watch?v=1"), Video("https://youtube.com/watch?v=2")];
+        List<OEmbedValue> value = [Video("https://youtube.com/watch?v=1"), Video("https://youtube.com/watch?v=2")];
 
-        var results = _validator.Validate(value, Config(max: 1), null, Context());
+        var results = _validator.Validate(OEmbedDtos.Of(value), Config(max: 1), null, Context());
 
         Assert.That(results, Is.Not.Empty);
         _localizedTextService.Received(1).Localize(
@@ -94,9 +95,9 @@ public class OEmbedMinMaxValidatorTests
     {
         // Reuses Umbraco's own "validation"/"multipleMediaNotAllowed" key, same as Media Picker 3's
         // MinMaxValidator, instead of a hardcoded English string.
-        List<OEmbedPropertyValue> value = [Video("https://youtube.com/watch?v=1"), Video("https://youtube.com/watch?v=2")];
+        List<OEmbedValue> value = [Video("https://youtube.com/watch?v=1"), Video("https://youtube.com/watch?v=2")];
 
-        var results = _validator.Validate(value, Config(multiple: false), null, Context());
+        var results = _validator.Validate(OEmbedDtos.Of(value), Config(multiple: false), null, Context());
 
         Assert.That(results, Is.Not.Empty);
         _localizedTextService.Received(1).Localize(
@@ -109,9 +110,9 @@ public class OEmbedMinMaxValidatorTests
     [Test]
     public void Multiple_False_With_One_Item_Passes()
     {
-        List<OEmbedPropertyValue> value = [Video("https://youtube.com/watch?v=1")];
+        List<OEmbedValue> value = [Video("https://youtube.com/watch?v=1")];
 
-        var results = _validator.Validate(value, Config(multiple: false), null, Context());
+        var results = _validator.Validate(OEmbedDtos.Of(value), Config(multiple: false), null, Context());
 
         Assert.That(results, Is.Empty);
     }
@@ -119,9 +120,9 @@ public class OEmbedMinMaxValidatorTests
     [Test]
     public void Missing_ValidationLimit_Configuration_Skips_Min_Max_Checks()
     {
-        List<OEmbedPropertyValue> value = [Video("https://youtube.com/watch?v=1")];
+        List<OEmbedValue> value = [Video("https://youtube.com/watch?v=1")];
 
-        var results = _validator.Validate(value, Config(multiple: true), null, Context());
+        var results = _validator.Validate(OEmbedDtos.Of(value), Config(multiple: true), null, Context());
 
         Assert.That(results, Is.Empty);
     }

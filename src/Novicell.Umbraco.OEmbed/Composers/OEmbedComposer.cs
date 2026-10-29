@@ -11,7 +11,7 @@ public class OEmbedComposer : IComposer
     /// <inheritdoc />
     public void Compose(IUmbracoBuilder builder)
     {
-        builder.DataEditors().Add<OEmbedDataEditor>();
+        builder.DataEditors().Add<OEmbedPickerPropertyEditor>();
         builder.AddNovicellOEmbed();
     }
 }
