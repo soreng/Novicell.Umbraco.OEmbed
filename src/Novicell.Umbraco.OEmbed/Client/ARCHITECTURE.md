@@ -99,7 +99,7 @@ import {
 
 class OEmbedPickerStore {
     #urlState = new UmbStringState<string>("");
-    #previewState = new UmbObjectState<OEmbedResponseModel | undefined>(
+    #previewState = new UmbObjectState<OEmbedResponse | undefined>(
         undefined,
     );
 
@@ -111,7 +111,7 @@ class OEmbedPickerStore {
         this.#urlState.setValue(url);
     }
 
-    setPreview(data: OEmbedResponseModel): void {
+    setPreview(data: OEmbedResponse): void {
         this.#previewState.setValue(data);
     }
 }

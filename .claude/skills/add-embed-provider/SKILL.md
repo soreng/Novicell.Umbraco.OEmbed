@@ -64,7 +64,7 @@ public URL for that platform and check:
 ## 3. Implement the provider
 
 This project's `OEmbedService` (`Services/OEmbedService.cs`)
-does its own JSON/XML fetching and parsing — it does **not** call
+does its own JSON fetching and parsing (it always sends `format=json`) — it does **not** call
 `IEmbedProvider.GetMarkupAsync`. Only three members actually matter for URL
 matching and endpoint construction: `ApiEndpoint`, `UrlSchemeRegex`,
 `RequestParams` (see `OEmbedApiEndpointProvider.cs`). Still implement
@@ -118,13 +118,14 @@ Notes:
   for XML ones (check the `formats` field in the `providers.json` entry; if
   absent, JSON is the spec default).
 - Only add to `RequestParams` if you've confirmed via step 2 that the param
-  is actually required — don't cargo-cult `format=json` onto every provider.
+  is actually required. `format=json` is added to every request by
+  `OEmbedService`, so a provider that can only answer with XML is not supported.
 
 ## 4. Register the provider
 
 In `src/Novicell.Umbraco.OEmbed/Configuration/UmbracoBuilderExtensions.cs`,
 append it to the `EmbedProviders()` collection builder inside
-`AddNovicellOEmbedCore`:
+`AddNovicellOEmbed`:
 
 ```csharp
 builder.EmbedProviders()
@@ -137,7 +138,7 @@ This is the standard Umbraco composition pattern
 (`builder.EmbedProviders().Append<T>()`), documented at
 https://docs.umbraco.com/umbraco-cms/extend-your-project/server-side-extensions/embedded-media-providers.
 No separate `IComposer` class is needed here since this project already has
-its own `AddNovicellOEmbedCore` builder extension as the composition root.
+its own `AddNovicellOEmbed` builder extension as the composition root.
 
 ## 5. Verify
 

@@ -1,4 +1,4 @@
-import type { OEmbedResponseModel } from "../src/api";
+import type { OEmbedResponse } from "../src/api";
 
 /**
  * Mock oEmbed responses for testing.
@@ -20,7 +20,7 @@ export const mockOEmbedResponses = {
     thumbnail_width: 480,
     thumbnail_url: "https://i.ytimg.com/vi/jNQXAC9IVRw/hqdefault.jpg",
     html: '<iframe width="600" height="338" src="https://www.youtube.com/embed/jNQXAC9IVRw" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>',
-  } as OEmbedResponseModel,
+  } as OEmbedResponse,
 
   vimeo: {
     type: "video",
@@ -37,7 +37,7 @@ export const mockOEmbedResponses = {
     thumbnail_width: 640,
     thumbnail_url: "https://i.vimeocdn.com/video/123456.jpg",
     html: '<iframe src="https://player.vimeo.com/video/123456" width="640" height="360" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>',
-  } as OEmbedResponseModel,
+  } as OEmbedResponse,
 
   image: {
     type: "photo",
@@ -49,7 +49,7 @@ export const mockOEmbedResponses = {
     thumbnail_url: "https://example.com/image-thumb.jpg",
     thumbnail_width: 200,
     thumbnail_height: 150,
-  } as OEmbedResponseModel,
+  } as OEmbedResponse,
 
   link: {
     type: "link",
@@ -57,5 +57,5 @@ export const mockOEmbedResponses = {
     title: "Example Link",
     url: "https://example.com",
     description: "This is a sample link embed",
-  } as OEmbedResponseModel,
+  } as OEmbedResponse,
 };

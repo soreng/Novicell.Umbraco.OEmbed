@@ -1,6 +1,6 @@
-import {OEmbedResponseModel} from "./../api/index.js";
+import {OEmbedResponse} from "./../api/index.js";
 
 export type OEmbedValueModel = {
     url: string;
-    oembed: OEmbedResponseModel;
+    oembed: OEmbedResponse;
 };

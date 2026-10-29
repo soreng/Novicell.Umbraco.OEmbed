@@ -1,6 +1,7 @@
 using System.Net;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Novicell.Umbraco.OEmbed.Configuration;
 using Novicell.Umbraco.OEmbed.Models;
 using Novicell.Umbraco.OEmbed.Services;
 using Novicell.Umbraco.OEmbed.Tests.TestSupport;
@@ -212,42 +213,104 @@ public class OEmbedServiceTests
         Assert.That(result.Status, Is.EqualTo(OEmbedOperationStatus.InvalidResponse));
     }
 
-    // --- XML parsing ---
+    // --- The provider's own object ---
 
     [Test]
-    public async Task Parses_Valid_Xml_Response()
+    public async Task Json_Response_Keeps_Everything_The_Provider_Returned()
     {
         _endpointProvider.GetApiEndpointAsync(Arg.Any<Uri>()).Returns(ApiEndpoint);
-        const string xml = """
-            <?xml version="1.0" encoding="utf-8" standalone="yes"?>
-            <oembed>
-                <type>video</type>
-                <version>1.0</version>
-                <title>A test video</title>
-                <html>&lt;iframe src="https://example.com"&gt;&lt;/iframe&gt;</html>
-            </oembed>
+        const string json = """
+            {"type":"video","version":"1.0","title":"A test video","width":"560","height":315,
+             "thumbnail_url_with_play_button":"https://example.com/play.jpg","is_plus":1,"tags":["a"]}
             """;
-        var handler = new StubHttpMessageHandler(_ => StubHttpMessageHandler.XmlResponse(HttpStatusCode.OK, xml));
+        var handler = new StubHttpMessageHandler(_ => StubHttpMessageHandler.JsonResponse(HttpStatusCode.OK, json));
         OEmbedService service = CreateService(handler);
 
         Attempt<OEmbedResponse?, OEmbedOperationStatus> result = await service.GetOEmbedAsync(Request(), CancellationToken.None);
 
         Assert.That(result.Success, Is.True);
-        Assert.That(result.Result!.Type, Is.EqualTo(OEmbedType.Video));
-        Assert.That(result.Result!.Title, Is.EqualTo("A test video"));
-        Assert.That(result.Result!.Html, Does.Contain("iframe"));
+        Assert.That(result.Result!.Extra, Is.Not.Null);
+        Assert.That(result.Result.Extra!.Keys, Is.EquivalentTo(new[] { "thumbnail_url_with_play_button", "is_plus", "tags" }));
+        Assert.That(result.Result.Extra["thumbnail_url_with_play_button"].GetString(), Is.EqualTo("https://example.com/play.jpg"));
+        // The typed fields are read leniently: a width sent as text is still a number.
+        Assert.That(result.Result.Width, Is.EqualTo(560));
+        Assert.That(result.Result.Height, Is.EqualTo(315));
     }
 
     [Test]
-    public async Task Xml_Missing_Type_Element_Maps_To_InvalidResponse()
+    public async Task One_Field_Of_An_Unexpected_Kind_Does_Not_Fail_The_Json_Response()
     {
         _endpointProvider.GetApiEndpointAsync(Arg.Any<Uri>()).Returns(ApiEndpoint);
-        const string xml = """
-            <?xml version="1.0" encoding="utf-8" standalone="yes"?>
-            <oembed>
-                <version>1.0</version>
-            </oembed>
-            """;
+        const string json = """{"type":"video","title":5,"width":"wide","author_url":["x"],"provider_name":"YouTube"}""";
+        var handler = new StubHttpMessageHandler(_ => StubHttpMessageHandler.JsonResponse(HttpStatusCode.OK, json));
+        OEmbedService service = CreateService(handler);
+
+        Attempt<OEmbedResponse?, OEmbedOperationStatus> result = await service.GetOEmbedAsync(Request(), CancellationToken.None);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Result!.Title, Is.Null);
+        Assert.That(result.Result.Width, Is.Null);
+        Assert.That(result.Result.AuthorUrl, Is.Null);
+        Assert.That(result.Result.ProviderName, Is.EqualTo("YouTube"));
+    }
+
+    [TestCase("""{"title":"no type"}""")]
+    [TestCase("""{"type":"movie"}""")]
+    [TestCase("""{"type":1}""")]
+    [TestCase("""["type","video"]""")]
+    [TestCase("""5""")]
+    [TestCase("""null""")]
+    public async Task Json_Response_Without_A_Valid_Type_Maps_To_InvalidResponse(string json)
+    {
+        _endpointProvider.GetApiEndpointAsync(Arg.Any<Uri>()).Returns(ApiEndpoint);
+        var handler = new StubHttpMessageHandler(_ => StubHttpMessageHandler.JsonResponse(HttpStatusCode.OK, json));
+        OEmbedService service = CreateService(handler);
+
+        Attempt<OEmbedResponse?, OEmbedOperationStatus> result = await service.GetOEmbedAsync(Request(), CancellationToken.None);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Status, Is.EqualTo(OEmbedOperationStatus.InvalidResponse));
+    }
+
+    // --- Only JSON is read ---
+
+    [Test]
+    public async Task Asks_The_Provider_For_Json()
+    {
+        _endpointProvider.GetApiEndpointAsync(Arg.Any<Uri>()).Returns(ApiEndpoint);
+        var handler = new StubHttpMessageHandler(_ =>
+            StubHttpMessageHandler.JsonResponse(HttpStatusCode.OK, ValidJsonResponse()));
+        OEmbedService service = CreateService(handler);
+
+        await service.GetOEmbedAsync(Request(), CancellationToken.None);
+
+        System.Collections.Specialized.NameValueCollection query =
+            System.Web.HttpUtility.ParseQueryString(handler.LastRequest!.RequestUri!.Query);
+        Assert.That(query["format"], Is.EqualTo("json"));
+    }
+
+    [Test]
+    public async Task An_Endpoint_That_Asks_For_Xml_Is_Asked_For_Json_Instead()
+    {
+        var endpointForXml = new OEmbedApiEndpoint("TestProvider", new Uri("https://provider.example/oembed?format=xml&other=1"));
+        _endpointProvider.GetApiEndpointAsync(Arg.Any<Uri>()).Returns(endpointForXml);
+        var handler = new StubHttpMessageHandler(_ =>
+            StubHttpMessageHandler.JsonResponse(HttpStatusCode.OK, ValidJsonResponse()));
+        OEmbedService service = CreateService(handler);
+
+        await service.GetOEmbedAsync(Request(), CancellationToken.None);
+
+        System.Collections.Specialized.NameValueCollection query =
+            System.Web.HttpUtility.ParseQueryString(handler.LastRequest!.RequestUri!.Query);
+        Assert.That(query.GetValues("format"), Is.EqualTo(new[] { "json" }));
+        Assert.That(query["other"], Is.EqualTo("1"));
+    }
+
+    [Test]
+    public async Task An_Xml_Response_Is_Not_Read()
+    {
+        _endpointProvider.GetApiEndpointAsync(Arg.Any<Uri>()).Returns(ApiEndpoint);
+        const string xml = "<?xml version=\"1.0\"?><oembed><type>video</type><title>x</title></oembed>";
         var handler = new StubHttpMessageHandler(_ => StubHttpMessageHandler.XmlResponse(HttpStatusCode.OK, xml));
         OEmbedService service = CreateService(handler);
 
@@ -257,30 +320,21 @@ public class OEmbedServiceTests
         Assert.That(result.Status, Is.EqualTo(OEmbedOperationStatus.InvalidResponse));
     }
 
-    /// <summary>
-    /// Regression test for XXE hardening: a DOCTYPE declaring an external entity must never be resolved,
-    /// and the response must fail cleanly rather than leak file contents or throw an unhandled exception.
-    /// </summary>
     [Test]
-    public async Task Xml_With_External_Entity_Is_Rejected_Not_Resolved()
+    public async Task A_Response_That_Is_Numbers_As_Text_And_A_Numeric_Version_Is_Read()
     {
+        // SoundCloud sends the version as a number and TikTok sends the sizes as text.
         _endpointProvider.GetApiEndpointAsync(Arg.Any<Uri>()).Returns(ApiEndpoint);
-        const string maliciousXml = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <!DOCTYPE oembed [ <!ENTITY xxe SYSTEM "file:///etc/passwd"> ]>
-            <oembed>
-                <type>video</type>
-                <version>1.0</version>
-                <title>&xxe;</title>
-            </oembed>
-            """;
-        var handler = new StubHttpMessageHandler(_ => StubHttpMessageHandler.XmlResponse(HttpStatusCode.OK, maliciousXml));
+        const string json = """{"version":1.0,"type":"video","width":"325","height":"578"}""";
+        var handler = new StubHttpMessageHandler(_ => StubHttpMessageHandler.JsonResponse(HttpStatusCode.OK, json));
         OEmbedService service = CreateService(handler);
 
         Attempt<OEmbedResponse?, OEmbedOperationStatus> result = await service.GetOEmbedAsync(Request(), CancellationToken.None);
 
-        Assert.That(result.Success, Is.False);
-        Assert.That(result.Status, Is.EqualTo(OEmbedOperationStatus.InvalidResponse));
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Result!.Version, Is.EqualTo("1.0"));
+        Assert.That(result.Result.Width, Is.EqualTo(325));
+        Assert.That(result.Result.Height, Is.EqualTo(578));
     }
 
     // --- BuildEndpointUrl behaviour (exercised indirectly via the captured request) ---
@@ -362,26 +416,6 @@ public class OEmbedServiceTests
         var handler = new StubHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = new UnknownLengthContent(System.Text.Encoding.UTF8.GetBytes(tooLarge), "application/json"),
-        });
-        OEmbedService service = CreateService(handler);
-
-        Attempt<OEmbedResponse?, OEmbedOperationStatus> result =
-            await service.GetOEmbedAsync(Request(), CancellationToken.None);
-
-        Assert.That(result.Success, Is.False);
-        Assert.That(result.Status, Is.EqualTo(OEmbedOperationStatus.InvalidResponse));
-    }
-
-    [Test]
-    public async Task Xml_Response_Of_Unknown_Length_That_Turns_Out_Too_Large_Maps_To_InvalidResponse()
-    {
-        _endpointProvider.GetApiEndpointAsync(Arg.Any<Uri>()).Returns(ApiEndpoint);
-        var tooLarge = "<oembed><type>video</type><title>"
-                       + new string('a', (int)OEmbedHttp.MaxResponseBytes)
-                       + "</title></oembed>";
-        var handler = new StubHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
-        {
-            Content = new UnknownLengthContent(System.Text.Encoding.UTF8.GetBytes(tooLarge), "text/xml"),
         });
         OEmbedService service = CreateService(handler);
 

@@ -6,12 +6,12 @@ namespace Novicell.Umbraco.OEmbed.PropertyEditors;
 
 /// <inheritdoc />
 [DataEditor(Constants.PropertyEditors.OEmbedPicker, ValueEditorIsReusable = true, ValueType = ValueTypes.Json)]
-public class OEmbedDataEditor : DataEditor
+internal class OEmbedPickerPropertyEditor : DataEditor
 {
     private readonly IIOHelper _ioHelper;
 
     /// <inheritdoc />
-    public OEmbedDataEditor(IDataValueEditorFactory dataValueEditorFactory, IIOHelper ioHelper)
+    public OEmbedPickerPropertyEditor(IDataValueEditorFactory dataValueEditorFactory, IIOHelper ioHelper)
         : base(dataValueEditorFactory)
     {
         _ioHelper = ioHelper;
@@ -23,5 +23,5 @@ public class OEmbedDataEditor : DataEditor
 
     /// <inheritdoc />
     protected override IDataValueEditor CreateValueEditor()
-        => DataValueEditorFactory.Create<OEmbedDataValueEditor>(Attribute!);
+        => DataValueEditorFactory.Create<OEmbedPickerPropertyValueEditor>(Attribute!);
 }

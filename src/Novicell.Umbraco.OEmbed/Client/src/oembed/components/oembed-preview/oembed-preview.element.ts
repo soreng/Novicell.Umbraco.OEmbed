@@ -8,7 +8,7 @@ import {
 } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement } from "@umbraco-cms/backoffice/lit-element";
 import { UmbPropertyEditorUiElement } from "@umbraco-cms/backoffice/property-editor";
-import type { OEmbedResponseModel, OEmbedType } from "../../../api";
+import type { OEmbedResponse, OEmbedType } from "../../../api";
 import {
   effectiveSandbox,
   parseProviderFrame,
@@ -38,7 +38,7 @@ export class OEmbedPreviewElement
   static readonly maxDynamicHeight = 600;
 
   @property({ attribute: false })
-  value?: OEmbedResponseModel;
+  value?: OEmbedResponse;
 
   /**
    * Live mode runs the provider's own markup (an iframe, or a script-based embed in a sandbox).
@@ -97,8 +97,8 @@ export class OEmbedPreviewElement
     return width && height ? width / height : 0;
   }
 
-  #renderImage(value: OEmbedResponseModel) {
-    const url = value.url ?? value.thumbnailUrl;
+  #renderImage(value: OEmbedResponse) {
+    const url = value.url ?? value.thumbnail_url;
     if (!url) return this.#renderThumbnailCard(value);
 
     const aspectRatio = this.#aspectRatio(value.width, value.height);
@@ -110,13 +110,13 @@ export class OEmbedPreviewElement
     </div>`;
   }
 
-  #renderThumbnailCard(value: OEmbedResponseModel) {
-    const thumbnail = value.thumbnailUrl;
+  #renderThumbnailCard(value: OEmbedResponse) {
+    const thumbnail = value.thumbnail_url;
     if (!thumbnail) return this.#renderLinkCard(value);
 
     const aspectRatio = this.#aspectRatio(
-      value.thumbnailWidth,
-      value.thumbnailHeight,
+      value.thumbnail_width,
+      value.thumbnail_height,
     );
     return html`<div
       class="oembed-frame"
@@ -126,9 +126,9 @@ export class OEmbedPreviewElement
     </div>`;
   }
 
-  #renderLinkCard(value: OEmbedResponseModel) {
+  #renderLinkCard(value: OEmbedResponse) {
     const href = value.url ?? this.sourceUrl ?? undefined;
-    let hostname = value.providerName ?? "";
+    let hostname = value.provider_name ?? "";
     if (!hostname && href) {
       try {
         hostname = new URL(href).hostname;
@@ -148,7 +148,7 @@ export class OEmbedPreviewElement
     </div>`;
   }
 
-  #renderProviderFrame(value: OEmbedResponseModel, frame: ProviderFrame) {
+  #renderProviderFrame(value: OEmbedResponse, frame: ProviderFrame) {
     // A sandbox only applies when a document is loaded. keyed() makes Lit replace the iframe
     // instead of reusing it when the sandbox or src changes, so a stricter sandbox takes
     // effect rather than being set on an already loaded document.
@@ -196,7 +196,7 @@ export class OEmbedPreviewElement
     </div>`;
   }
 
-  #renderIFrame(value: OEmbedResponseModel) {
+  #renderIFrame(value: OEmbedResponse) {
     const markup = value.html;
     if (!markup || !this.live) return this.#renderThumbnailCard(value);
 
@@ -298,7 +298,7 @@ export class OEmbedPreviewElement
     this.#frameObservers.push(observer);
   }
 
-  #renderVisual(value: OEmbedResponseModel) {
+  #renderVisual(value: OEmbedResponse) {
     switch (this.#normalizedType(value.type)) {
       case "photo":
         return this.#renderImage(value);

@@ -7,7 +7,7 @@ using Umbraco.Cms.Api.Common.OpenApi;
 namespace Novicell.Umbraco.OEmbed.Api.Configuration;
 
 /// <inheritdoc />
-public class OEmbedApiOperationIdHandler(IOptions<ApiVersioningOptions> apiVersioningOptions)
+internal class OEmbedApiOperationIdHandler(IOptions<ApiVersioningOptions> apiVersioningOptions)
     : OperationIdHandler(apiVersioningOptions)
 {
     /// <inheritdoc />

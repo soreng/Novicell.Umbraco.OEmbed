@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using Novicell.Umbraco.OEmbed.Models;
 using Novicell.Umbraco.OEmbed.PropertyEditors;
+using Novicell.Umbraco.OEmbed.Tests.TestSupport;
 using NSubstitute;
 using NUnit.Framework;
 using Umbraco.Cms.Core.Models.Validation;
@@ -13,7 +14,7 @@ namespace Novicell.Umbraco.OEmbed.Tests.PropertyEditors;
 public class OEmbedUrlValidatorTests
 {
     private ILocalizedTextService _localizedTextService = null!;
-    private OEmbedUrlValidator _validator = null!;
+    private OEmbedPickerPropertyValueEditor.UrlValidator _validator = null!;
 
     [SetUp]
     public void SetUp()
@@ -22,17 +23,17 @@ public class OEmbedUrlValidatorTests
         _localizedTextService
             .Localize(Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CultureInfo?>(), Arg.Any<IDictionary<string, string?>?>())
             .Returns("localized message");
-        _validator = new OEmbedUrlValidator(_localizedTextService);
+        _validator = new OEmbedPickerPropertyValueEditor.UrlValidator(_localizedTextService);
     }
 
-    private static OEmbedPropertyValue Embed(string url = "https://youtube.com/watch?v=1", Action<OEmbedResponse>? configure = null)
+    private static OEmbedDto Embed(string url = "https://youtube.com/watch?v=1", Action<OEmbedResponse>? configure = null)
     {
         var response = new OEmbedResponse { Type = OEmbedType.Video };
         configure?.Invoke(response);
-        return new OEmbedPropertyValue { Url = url, OEmbed = response };
+        return new OEmbedDto { Url = url, OEmbed = response };
     }
 
-    private IEnumerable<ValidationResult> Validate(params OEmbedPropertyValue[] values)
+    private IEnumerable<ValidationResult> Validate(params OEmbedDto[] values)
         => _validator.Validate([.. values], new OEmbedPickerConfiguration(), null, PropertyValidationContext.Empty());
 
     [Test]
@@ -129,10 +130,10 @@ public class OEmbedUrlValidatorTests
             _validator.Validate([null!], new OEmbedPickerConfiguration(), null, PropertyValidationContext.Empty()),
             Is.Not.Empty);
 
-        var nullResponse = new OEmbedPropertyValue { Url = "https://youtube.com/watch?v=1", OEmbed = null! };
+        var nullResponse = new OEmbedDto { Url = "https://youtube.com/watch?v=1", OEmbed = null };
         Assert.That(Validate(nullResponse), Is.Not.Empty);
 
-        var nullUrl = new OEmbedPropertyValue { Url = null!, OEmbed = new OEmbedResponse { Type = OEmbedType.Video } };
+        var nullUrl = new OEmbedDto { Url = null, OEmbed = new OEmbedResponse { Type = OEmbedType.Video } };
         Assert.That(Validate(nullUrl), Is.Not.Empty);
     }
 

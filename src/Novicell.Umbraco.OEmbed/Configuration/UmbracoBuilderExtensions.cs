@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi;
 using Novicell.Umbraco.OEmbed.Api.Configuration;
@@ -15,88 +14,43 @@ namespace Novicell.Umbraco.OEmbed.Configuration;
 public static class UmbracoBuilderExtensions
 {
     /// <summary>
-    /// Adds OEmbed services to the Umbraco builder.
+    /// Adds the OEmbed services, the value converter, the extra embed providers and the Management API
+    /// the backoffice uses to the Umbraco builder. <see cref="Composers.OEmbedComposer"/> calls this, so it
+    /// is only needed when the package is registered by hand.
     /// </summary>
-    /// <param name="builder"></param>
-    /// <returns></returns>
+    /// <param name="builder">The Umbraco builder.</param>
+    /// <returns>The same builder.</returns>
     public static IUmbracoBuilder AddNovicellOEmbed(this IUmbracoBuilder builder)
     {
-        builder.AddNovicellOEmbedCore();
-        builder.AddNovicellOEmbedWeb();
-
-        return builder;
-    }
-
-    private static IUmbracoBuilder AddNovicellOEmbedCore(this IUmbracoBuilder builder)
-    {
         IServiceCollection services = builder.Services;
-        IConfiguration config = builder.Config;
 
         services.AddOEmbedHttpClient();
         services.AddTransient<IOEmbedApiEndpointProvider, OEmbedApiEndpointProvider>();
         services.AddTransient<IOEmbedApiEndpointDiscoveryProvider, OEmbedApiEndpointDiscoveryProvider>();
         services.AddTransient<IOEmbedService, OEmbedService>();
         services.AddOptions<OEmbedOptions>()
-            .Bind(config.GetSection(OEmbedOptions.SectionKey));
+            .Bind(builder.Config.GetSection(OEmbedOptions.SectionKey));
 
-        builder.PropertyValueConverters().Append<OEmbedValuePropertyValueConverter>();
+        builder.PropertyValueConverters().Append<OEmbedPickerPropertyValueConverter>();
 
         builder.EmbedProviders()
             .Append<Reddit>()
             .Append<Spotify>()
             .Append<TikTok>();
 
-        return builder;
-    }
-
-    /// <summary>
-    /// Adds the OEmbed Management API to the Umbraco builder.
-    /// </summary>
-    /// <param name="builder"></param>
-    /// <returns></returns>
-    public static IUmbracoBuilder AddNovicellOEmbedWeb(this IUmbracoBuilder builder)
-    {
-        builder.AddNovicellOEmbedManagementApi();
-
-        return builder;
-    }
-
-    private static IUmbracoBuilder AddNovicellOEmbedManagementApi(this IUmbracoBuilder builder)
-    {
-        builder.WithNovicellOEmbedManagementApi(Constants.ApiName, options =>
+        // The Management API: its swagger document, which the generated backoffice client is built from.
+        services.Configure<SwaggerGenOptions>(options =>
         {
-            options.SwaggerDoc(
-                Constants.ApiName,
-                new OpenApiInfo
-                {
-                    Title = "Novicell OEmbed API",
-                    Version = "1.0",
-                });
-        });
-
-        return builder;
-    }
-
-    public static IUmbracoBuilder WithNovicellOEmbedManagementApi(this IUmbracoBuilder builder, string apiName,
-        Action<SwaggerGenOptions>? configureSwagger = null)
-    {
-        if (configureSwagger != null)
-        {
-            builder.Services.Configure<SwaggerGenOptions>(options =>
+            // Registering the package twice must not add the document and the filter twice.
+            if (options.SwaggerGeneratorOptions.SwaggerDocs.ContainsKey(Constants.ApiName))
             {
-                // Only add the swagger doc if it hasn't been added already
-                if (options.SwaggerGeneratorOptions.SwaggerDocs.ContainsKey(apiName))
-                {
-                    return;
-                }
+                return;
+            }
 
-                configureSwagger(options);
-
-                options.OperationFilter<OEmbedApiOperationSecurityFilter>();
-            });
-        }
-
-        builder.Services.AddSingleton<IOperationIdHandler, OEmbedApiOperationIdHandler>();
+            options.SwaggerDoc(Constants.ApiName, new OpenApiInfo { Title = "Novicell OEmbed API", Version = "1.0" });
+            options.OperationFilter<OEmbedApiOperationSecurityFilter>();
+        });
+        services.AddSingleton<IOperationIdHandler, OEmbedApiOperationIdHandler>();
 
         return builder;
     }

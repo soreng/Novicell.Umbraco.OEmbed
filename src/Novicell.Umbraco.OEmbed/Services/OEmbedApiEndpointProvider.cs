@@ -19,10 +19,20 @@ internal class OEmbedApiEndpointProvider(EmbedProvidersCollection providers) : I
             return null;
         }
 
-        Uri endpoint = BuildApiEndpointUrl(provider.Result);
+        Uri endpoint = ToJsonEndpoint(BuildApiEndpointUrl(provider.Result));
 
         return new OEmbedApiEndpoint(provider.GetType().Name, endpoint);
     }
+
+    /// <summary>
+    /// Only JSON is read, and some of Umbraco's providers point at an endpoint that is XML by its path
+    /// (Vimeo's <c>oembed.xml</c>, TED's <c>oembed.xml</c>), where asking for <c>format=json</c> changes
+    /// nothing. Those providers serve the same response at the same path ending in <c>.json</c>.
+    /// </summary>
+    internal static Uri ToJsonEndpoint(Uri endpoint)
+        => endpoint.AbsolutePath.EndsWith(".xml", StringComparison.OrdinalIgnoreCase)
+            ? new UriBuilder(endpoint) { Path = endpoint.AbsolutePath[..^".xml".Length] + ".json" }.Uri
+            : endpoint;
 
     private Attempt<IEmbedProvider> FindEmbedProvider(Uri url)
     {

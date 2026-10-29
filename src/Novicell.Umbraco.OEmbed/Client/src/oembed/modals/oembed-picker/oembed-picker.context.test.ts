@@ -3,7 +3,7 @@ import sinon from "sinon";
 import { UmbLitElement } from "@umbraco-cms/backoffice/lit-element";
 import { UmbOEmbedPickerContext } from "./oembed-picker.context.ts";
 import { OEmbedRepository } from "../../repository/oembed/oembed.repository.ts";
-import type { OEmbedResponseModel } from "../../../api";
+import type { OEmbedResponse } from "../../../api";
 
 class OEmbedPickerContextTestHost extends UmbLitElement {}
 customElements.define("oembed-picker-context-test-host", OEmbedPickerContextTestHost);
@@ -14,7 +14,7 @@ const deferred = <T>() => {
   return { promise, resolve };
 };
 
-const response = (title: string): OEmbedResponseModel => ({ type: "video", title });
+const response = (title: string): OEmbedResponse => ({ type: "video", title });
 
 /**
  * Tests for UmbOEmbedPickerContext.fetchPreview().
@@ -25,7 +25,7 @@ describe("UmbOEmbedPickerContext", () => {
   let host: OEmbedPickerContextTestHost;
   let context: UmbOEmbedPickerContext;
   let requestOEmbed: sinon.SinonStub;
-  let preview: OEmbedResponseModel | undefined;
+  let preview: OEmbedResponse | undefined;
   let loading: string;
 
   beforeEach(() => {
@@ -55,7 +55,7 @@ describe("UmbOEmbedPickerContext", () => {
   });
 
   it("ignores a response that arrives after the URL was changed", async () => {
-    const first = deferred<{ data: OEmbedResponseModel }>();
+    const first = deferred<{ data: OEmbedResponse }>();
     requestOEmbed.onFirstCall().returns(first.promise);
 
     context.updateUrl("https://example.com/a");
@@ -71,8 +71,8 @@ describe("UmbOEmbedPickerContext", () => {
   });
 
   it("keeps the latest preview when responses arrive out of order", async () => {
-    const first = deferred<{ data: OEmbedResponseModel }>();
-    const second = deferred<{ data: OEmbedResponseModel }>();
+    const first = deferred<{ data: OEmbedResponse }>();
+    const second = deferred<{ data: OEmbedResponse }>();
     requestOEmbed.onFirstCall().returns(first.promise);
     requestOEmbed.onSecondCall().returns(second.promise);
 
@@ -106,7 +106,7 @@ describe("UmbOEmbedPickerContext", () => {
   });
 
   it("ignores a response that arrives after reset()", async () => {
-    const first = deferred<{ data: OEmbedResponseModel }>();
+    const first = deferred<{ data: OEmbedResponse }>();
     requestOEmbed.onFirstCall().returns(first.promise);
 
     context.updateUrl("https://example.com/a");

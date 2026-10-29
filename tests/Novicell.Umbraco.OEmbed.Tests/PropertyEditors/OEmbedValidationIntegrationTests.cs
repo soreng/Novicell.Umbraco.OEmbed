@@ -13,8 +13,8 @@ using Umbraco.Cms.Core.Services;
 namespace Novicell.Umbraco.OEmbed.Tests.PropertyEditors;
 
 /// <summary>
-/// Exercises <see cref="OEmbedMinMaxValidator"/>/<see cref="OEmbedAllowedTypeValidator"/> the way
-/// <see cref="OEmbedDataValueEditor"/> actually wires them up - through the real
+/// Exercises <see cref="OEmbedPickerPropertyValueEditor.MinMaxValidator"/>/<see cref="OEmbedPickerPropertyValueEditor.AllowedTypeValidator"/> the way
+/// <see cref="OEmbedPickerPropertyValueEditor"/> actually wires them up - through the real
 /// <see cref="TypedJsonValidatorRunner{TValue,TConfiguration}"/> and a real <see cref="IJsonSerializer"/>,
 /// mirroring <c>MediaPicker3PropertyValueEditor</c>'s own constructor exactly, with no extra normalization.
 /// </summary>
@@ -34,12 +34,12 @@ public class OEmbedValidationIntegrationTests
             .Returns("localized message");
     }
 
-    private TypedJsonValidatorRunner<List<OEmbedPropertyValue>, OEmbedPickerConfiguration> BuildRunner()
+    private TypedJsonValidatorRunner<List<OEmbedDto>, OEmbedPickerConfiguration> BuildRunner()
         => new(
             _jsonSerializer,
-            new OEmbedMinMaxValidator(_localizedTextService),
-            new OEmbedAllowedTypeValidator(_localizedTextService),
-            new OEmbedUrlValidator(_localizedTextService));
+            new OEmbedPickerPropertyValueEditor.MinMaxValidator(_localizedTextService),
+            new OEmbedPickerPropertyValueEditor.AllowedTypeValidator(_localizedTextService),
+            new OEmbedPickerPropertyValueEditor.UrlValidator(_localizedTextService));
 
     private static PropertyValidationContext Context() => PropertyValidationContext.Empty();
 
@@ -84,7 +84,7 @@ public class OEmbedValidationIntegrationTests
         // Known, accepted limitation: Umbraco's own TypedJsonValidatorRunner/IJsonSerializer.TryDeserialize
         // has no tolerance for a bare JSON object where a JSON array is expected - the same class Media
         // Picker 3 relies on, unwrapped (MediaPicker3PropertyValueEditor's constructor adds it directly to
-        // Validators with no normalization either). This project's now-retired OEmbedPropertyValueJson
+        // Validators with no normalization either). An earlier, since removed, helper of this project
         // helper used to paper over this for legacy single-object content saved before multi-value support,
         // but we've deliberately chosen to match Media Picker 3's own risk profile here instead of keeping a
         // bespoke wrapper around Umbraco's shared validation infrastructure.
@@ -119,7 +119,7 @@ public class OEmbedValidationIntegrationTests
     public void A_Script_Url_In_The_Posted_Json_Is_Rejected_Through_The_Real_Runner()
     {
         const string withScriptUrl = """
-            [{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "rich", "version": "1.0", "authorUrl": "javascript:alert(1)", "thumbnailUrl": "https://example.com/t.jpg" } }]
+            [{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "rich", "version": "1.0", "author_url": "javascript:alert(1)", "thumbnail_url": "https://example.com/t.jpg" } }]
             """;
 
         var results = BuildRunner().Validate(withScriptUrl, null, new OEmbedPickerConfiguration { Multiple = true }, Context());
@@ -127,8 +127,9 @@ public class OEmbedValidationIntegrationTests
         Assert.That(results, Is.Not.Empty);
     }
 
-    [TestCase("""[{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "rich", "authorUrl": "java\nscript:alert(1)" } }]""")]
-    [TestCase("""[{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "rich", "thumbnailUrl": "\u0001javascript:alert(1)" } }]""")]
+    [TestCase("""[{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "rich", "author_url": "java\nscript:alert(1)" } }]""")]
+    [TestCase("""[{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "rich", "thumbnail_url": "\u0001javascript:alert(1)" } }]""")]
+    [TestCase("""[{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "rich", "provider_url": "data:text/html,x" } }]""")]
     public void A_Control_Character_Url_In_The_Posted_Json_Is_Rejected_Through_The_Real_Runner(string json)
     {
         var results = BuildRunner().Validate(json, null, new OEmbedPickerConfiguration { Multiple = true }, Context());
@@ -159,7 +160,7 @@ public class OEmbedValidationIntegrationTests
     public void Ordinary_Http_Urls_In_The_Posted_Json_Pass_Through_The_Real_Runner()
     {
         const string ordinary = """
-            [{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "video", "version": "1.0", "authorUrl": "https://youtube.com/@a", "providerUrl": "https://youtube.com/", "thumbnailUrl": "https://i.ytimg.com/vi/1/hq.jpg" } }]
+            [{ "url": "https://youtube.com/watch?v=1", "oembed": { "type": "video", "version": "1.0", "author_url": "https://youtube.com/@a", "provider_url": "https://youtube.com/", "thumbnail_url": "https://i.ytimg.com/vi/1/hq.jpg" } }]
             """;
 
         var results = BuildRunner().Validate(ordinary, null, new OEmbedPickerConfiguration { Multiple = true }, Context());

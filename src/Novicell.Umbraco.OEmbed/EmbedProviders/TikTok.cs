@@ -6,7 +6,7 @@ namespace Novicell.Umbraco.OEmbed.EmbedProviders;
 /// <summary>
 ///     Embed Provider for TikTok, the short-form video hosting platform.
 /// </summary>
-public class TikTok : OEmbedProviderBase
+internal class TikTok : OEmbedProviderBase
 {
     public TikTok(IJsonSerializer jsonSerializer)
         : base(jsonSerializer)

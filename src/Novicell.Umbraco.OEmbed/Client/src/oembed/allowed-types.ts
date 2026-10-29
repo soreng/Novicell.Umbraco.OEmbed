@@ -1,5 +1,5 @@
 /**
- * Mirrors the server's OEmbedAllowedTypeValidator: an empty or missing list allows every
+ * Mirrors the server's OEmbedPickerPropertyValueEditor.AllowedTypeValidator: an empty or missing list allows every
  * type, and types are compared case-insensitively (the server uses OrdinalIgnoreCase).
  */
 export function isOEmbedTypeAllowed(

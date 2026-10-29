@@ -5,7 +5,7 @@ namespace Novicell.Umbraco.OEmbed.PropertyEditors;
 
 /// <summary>
 /// The rule for which URLs in a stored OEmbed value are safe to hand on, shared by the save validator
-/// (<see cref="OEmbedUrlValidator"/>) and the published value converter.
+/// (<see cref="OEmbedPickerPropertyValueEditor.UrlValidator"/>) and the published value converter.
 /// </summary>
 /// <remarks>
 /// Both are needed. The validator gives the editor an early error, but it is not the only way a value
@@ -20,10 +20,11 @@ internal static class OEmbedUrlSafety
     /// True for the URL the editor entered when it is an absolute http(s) URL, as that is all the
     /// server ever resolves, and it has no control characters.
     /// </summary>
-    internal static bool IsSafeEnteredUrl(string? url)
-        => !HasControlCharacters(url)
-           && Uri.TryCreate(url, UriKind.Absolute, out Uri? uri)
-           && OEmbedHttp.IsHttpUrl(uri);
+    internal static bool IsSafeEnteredUrl(Uri? url)
+        => url is not null
+           && !HasControlCharacters(url.OriginalString)
+           && url.IsAbsoluteUri
+           && OEmbedHttp.IsHttpUrl(url);
 
     /// <summary>
     /// True for a URL inside the stored response (resource, author, provider, thumbnail): none, an
@@ -45,7 +46,7 @@ internal static class OEmbedUrlSafety
         => text is not null && text.Any(char.IsControl);
 
     /// <summary>True if the item, its response and every URL in it are safe.</summary>
-    internal static bool IsSafe(OEmbedPropertyValue? item)
+    internal static bool IsSafe(OEmbedValue? item)
         => item?.OEmbed is not null
            && IsSafeEnteredUrl(item.Url)
            && IsSafeResponseUrl(item.OEmbed.Url)
@@ -57,7 +58,7 @@ internal static class OEmbedUrlSafety
     /// The item with every unsafe URL in its response removed, or null if the item itself is not usable
     /// (it is null, has no response, or the URL the editor entered is not safe).
     /// </summary>
-    internal static OEmbedPropertyValue? Sanitize(OEmbedPropertyValue? item)
+    internal static OEmbedValue? Sanitize(OEmbedValue? item)
     {
         if (item?.OEmbed is null || !IsSafeEnteredUrl(item.Url))
         {

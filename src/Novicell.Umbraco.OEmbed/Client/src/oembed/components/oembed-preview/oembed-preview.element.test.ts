@@ -46,9 +46,9 @@ describe("OEmbedPreviewElement", () => {
   it("falls back to the thumbnail card for a photo with no url", async () => {
     element.value = {
       type: "photo" as any,
-      thumbnailUrl: "https://example.com/thumb.jpg",
-      thumbnailWidth: 200,
-      thumbnailHeight: 100,
+      thumbnail_url: "https://example.com/thumb.jpg",
+      thumbnail_width: 200,
+      thumbnail_height: 100,
     };
     await element.updateComplete;
 
@@ -61,9 +61,9 @@ describe("OEmbedPreviewElement", () => {
   it("renders the thumbnail card for a link type", async () => {
     element.value = {
       type: "link" as any,
-      thumbnailUrl: "https://example.com/thumb.jpg",
-      thumbnailWidth: 200,
-      thumbnailHeight: 100,
+      thumbnail_url: "https://example.com/thumb.jpg",
+      thumbnail_width: 200,
+      thumbnail_height: 100,
     };
     await element.updateComplete;
 
@@ -231,7 +231,7 @@ describe("OEmbedPreviewElement", () => {
   it("falls back to the thumbnail card when a rich/video type has no html", async () => {
     element.value = {
       type: "rich" as any,
-      thumbnailUrl: "https://example.com/thumb.jpg",
+      thumbnail_url: "https://example.com/thumb.jpg",
     };
     await element.updateComplete;
 
@@ -310,9 +310,9 @@ describe("OEmbedPreviewElement", () => {
       saved.value = {
         type: "video" as any,
         html: '<iframe src="https://example.com/embed"></iframe>',
-        thumbnailUrl: "https://example.com/thumb.jpg",
-        thumbnailWidth: 200,
-        thumbnailHeight: 100,
+        thumbnail_url: "https://example.com/thumb.jpg",
+        thumbnail_width: 200,
+        thumbnail_height: 100,
       };
       await saved.updateComplete;
 
