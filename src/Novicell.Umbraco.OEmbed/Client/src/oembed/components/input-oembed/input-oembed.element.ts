@@ -126,8 +126,8 @@ export class InputOEmbedElement
         ),
       () => !this.readonly && !!this.max && this.value.length > this.max,
     );
-    // The server rejects both of these on save (OEmbedAllowedTypeValidator and
-    // OEmbedMinMaxValidator), so surface them in the editor as well.
+    // The server rejects both of these on save (OEmbedPickerPropertyValueEditor.AllowedTypeValidator and
+    // OEmbedPickerPropertyValueEditor.MinMaxValidator), so surface them in the editor as well.
     this.addValidator(
       "typeMismatch",
       () =>

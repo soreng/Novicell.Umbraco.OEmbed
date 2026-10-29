@@ -13,7 +13,7 @@ namespace Novicell.Umbraco.OEmbed.Tests.PropertyEditors;
 public class OEmbedAllowedTypeValidatorTests
 {
     private ILocalizedTextService _localizedTextService = null!;
-    private OEmbedAllowedTypeValidator _validator = null!;
+    private OEmbedPickerPropertyValueEditor.AllowedTypeValidator _validator = null!;
 
     [SetUp]
     public void SetUp()
@@ -22,7 +22,7 @@ public class OEmbedAllowedTypeValidatorTests
         _localizedTextService
             .Localize(Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CultureInfo?>(), Arg.Any<IDictionary<string, string?>?>())
             .Returns("localized message");
-        _validator = new OEmbedAllowedTypeValidator(_localizedTextService);
+        _validator = new OEmbedPickerPropertyValueEditor.AllowedTypeValidator(_localizedTextService);
     }
 
     private static OEmbedValue Embed(OEmbedType type, string url) => new()

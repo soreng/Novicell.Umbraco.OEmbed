@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { isOEmbedTypeAllowed } from "./allowed-types.ts";
 
 /**
- * Mirrors the server-side OEmbedAllowedTypeValidator, which compares types
+ * Mirrors the server-side OEmbedPickerPropertyValueEditor.AllowedTypeValidator, which compares types
  * case-insensitively and treats an empty list as "no restriction".
  */
 describe("isOEmbedTypeAllowed", () => {

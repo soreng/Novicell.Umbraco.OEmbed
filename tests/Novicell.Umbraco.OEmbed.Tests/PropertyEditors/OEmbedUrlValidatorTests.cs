@@ -14,7 +14,7 @@ namespace Novicell.Umbraco.OEmbed.Tests.PropertyEditors;
 public class OEmbedUrlValidatorTests
 {
     private ILocalizedTextService _localizedTextService = null!;
-    private OEmbedUrlValidator _validator = null!;
+    private OEmbedPickerPropertyValueEditor.UrlValidator _validator = null!;
 
     [SetUp]
     public void SetUp()
@@ -23,7 +23,7 @@ public class OEmbedUrlValidatorTests
         _localizedTextService
             .Localize(Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CultureInfo?>(), Arg.Any<IDictionary<string, string?>?>())
             .Returns("localized message");
-        _validator = new OEmbedUrlValidator(_localizedTextService);
+        _validator = new OEmbedPickerPropertyValueEditor.UrlValidator(_localizedTextService);
     }
 
     private static OEmbedDto Embed(string url = "https://youtube.com/watch?v=1", Action<OEmbedResponse>? configure = null)

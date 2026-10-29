@@ -13,7 +13,7 @@ namespace Novicell.Umbraco.OEmbed.Tests.PropertyEditors;
 public class OEmbedMinMaxValidatorTests
 {
     private ILocalizedTextService _localizedTextService = null!;
-    private OEmbedMinMaxValidator _validator = null!;
+    private OEmbedPickerPropertyValueEditor.MinMaxValidator _validator = null!;
 
     [SetUp]
     public void SetUp()
@@ -22,7 +22,7 @@ public class OEmbedMinMaxValidatorTests
         _localizedTextService
             .Localize(Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CultureInfo?>(), Arg.Any<IDictionary<string, string?>?>())
             .Returns("localized message");
-        _validator = new OEmbedMinMaxValidator(_localizedTextService);
+        _validator = new OEmbedPickerPropertyValueEditor.MinMaxValidator(_localizedTextService);
     }
 
     private static OEmbedValue Video(string url) => new()

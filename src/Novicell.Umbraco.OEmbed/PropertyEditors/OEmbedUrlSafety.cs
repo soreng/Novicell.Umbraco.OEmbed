@@ -5,7 +5,7 @@ namespace Novicell.Umbraco.OEmbed.PropertyEditors;
 
 /// <summary>
 /// The rule for which URLs in a stored OEmbed value are safe to hand on, shared by the save validator
-/// (<see cref="OEmbedUrlValidator"/>) and the published value converter.
+/// (<see cref="OEmbedPickerPropertyValueEditor.UrlValidator"/>) and the published value converter.
 /// </summary>
 /// <remarks>
 /// Both are needed. The validator gives the editor an early error, but it is not the only way a value

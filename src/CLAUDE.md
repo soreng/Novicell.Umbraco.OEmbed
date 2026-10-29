@@ -17,7 +17,7 @@ src/Novicell.Umbraco.OEmbed/
 ├── Configuration/         UmbracoBuilderExtensions (AddNovicellOEmbed), OEmbedOptions, OEmbedHttpClientExtensions
 ├── EmbedProviders/        Reddit, Spotify, TikTok (added to Umbraco's EmbedProvidersCollection)
 ├── Models/                OEmbedResponse (what a provider returned, and what is stored), OEmbedValue (one embed as Razor gets it), OEmbedRequest, OEmbedType, the lenient JSON converters, ...
-├── PropertyEditors/       OEmbedPickerPropertyEditor, OEmbedPickerPropertyValueEditor, validators, value converter
+├── PropertyEditors/       OEmbedPickerPropertyEditor, OEmbedPickerPropertyValueEditor (with the validators nested in it), value converter
 ├── Services/              IOEmbedService, OEmbedService, endpoint and discovery providers, OEmbedOperationStatus
 ├── Client/                Lit/TypeScript backoffice UI (Vite), see Client/ARCHITECTURE.md
 └── wwwroot/App_Plugins/NovicellUmbracoOEmbed/   build output of Client/, git-ignored
@@ -29,7 +29,7 @@ src/Novicell.Umbraco.OEmbed/
 - `OEmbedApiEndpointProvider` – matches a URL against Umbraco's registered `EmbedProvidersCollection`
 - `OEmbedApiEndpointDiscoveryProvider` – auto-discovery via HTTP `Link` header or `<link rel="alternate"|"alternative" type="application/json+oembed">` in the page HTML
 - `OEmbedOptions` (`Configuration/`) – configuration (`Autodiscover`, `AllowPrivateNetworks`)
-- `OEmbedPickerPropertyEditor` / `OEmbedPickerPropertyValueEditor` / `OEmbedMinMaxValidator` / `OEmbedAllowedTypeValidator` / `OEmbedUrlValidator` – property editor definition and validation (the last one rejects non-http(s) URLs in a saved value)
+- `OEmbedPickerPropertyEditor` / `OEmbedPickerPropertyValueEditor` (with its nested `MinMaxValidator`, `AllowedTypeValidator` and `UrlValidator`) – property editor definition and validation (the last one rejects non-http(s) URLs in a saved value)
 - `OEmbedPickerPropertyValueConverter` – converts the stored property JSON into a strongly-typed `OEmbedValue` for Razor views
 - `OEmbedApiController` – `GET {ApiName}/api/v{version}/oembed?url=&maxwidth=&maxheight=`; `OEmbedApiControllerBase` maps `OEmbedOperationStatus` to problem-details responses
 - `UmbracoBuilderExtensions.AddNovicellOEmbed()` – the single entry point, called by `OEmbedComposer`
@@ -161,7 +161,7 @@ Use the `add-embed-provider` skill (`.claude/skills/add-embed-provider`).
 
 ### Backend Tests (`tests/Novicell.Umbraco.OEmbed.Tests`)
 
-- Cover `OEmbedService` (provider matching/fallthrough, HTTP status mapping, JSON reading, what is kept from the response), `OEmbedPickerPropertyValueConverter`, `OEmbedMinMaxValidator` and `OEmbedAllowedTypeValidator`
+- Cover `OEmbedService` (provider matching/fallthrough, HTTP status mapping, JSON reading, what is kept from the response), `OEmbedPickerPropertyValueConverter`, the nested `MinMaxValidator` and `AllowedTypeValidator` of `OEmbedPickerPropertyValueEditor`
 - Approach: mock `HttpMessageHandler` responses via `IHttpClientFactory`, assert typed `OEmbedOperationStatus` outcomes
 - Internal types are reachable through `InternalsVisibleTo`
 

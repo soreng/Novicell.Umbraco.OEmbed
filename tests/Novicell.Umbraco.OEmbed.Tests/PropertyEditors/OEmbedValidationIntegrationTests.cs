@@ -13,7 +13,7 @@ using Umbraco.Cms.Core.Services;
 namespace Novicell.Umbraco.OEmbed.Tests.PropertyEditors;
 
 /// <summary>
-/// Exercises <see cref="OEmbedMinMaxValidator"/>/<see cref="OEmbedAllowedTypeValidator"/> the way
+/// Exercises <see cref="OEmbedPickerPropertyValueEditor.MinMaxValidator"/>/<see cref="OEmbedPickerPropertyValueEditor.AllowedTypeValidator"/> the way
 /// <see cref="OEmbedPickerPropertyValueEditor"/> actually wires them up - through the real
 /// <see cref="TypedJsonValidatorRunner{TValue,TConfiguration}"/> and a real <see cref="IJsonSerializer"/>,
 /// mirroring <c>MediaPicker3PropertyValueEditor</c>'s own constructor exactly, with no extra normalization.
@@ -37,9 +37,9 @@ public class OEmbedValidationIntegrationTests
     private TypedJsonValidatorRunner<List<OEmbedDto>, OEmbedPickerConfiguration> BuildRunner()
         => new(
             _jsonSerializer,
-            new OEmbedMinMaxValidator(_localizedTextService),
-            new OEmbedAllowedTypeValidator(_localizedTextService),
-            new OEmbedUrlValidator(_localizedTextService));
+            new OEmbedPickerPropertyValueEditor.MinMaxValidator(_localizedTextService),
+            new OEmbedPickerPropertyValueEditor.AllowedTypeValidator(_localizedTextService),
+            new OEmbedPickerPropertyValueEditor.UrlValidator(_localizedTextService));
 
     private static PropertyValidationContext Context() => PropertyValidationContext.Empty();
 
