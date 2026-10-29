@@ -6,7 +6,7 @@ using Umbraco.Cms.Core.DependencyInjection;
 namespace Novicell.Umbraco.OEmbed.Composers;
 
 /// <inheritdoc />
-public class OEmbedComposer : IComposer
+internal class OEmbedComposer : IComposer
 {
     /// <inheritdoc />
     public void Compose(IUmbracoBuilder builder)

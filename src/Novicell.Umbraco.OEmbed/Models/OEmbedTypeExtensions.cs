@@ -3,7 +3,7 @@ namespace Novicell.Umbraco.OEmbed.Models;
 /// <summary>
 /// Helpers for <see cref="OEmbedType"/>.
 /// </summary>
-public static class OEmbedTypeExtensions
+internal static class OEmbedTypeExtensions
 {
     /// <summary>
     /// Converts the enum value to its lowercase oEmbed spec / API string (matching

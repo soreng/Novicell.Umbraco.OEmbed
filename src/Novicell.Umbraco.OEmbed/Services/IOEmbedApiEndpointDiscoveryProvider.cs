@@ -2,7 +2,7 @@ using Novicell.Umbraco.OEmbed.Models;
 
 namespace Novicell.Umbraco.OEmbed.Services;
 
-public interface IOEmbedApiEndpointDiscoveryProvider
+internal interface IOEmbedApiEndpointDiscoveryProvider
 {
     /// <summary>
     /// Discover the OEmbed endpoint of the provided url.

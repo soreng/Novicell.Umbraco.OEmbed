@@ -19,7 +19,7 @@ namespace Novicell.Umbraco.OEmbed.PropertyEditors;
 /// For the Delivery API the value is always an array of <see cref="ApiOEmbedValue"/>, a contract of its own
 /// that does not follow the Razor model, so changing the setting does not change what a site receives.
 /// </remarks>
-public class OEmbedPickerPropertyValueConverter : PropertyValueConverterBase, IDeliveryApiPropertyValueConverter
+internal class OEmbedPickerPropertyValueConverter : PropertyValueConverterBase, IDeliveryApiPropertyValueConverter
 {
     /// <inheritdoc />
     public override bool IsConverter(IPublishedPropertyType propertyType)

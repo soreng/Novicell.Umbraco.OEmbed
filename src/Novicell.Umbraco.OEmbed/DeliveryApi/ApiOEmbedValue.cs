@@ -16,7 +16,7 @@ namespace Novicell.Umbraco.OEmbed.DeliveryApi;
 /// </remarks>
 /// <param name="Url">The URL the editor entered.</param>
 /// <param name="OEmbed">The oEmbed response for <paramref name="Url"/>.</param>
-public sealed record ApiOEmbedValue(
+internal sealed record ApiOEmbedValue(
     [property: JsonPropertyName("url")] string Url,
     [property: JsonPropertyName("oembed")] ApiOEmbedResponse OEmbed)
 {

@@ -5,7 +5,7 @@ namespace Novicell.Umbraco.OEmbed.PropertyEditors;
 /// <summary>
 /// Represents the configuration for the OEmbed picker value editor.
 /// </summary>
-public class OEmbedPickerConfiguration
+internal class OEmbedPickerConfiguration
 {
     /// <summary>
     /// Gets or sets whether more than one embed can be picked for this property.
@@ -28,7 +28,7 @@ public class OEmbedPickerConfiguration
     /// <summary>
     /// Represents a numeric range with optional minimum and maximum values.
     /// </summary>
-    public class NumberRange
+    internal class NumberRange
     {
         /// <summary>
         /// Gets or sets the minimum value of the range.

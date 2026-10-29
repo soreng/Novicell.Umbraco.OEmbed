@@ -6,7 +6,7 @@ namespace Novicell.Umbraco.OEmbed.PropertyEditors;
 
 /// <inheritdoc />
 [DataEditor(Constants.PropertyEditors.OEmbedPicker, ValueEditorIsReusable = true, ValueType = ValueTypes.Json)]
-public class OEmbedPickerPropertyEditor : DataEditor
+internal class OEmbedPickerPropertyEditor : DataEditor
 {
     private readonly IIOHelper _ioHelper;
 

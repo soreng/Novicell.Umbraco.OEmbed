@@ -6,7 +6,7 @@ namespace Novicell.Umbraco.OEmbed.EmbedProviders;
 /// <summary>
 ///     Embed Provider for Reddit, the network of communities-based discussion platform.
 /// </summary>
-public class Reddit : OEmbedProviderBase
+internal class Reddit : OEmbedProviderBase
 {
     public Reddit(IJsonSerializer jsonSerializer)
         : base(jsonSerializer)

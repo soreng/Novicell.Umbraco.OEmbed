@@ -28,7 +28,7 @@ namespace Novicell.Umbraco.OEmbed.DeliveryApi;
 /// <c>video_id</c>). Left out when the provider returned nothing more. These values are exactly what the
 /// provider sent and are not checked, so a site should treat them as editor-supplied content.
 /// </param>
-public sealed record ApiOEmbedResponse(
+internal sealed record ApiOEmbedResponse(
     [property: JsonPropertyName("type")] string Type,
     [property: JsonPropertyName("version")] string? Version,
     [property: JsonPropertyName("title")] string? Title,
