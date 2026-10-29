@@ -4,7 +4,7 @@ An [oEmbed](https://oembed.com/) integration for [Umbraco CMS](https://umbraco.c
 
 Built on .NET 10 and Umbraco's built-in embed provider infrastructure.
 
-> **Beta.** Requires Umbraco 17. It replaces the Umbraco 9 version of this package: the property editor alias, the stored value and the Razor model are different, see [Migrating from the Umbraco 9 version](#migrating-from-the-umbraco-9-version).
+> **Beta.** Requires Umbraco 17. It replaces the Umbraco 9 version of this package: the stored value and the Razor model are different, and existing data types are converted when the site starts, see [Migrating from the Umbraco 9 version](#migrating-from-the-umbraco-9-version).
 
 ## Installation
 
@@ -26,7 +26,7 @@ Earlier versions of the package target Umbraco 9.
 
 ## Features
 
-- **OEmbed property editor** (`Novicell.OEmbed.Picker`) for storing embeds on documents, media and blocks.
+- **OEmbed property editor** (`Novicell.OEmbed`) for storing embeds on documents, media and blocks.
 - **OEmbed resolution service** (`IOEmbedService`) that turns a URL into a strongly-typed oEmbed response.
 - **Provider matching** via Umbraco's `EmbedProvidersCollection`, with optional **auto-discovery** for providers that advertise an oEmbed endpoint via `<link>` tags.
 - **Management API endpoint** for the backoffice to request embeds.
@@ -193,9 +193,9 @@ The workflow then builds with the version from the tag, publishes to NuGet.org a
 
 ## Migrating from the Umbraco 9 version
 
-The Umbraco 17 package is a rewrite, and existing data types and content are not converted automatically:
+The Umbraco 17 package is a rewrite. The property editor alias is unchanged, so existing data types and content keep working, and a package migration converts what has to change:
 
-- The property editor alias is `Novicell.OEmbed.Picker` (it was `Novicell.OEmbed`). Create new data types with the new editor.
+- **Data types are converted by a migration.** The first time the site starts, a package migration gives each of those data types the new property editor UI (an upgraded data type has none, so the picker would not show) and converts the old `Type` setting (`Video`, `Photo`, `Rich`, `Link`, or empty for any) to the new `Allowed types`. It runs once, only changes data types that have this editor and the old shape, and does nothing on a new site. It logs what it did, starting with `oEmbed migration:`. Content is not touched: a saved value is read as it is, and written in the new shape the next time it is edited. After it has run, export the changed data types if you use uSync, or the next import switches them back, and back up the database first, as with any migration.
 - A property stores an array of `{ url, oembed }` items (it was one object), and the Razor model is `OEmbedValue?` when the data type does not allow multiple embeds and `IEnumerable<OEmbedValue>` when it does, like Umbraco's media picker (the Delivery API is always an array). Each item has `.Url` and `.OEmbed`, which is the `OEmbedResponse` (type, html, title, thumbnail and so on, as typed properties). The `oembed` object in the database is the response as the provider returned it, with the provider's names (`author_name`, `thumbnail_url` and so on) and every other field it sent, which is also what the old version stored, so the only difference in the database is the array around the items. Fields without a property are kept and read with `OEmbedResponse.TryGetValue<T>("name", out value)`. The property value converter reads the stored object leniently (a width sent as text is still a number, a URL that cannot be read is null), so one odd value never makes the whole property empty. Content saved by the old version is read as it is, the single-object shape included, and shows in the backoffice, in Razor and in the Delivery API without being converted.
 - The data type has `Allowed types`, `Multiple` and `Min`/`Max` settings instead of one type setting.
 - `IOEmbedService.GetOEmbedAsync` now takes an `OEmbedRequest` and returns an `Attempt` with an `OEmbedOperationStatus`; it does not throw.
