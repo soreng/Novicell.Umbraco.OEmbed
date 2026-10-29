@@ -36,13 +36,17 @@ Thumbs.db
 **/appsettings.*.local.json
 **/secrets.json
 
-# Umbraco runtime/generated content for local host projects
-demo/OEmbed.Testsite/umbraco/Data/
-demo/OEmbed.Testsite/umbraco/Logs/
-demo/OEmbed.Testsite/umbraco/Temp/
-demo/OEmbed.Testsite/umbraco/Smidge/
-demo/OEmbed.Testsite/wwwroot/media/
-demo/OEmbed.Testsite/wwwroot/cache/
+# The test site: JSON schemas generated for appsettings.json and umbraco-package.json, and what Umbraco
+# writes at runtime (database, logs, temp files, uploaded media)
+appsettings-schema.json
+appsettings-schema.*.json
+umbraco-package-schema.json
+**/umbraco/Data/
+**/umbraco/Logs/
+**/umbraco/Temp/
+**/umbraco/Smidge/
+**/wwwroot/media/
+**/wwwroot/cache/
 
 .jumbo/
 .jumbo/jumbo.db

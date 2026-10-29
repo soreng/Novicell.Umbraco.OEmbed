@@ -16,7 +16,7 @@ The package registers itself through a composer, so nothing else is needed. See 
 
 ## Versions
 
-The major version of the package is the lowest Umbraco major version it supports. It is built against Umbraco 17.0.0, so a site on any 17.x can install it; the demo site runs a newer Umbraco.
+The major version of the package is the lowest Umbraco major version it supports. It is built against Umbraco 17.0.0, so a site on any 17.x can install it; the test site runs a newer Umbraco.
 
 | Package | Umbraco | .NET |
 | ------- | ------- | ---- |
@@ -39,7 +39,7 @@ Earlier versions of the package target Umbraco 9.
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `src/Novicell.Umbraco.OEmbed`             | The NuGet package: oEmbed service, endpoint/discovery providers, property editor, Management API, composer and the `Client/` backoffice UI (TypeScript/Lit, built with Vite). |
 | `tests/Novicell.Umbraco.OEmbed.Tests`     | NUnit tests for the service, validators and value converter.                                                                          |
-| `demo/OEmbed.Testsite`                    | A runnable Umbraco site used for local development and testing.                                                                       |
+| `src/Novicell.Umbraco.OEmbed.TestSite`    | A runnable Umbraco site (SQLite) for development and testing, with a ready-made setup imported by uSync.                              |
 
 Inside the package, namespaces mirror folders: `Api`, `Composers`, `Configuration`, `EmbedProviders`, `Models`, `PropertyEditors` and `Services`. See [src/CLAUDE.md](src/CLAUDE.md) and [Client/ARCHITECTURE.md](src/Novicell.Umbraco.OEmbed/Client/ARCHITECTURE.md) for details.
 
@@ -128,19 +128,33 @@ With Umbraco's [Delivery API](https://docs.umbraco.com/umbraco-cms/reference/con
 - A URL that is not http(s) is returned as `null`.
 - `html` is what the provider returned when the editor picked the URL and is not verified, so a headless site should treat it as editor-supplied content, as with the Razor model.
 
-## Running the demo site
+## Running the test site
 
-```bash
-dotnet run --project demo/OEmbed.Testsite/OEmbed.Testsite.csproj
-```
-
-The backoffice client is built into `wwwroot/App_Plugins/NovicellUmbracoOEmbed` and is not committed, so build it before running the demo (and before `dotnet pack`):
+The backoffice client is built into `wwwroot/App_Plugins/NovicellUmbracoOEmbed` and is not committed, so build it before running the test site (and before `dotnet pack`):
 
 ```bash
 cd src/Novicell.Umbraco.OEmbed/Client
 npm ci
 npm run build
 ```
+
+Then run the test site:
+
+```bash
+dotnet run --project src/Novicell.Umbraco.OEmbed.TestSite
+```
+
+It installs itself on first run. Log in at https://localhost:44366/umbraco with `admin@example.com` / `1234567890` (see `appsettings.Development.json`).
+
+On a fresh install, uSync imports a ready-made setup from `uSync/v17`:
+
+- **Embed page** document type with the **Embed page** template. `Views/embedPage.cshtml` and `Views/Partials/oembed.cshtml` show how to render the value: one embed or a collection, `Url` and `OEmbed`, the typed fields, and `TryGetValue` for a field the provider returned that has no property
+- **OEmbed picker - single video** and **OEmbed picker - multiple** data types, to try both shapes of the value
+- an **Embed page** with a video and four embeds (a video, a photo and two rich embeds)
+
+The Delivery API is switched on with public access, so the sample page is also at https://localhost:44366/umbraco/delivery/api/v2/content.
+
+uSync exports changes when you save, so remember to commit `uSync/` if you change these types.
 
 ## Branches and releases
 

@@ -5,9 +5,15 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
     <!--
       The lowest Umbraco version the package supports (its major version is the package's major version),
-      so a site on any 17.x can install it. The demo site runs a newer Umbraco, see its own props file.
+      so a site on any 17.x can install it. The test site runs a newer Umbraco, see the test site block below.
     -->
     <UmbracoVersion>17.0.0</UmbracoVersion>
+    <!--
+      Must match UmbracoAppLocalIcuVersion in Novicell.Umbraco.OEmbed.TestSite.csproj. Defined here too because this file
+      is imported before the project's own PropertyGroup runs, so under CPM the PackageVersion below needs its own
+      fallback to stay in sync with the RuntimeHostConfigurationOption value set from the same property.
+    -->
+    <UmbracoAppLocalIcuVersion Condition="'$(UmbracoAppLocalIcuVersion)' == ''">72.1.0.3</UmbracoAppLocalIcuVersion>
   </PropertyGroup>
   <!-- Global packages (private, build-time packages for all projects) -->
   <ItemGroup>
@@ -21,5 +27,13 @@
     <PackageVersion Include="Umbraco.Cms.Web.Common" Version="$(UmbracoVersion)" />
     <PackageVersion Include="Umbraco.Cms.Api.Common" Version="$(UmbracoVersion)" />
     <PackageVersion Include="Umbraco.Cms.Api.Management" Version="$(UmbracoVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The test site: a newer Umbraco than the package supports, to run it on what a new site gets -->
+    <PackageVersion Include="Umbraco.Cms" Version="17.7.1" />
+    <PackageVersion Include="Umbraco.Cms.DevelopmentMode.Backoffice" Version="17.7.1" />
+    <PackageVersion Include="uSync" Version="17.3.2" />
+    <PackageVersion Include="Microsoft.ICU.ICU4C.Runtime" Version="$(UmbracoAppLocalIcuVersion)" />
   </ItemGroup>
 </Project>
