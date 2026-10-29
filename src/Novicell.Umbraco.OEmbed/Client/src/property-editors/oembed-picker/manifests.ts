@@ -3,7 +3,7 @@ import type { ManifestPropertyEditorUi, ManifestPropertyEditorSchema } from "@um
 const propertyEditorSchema: ManifestPropertyEditorSchema = {
     type: "propertyEditorSchema",
     name: "Novicell OEmbed Picker Schema",
-    alias: "Novicell.OEmbed.Picker",
+    alias: "Novicell.OEmbed",
     meta: {
         defaultPropertyEditorUiAlias: 'Novicell.PropertyEditorUi.OEmbedPicker',
         settings: {
@@ -50,7 +50,7 @@ const propertyEditorUi: ManifestPropertyEditorUi = {
         element: () => import('./property-editor-ui-oembed-picker.element.ts'),
         meta: {
             label: 'OEmbed Picker',
-            propertyEditorSchemaAlias: 'Novicell.OEmbed.Picker',
+            propertyEditorSchemaAlias: 'Novicell.OEmbed',
             icon: 'icon-embed',
             group: 'media',
         supportsReadOnly: true,

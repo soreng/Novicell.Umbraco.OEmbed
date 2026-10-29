@@ -16,6 +16,7 @@ src/Novicell.Umbraco.OEmbed/
 ├── Composers/             OEmbedComposer
 ├── Configuration/         UmbracoBuilderExtensions (AddNovicellOEmbed), OEmbedOptions, OEmbedHttpClientExtensions
 ├── EmbedProviders/        Reddit, Spotify, TikTok (added to Umbraco's EmbedProvidersCollection)
+├── Migrations/            OEmbedMigrationPlan, ConvertUmbraco9DataTypes (gives data types of the Umbraco 9 version the editor UI and the allowed types they need)
 ├── Models/                OEmbedResponse (what a provider returned, and what is stored), OEmbedValue (one embed as Razor gets it), OEmbedRequest, OEmbedType, the lenient JSON converters, ...
 ├── PropertyEditors/       OEmbedPickerPropertyEditor, OEmbedPickerPropertyValueEditor (with the validators nested in it), value converter
 ├── Services/              IOEmbedService, OEmbedService, endpoint and discovery providers, OEmbedOperationStatus
