@@ -10,7 +10,7 @@ namespace Novicell.Umbraco.OEmbed.PropertyEditors;
 /// <c>MediaWithCropsDto</c> has for the media picker.
 /// </summary>
 /// <remarks>
-/// This is what the save validators read, and what <see cref="OEmbedPropertyValueConverter"/> reads before
+/// This is what the save validators read, and what <see cref="OEmbedPickerPropertyValueConverter"/> reads before
 /// it maps it to <see cref="OEmbedValue"/>, see <see cref="ToValue"/>. The response is
 /// an <see cref="OEmbedResponse"/>, which reads a field of an unexpected kind as null and keeps the fields
 /// it has no property for, so a provider's unusual value can never make a whole property unreadable, and

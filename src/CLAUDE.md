@@ -30,7 +30,7 @@ src/Novicell.Umbraco.OEmbed/
 - `OEmbedApiEndpointDiscoveryProvider` – auto-discovery via HTTP `Link` header or `<link rel="alternate"|"alternative" type="application/json+oembed">` in the page HTML
 - `OEmbedOptions` (`Configuration/`) – configuration (`Autodiscover`, `AllowPrivateNetworks`)
 - `OEmbedPickerPropertyEditor` / `OEmbedPickerPropertyValueEditor` / `OEmbedMinMaxValidator` / `OEmbedAllowedTypeValidator` / `OEmbedUrlValidator` – property editor definition and validation (the last one rejects non-http(s) URLs in a saved value)
-- `OEmbedPropertyValueConverter` – converts the stored property JSON into a strongly-typed `OEmbedValue` for Razor views
+- `OEmbedPickerPropertyValueConverter` – converts the stored property JSON into a strongly-typed `OEmbedValue` for Razor views
 - `OEmbedApiController` – `GET {ApiName}/api/v{version}/oembed?url=&maxwidth=&maxheight=`; `OEmbedApiControllerBase` maps `OEmbedOperationStatus` to problem-details responses
 - `UmbracoBuilderExtensions.AddNovicellOEmbed()` – the single entry point, called by `OEmbedComposer`
 
@@ -90,7 +90,7 @@ Two complementary providers:
 
 ### Property Value Converter
 
-`OEmbedPropertyValueConverter` converts the property editor's stored JSON (an array of `{ "url": "...", "oembed": { ... } }`, or the legacy single-object shape) into `OEmbedValue` (`Url` is a `Uri`, `OEmbed` is the `OEmbedResponse`: typed properties, `Uri` for URLs, `OEmbedType`, `int`, and `TryGetValue<T>` for fields without a property), so the value is usable from Razor views rather than being exposed as a raw JSON string. Like Umbraco's media picker, the Razor value is a single `OEmbedValue?` (the first item, or null) when the data type's `Multiple` setting is off, and an `IEnumerable<OEmbedValue>` when it is on; the Delivery API is an array either way. It also implements `IDeliveryApiPropertyValueConverter`: for the Delivery API the value is an array of `ApiOEmbedValue` (`DeliveryApi/ApiOEmbedValue.cs`, with `ApiOEmbedResponse` in its own file), a contract of its own with explicit camelCase names (and an optional `extra` object with the provider fields that have no property, under the provider's own names), so renaming the Razor model cannot change what a headless site receives. The JSON is pinned by `OEmbedDeliveryApiTests`.
+`OEmbedPickerPropertyValueConverter` converts the property editor's stored JSON (an array of `{ "url": "...", "oembed": { ... } }`, or the legacy single-object shape) into `OEmbedValue` (`Url` is a `Uri`, `OEmbed` is the `OEmbedResponse`: typed properties, `Uri` for URLs, `OEmbedType`, `int`, and `TryGetValue<T>` for fields without a property), so the value is usable from Razor views rather than being exposed as a raw JSON string. Like Umbraco's media picker, the Razor value is a single `OEmbedValue?` (the first item, or null) when the data type's `Multiple` setting is off, and an `IEnumerable<OEmbedValue>` when it is on; the Delivery API is an array either way. It also implements `IDeliveryApiPropertyValueConverter`: for the Delivery API the value is an array of `ApiOEmbedValue` (`DeliveryApi/ApiOEmbedValue.cs`, with `ApiOEmbedResponse` in its own file), a contract of its own with explicit camelCase names (and an optional `extra` object with the provider fields that have no property, under the provider's own names), so renaming the Razor model cannot change what a headless site receives. The JSON is pinned by `OEmbedDeliveryApiTests`.
 
 **What is stored.** The database holds what the backoffice posted: the URL the editor entered and the provider's response with the provider's names (`author_name`, `thumbnail_url`, ... and every other field). The flow is: the service deserializes the provider's JSON into `OEmbedResponse` (typed fields, plus `Extra` for everything else the provider returned) → the Management API returns that `OEmbedResponse` as it is (it is the API's response type, and extension data keeps the provider's names whatever the serializer's naming policy is) → the backoffice client reads the provider names and stores the object untouched → `OEmbedPickerPropertyValueEditor` stores it as posted. There is no renaming and no mapping anywhere. The save validators and the converter read the stored value as `OEmbedDto` (`url` and `oembed` as an `OEmbedResponse`; a response without a valid type is null, so the item is reported as unusable instead of the whole value failing to read), and `OEmbedDto.ToValue()` builds the `OEmbedValue` from it. The Umbraco 9 version stored the same names as one object instead of an array; `OEmbedDto.Deserialize` reads both shapes. The converter also applies the URL rule (`OEmbedUrlSafety`) to the known URL fields it returns: a URL that is not http(s), or has a control character, is removed, and an unusable item (no URL, no response, no valid type) is left out, because the save validator is not the only way a value reaches the database. Fields without a property (`OEmbedResponse.Extra`) are exactly what the provider sent and are not checked.
 
@@ -161,7 +161,7 @@ Use the `add-embed-provider` skill (`.claude/skills/add-embed-provider`).
 
 ### Backend Tests (`tests/Novicell.Umbraco.OEmbed.Tests`)
 
-- Cover `OEmbedService` (provider matching/fallthrough, HTTP status mapping, JSON reading, what is kept from the response), `OEmbedPropertyValueConverter`, `OEmbedMinMaxValidator` and `OEmbedAllowedTypeValidator`
+- Cover `OEmbedService` (provider matching/fallthrough, HTTP status mapping, JSON reading, what is kept from the response), `OEmbedPickerPropertyValueConverter`, `OEmbedMinMaxValidator` and `OEmbedAllowedTypeValidator`
 - Approach: mock `HttpMessageHandler` responses via `IHttpClientFactory`, assert typed `OEmbedOperationStatus` outcomes
 - Internal types are reachable through `InternalsVisibleTo`
 
@@ -195,7 +195,7 @@ Override components in `Client/src/oembed/` or `property-editors/`, or create ne
 | `Novicell.Umbraco.OEmbed/Configuration/UmbracoBuilderExtensions.cs` | DI entry point              |
 | `Novicell.Umbraco.OEmbed/Composers/OEmbedComposer.cs`        | Umbraco composer            |
 | `Novicell.Umbraco.OEmbed/Services/OEmbedService.cs`          | Core service implementation |
-| `Novicell.Umbraco.OEmbed/PropertyEditors/OEmbedPropertyValueConverter.cs` | Property value converter    |
+| `Novicell.Umbraco.OEmbed/PropertyEditors/OEmbedPickerPropertyValueConverter.cs` | Property value converter    |
 | `Novicell.Umbraco.OEmbed/Api/Controllers/OEmbedApiController.cs` | REST endpoint               |
 | `Novicell.Umbraco.OEmbed/Client/src/oembed/`                 | Frontend components & logic |
 | `Novicell.Umbraco.OEmbed/Client/public/umbraco-package.json` | Extension manifest          |

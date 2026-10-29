@@ -24,7 +24,7 @@ public class OEmbedLegacyValueTests
         IPublishedPropertyType propertyType = Substitute.For<IPublishedPropertyType>();
         propertyType.EditorAlias.Returns(Constants.PropertyEditors.OEmbedPicker);
 
-        return ((IEnumerable<OEmbedValue>)new OEmbedPropertyValueConverter()
+        return ((IEnumerable<OEmbedValue>)new OEmbedPickerPropertyValueConverter()
             .ConvertSourceToIntermediate(Substitute.For<IPublishedElement>(), propertyType, json, false)!).ToList();
     }
 

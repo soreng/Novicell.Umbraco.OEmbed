@@ -20,7 +20,7 @@ namespace Novicell.Umbraco.OEmbed.Tests.DeliveryApi;
 [TestFixture]
 public class OEmbedDeliveryApiTests
 {
-    private readonly OEmbedPropertyValueConverter _converter = new();
+    private readonly OEmbedPickerPropertyValueConverter _converter = new();
     private readonly IPublishedElement _owner = Substitute.For<IPublishedElement>();
     private readonly IPublishedPropertyType _propertyType = Substitute.For<IPublishedPropertyType>();
 

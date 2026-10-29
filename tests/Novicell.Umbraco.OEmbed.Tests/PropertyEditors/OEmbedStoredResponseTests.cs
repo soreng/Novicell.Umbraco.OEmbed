@@ -23,8 +23,8 @@ namespace Novicell.Umbraco.OEmbed.Tests.PropertyEditors;
 
 /// <summary>
 /// What is stored is the response as the provider returned it, with the provider's names and everything
-/// else it sent, and <see cref="OEmbedPropertyValueConverter"/> maps it to the friendly
-/// <see cref="OEmbedResponse"/> leniently.
+/// else it sent, and <see cref="OEmbedPickerPropertyValueConverter"/> reads it into an
+/// <see cref="OEmbedValue"/> leniently.
 /// </summary>
 [TestFixture]
 public class OEmbedStoredResponseTests
@@ -45,7 +45,7 @@ public class OEmbedStoredResponseTests
         IPublishedPropertyType propertyType = Substitute.For<IPublishedPropertyType>();
         propertyType.EditorAlias.Returns(Constants.PropertyEditors.OEmbedPicker);
 
-        return ((IEnumerable<OEmbedValue>)new OEmbedPropertyValueConverter()
+        return ((IEnumerable<OEmbedValue>)new OEmbedPickerPropertyValueConverter()
             .ConvertSourceToIntermediate(Substitute.For<IPublishedElement>(), propertyType, stored, false)!)
             .Single().OEmbed;
     }
@@ -55,7 +55,7 @@ public class OEmbedStoredResponseTests
         IPublishedPropertyType propertyType = Substitute.For<IPublishedPropertyType>();
         propertyType.EditorAlias.Returns(Constants.PropertyEditors.OEmbedPicker);
 
-        return ((IEnumerable<OEmbedValue>)new OEmbedPropertyValueConverter()
+        return ((IEnumerable<OEmbedValue>)new OEmbedPickerPropertyValueConverter()
             .ConvertSourceToIntermediate(Substitute.For<IPublishedElement>(), propertyType, stored, false)!).ToList();
     }
 
@@ -156,7 +156,7 @@ public class OEmbedStoredResponseTests
         Assert.That(JsonNode.DeepEquals(JsonNode.Parse(stored), JsonNode.Parse(WithExtras)), Is.True, stored);
     }
 
-    // ---- Mapping to the friendly value ----
+    // ---- Reading the stored value into an OEmbedValue ----
 
     [Test]
     public void The_Known_Fields_Are_Mapped_To_Typed_Properties()

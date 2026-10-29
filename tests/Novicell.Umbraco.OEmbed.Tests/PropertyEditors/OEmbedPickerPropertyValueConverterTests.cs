@@ -8,15 +8,15 @@ using Umbraco.Cms.Core.PropertyEditors;
 namespace Novicell.Umbraco.OEmbed.Tests.PropertyEditors;
 
 [TestFixture]
-public class OEmbedPropertyValueConverterTests
+public class OEmbedPickerPropertyValueConverterTests
 {
-    private OEmbedPropertyValueConverter _converter = null!;
+    private OEmbedPickerPropertyValueConverter _converter = null!;
     private IPublishedElement _owner = null!;
 
     [SetUp]
     public void SetUp()
     {
-        _converter = new OEmbedPropertyValueConverter();
+        _converter = new OEmbedPickerPropertyValueConverter();
         _owner = Substitute.For<IPublishedElement>();
     }
 
@@ -217,7 +217,7 @@ public class OEmbedPropertyValueConverterTests
     }
 
     [Test]
-    public void ConvertIntermediateToObject_Returns_Null_When_Intermediate_Is_Not_An_OEmbedPropertyValue_Collection()
+    public void ConvertIntermediateToObject_Returns_Null_When_Intermediate_Is_Not_An_OEmbedValue_Collection()
     {
         var result = _converter.ConvertIntermediateToObject(
             _owner,

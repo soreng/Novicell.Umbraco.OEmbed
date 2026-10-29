@@ -7,7 +7,7 @@ using Umbraco.Cms.Core.Models.PublishedContent;
 namespace Novicell.Umbraco.OEmbed.Tests.PropertyEditors;
 
 /// <summary>
-/// What a site sees is whatever <see cref="OEmbedPropertyValueConverter"/> produces from the stored
+/// What a site sees is whatever <see cref="OEmbedPickerPropertyValueConverter"/> produces from the stored
 /// JSON, and the stored JSON does not only come through the save validators: it is also written by
 /// uSync, by a direct database change, or by an older version. The converter is therefore what makes
 /// sure a site is never handed a script-capable URL.
@@ -15,7 +15,7 @@ namespace Novicell.Umbraco.OEmbed.Tests.PropertyEditors;
 [TestFixture]
 public class OEmbedPublishedValueSafetyTests
 {
-    private readonly OEmbedPropertyValueConverter _converter = new();
+    private readonly OEmbedPickerPropertyValueConverter _converter = new();
     private readonly IPublishedElement _owner = Substitute.For<IPublishedElement>();
 
     private List<OEmbedValue> Convert(string json)

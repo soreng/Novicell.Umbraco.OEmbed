@@ -5,7 +5,7 @@ namespace Novicell.Umbraco.OEmbed.Models;
 /// </summary>
 /// <remarks>
 /// Like Umbraco's <c>MediaWithCrops</c> for the media picker and <c>Link</c> for the URL picker: the
-/// picked thing, with the URL the editor entered. <see cref="PropertyEditors.OEmbedPropertyValueConverter"/>
+/// picked thing, with the URL the editor entered. <see cref="PropertyEditors.OEmbedPickerPropertyValueConverter"/>
 /// returns one of these when the data type does not allow multiple embeds, and a collection of them when it
 /// does. It is read from the stored value, which holds the same two parts, see <c>OEmbedDto</c>.
 /// </remarks>
