@@ -16,10 +16,5 @@
       "alias": "Novicell.OEmbed.BackofficeEntryPoint",
       "js": "/App_Plugins/NovicellUmbracoOEmbed/novicell-umbraco-oembed-app.js?v=20260606"
     }
-  ],
-  "importmap": {
-    "imports": {
-      "@novicell-umbraco-oembed/core": "/App_Plugins/NovicellUmbracoOEmbed/novicell-umbraco-oembed-app.js"
-    }
-  }
+  ]
 }

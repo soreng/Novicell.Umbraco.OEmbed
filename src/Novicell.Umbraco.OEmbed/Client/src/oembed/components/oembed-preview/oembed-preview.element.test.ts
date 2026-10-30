@@ -183,6 +183,50 @@ describe("OEmbedPreviewElement", () => {
     expect(iframe.hasAttribute("src")).to.be.false;
   });
 
+  it("keeps one height observer per frame when the frame loads again", async () => {
+    // Count the observers that are still connected.
+    const Original = window.ResizeObserver;
+    let connected = 0;
+    window.ResizeObserver = class extends Original {
+      #observing = false;
+      override observe(target: Element, options?: ResizeObserverOptions) {
+        if (!this.#observing) connected++;
+        this.#observing = true;
+        super.observe(target, options);
+      }
+      override disconnect() {
+        if (this.#observing) connected--;
+        this.#observing = false;
+        super.disconnect();
+      }
+    };
+
+    try {
+      element.value = {
+        type: "rich" as any,
+        html: '<blockquote class="embed">x</blockquote>',
+      };
+      await element.updateComplete;
+
+      const iframe = element.shadowRoot!.querySelector("iframe") as HTMLIFrameElement;
+      await new Promise<void>((resolve) => {
+        if (connected > 0) return resolve();
+        iframe.addEventListener("load", () => resolve(), { once: true });
+      });
+      expect(connected).to.equal(1);
+
+      // A provider script that reloads its frame fires load again.
+      iframe.dispatchEvent(new Event("load"));
+      iframe.dispatchEvent(new Event("load"));
+      expect(connected).to.equal(1);
+
+      element.remove();
+      expect(connected).to.equal(0);
+    } finally {
+      window.ResizeObserver = Original;
+    }
+  });
+
   it("does not render an iframe that points back at the backoffice directly", async () => {
     element.value = {
       type: "video" as any,

@@ -65,7 +65,9 @@ export class OEmbedPreviewElement
   @property({ type: Boolean, reflect: true })
   contain = false;
 
-  #frameObservers: ResizeObserver[] = [];
+  // One observer per iframe: a frame fires load again when it is reloaded, and the observer of the
+  // document it had before must not be left behind.
+  #frameObservers = new Map<HTMLIFrameElement, ResizeObserver>();
 
   override disconnectedCallback() {
     super.disconnectedCallback();
@@ -74,7 +76,7 @@ export class OEmbedPreviewElement
 
   #disconnectFrameObservers() {
     this.#frameObservers.forEach((observer) => observer.disconnect());
-    this.#frameObservers = [];
+    this.#frameObservers.clear();
   }
 
   override willUpdate(
@@ -293,9 +295,10 @@ export class OEmbedPreviewElement
 
     // Provider scripts (e.g. Twitter's widgets.js) render asynchronously and
     // change the document height after load, so keep the iframe in sync.
+    this.#frameObservers.get(iframe)?.disconnect();
     const observer = new ResizeObserver(() => resize());
     observer.observe(body);
-    this.#frameObservers.push(observer);
+    this.#frameObservers.set(iframe, observer);
   }
 
   #renderVisual(value: OEmbedResponse) {
