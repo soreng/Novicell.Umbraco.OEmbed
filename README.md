@@ -55,7 +55,7 @@ Inside the package, namespaces mirror folders: `Api`, `Composers`, `Configuratio
 
 ### Register the package
 
-Registration happens automatically via `OEmbedComposer`. If you need to register it manually, call the builder extension from your composer or `Program.cs`:
+Registration happens automatically via `OEmbedComposer`, so nothing is needed in a normal site. To register it by hand, call the builder extension from your composer or `Program.cs`; calling it when the composer has already registered the package does nothing:
 
 ```csharp
 builder.AddNovicellOEmbed();

@@ -98,7 +98,7 @@ public enum OEmbedOperationStatus
 
 **Entry point**: `Configuration/UmbracoBuilderExtensions.cs`
 
-One method does all of it: `AddNovicellOEmbed()` registers the outbound HTTP client, the endpoint provider, the discovery provider and the service as `Transient`, binds `OEmbedOptions` to `Novicell:OEmbed`, adds the property value converter and the Reddit, Spotify and TikTok embed providers, and registers the Management API (its swagger document, the operation-id handler and the security filter). Calling it twice does not add the swagger document twice. There is no notification handler in this project.
+One method does all of it: `AddNovicellOEmbed()` registers the outbound HTTP client, the endpoint provider, the discovery provider and the service as `Transient`, binds `OEmbedOptions` to `Novicell:OEmbed`, adds the property value converter and the Reddit, Spotify and TikTok embed providers, and registers the Management API (its swagger document, the operation-id handler and the security filter). Calling it more than once is safe: a marker service makes every call after the first do nothing. There is no notification handler in this project.
 
 ---
 
