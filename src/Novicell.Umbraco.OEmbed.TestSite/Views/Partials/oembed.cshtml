@@ -6,23 +6,22 @@
     OEmbedResponse oembed = Model.OEmbed;
 }
 <figure data-type="@oembed.Type.ToString().ToLowerInvariant()">
-    @if (!string.IsNullOrWhiteSpace(oembed.Html))
-    {
-        @* The html is exactly what the provider returned when the editor picked the URL and it is not verified,
-           so treat it as editor-supplied content. *@
-        @Html.Raw(oembed.Html)
-    }
-    else if (oembed.Type == OEmbedType.Photo && oembed.Url is not null)
+    @if (oembed.Type == OEmbedType.Photo && oembed.Url is not null)
     {
         <img src="@oembed.Url" alt="@oembed.Title">
     }
     else
     {
-        <a href="@Model.Url">@(oembed.Title ?? Model.Url.ToString())</a>
+        @* The provider's html exactly as it is when it is one safe iframe (YouTube, Vimeo, Spotify, SoundCloud),
+           and nothing for markup with a script of its own (X, TikTok, Reddit): the saved html is posted by the
+           backoffice and is not verified. @Html.OEmbed(Model, new OEmbedRenderOptions { Scripts = OEmbedScripts.Raw })
+           writes any html as it is, on a site that trusts its editors with that. *@
+        @Html.OEmbed(Model)
     }
 
     <figcaption>
-        @(oembed.Title ?? Model.Url.ToString())
+        @* The site decides what else to show; the link is also what a visitor gets when the html was left out. *@
+        <a href="@Model.Url">@(oembed.Title ?? Model.Url.ToString())</a>
 
         @* A field the provider returned that has no property is read by its name, here one only Vimeo returns *@
         @if (oembed.TryGetValue("video_id", out long videoId))

@@ -81,6 +81,29 @@ Configure options under the `Novicell:OEmbed` section in `appsettings.json`:
 | `Autodiscover` | `false` | When enabled, attempts to discover an oEmbed endpoint from the target page when no registered provider matches the URL. |
 | `AllowPrivateNetworks` | `false` | Allows the server to call loopback and private network addresses. Off by default, see the security note below. |
 
+### Rendering an embed
+
+The `html` of a saved embed is posted by the backoffice and is not verified, so do not write it to a page with `Html.Raw`. Use the helper, which is in Umbraco's `Umbraco.Extensions` namespace and so is available in a view without a `using`:
+
+```cshtml
+@Html.OEmbed(Model.Video)
+```
+
+It writes the html the provider returned **exactly as it is**, with nothing added or changed, when it is one ordinary iframe (YouTube, Vimeo, Spotify, SoundCloud and the like), and nothing otherwise. Ordinary means:
+
+- exactly one `<iframe>` with its closing tag, and nothing else in or around it;
+- only these attributes, each with a value of the expected shape: `src`, `width`, `height`, `title`, `allow`, `allowfullscreen`, `frameborder`, `scrolling`, `loading`, `referrerpolicy`, `sandbox`, `data-testid`, and a `style` that only lays the frame out (no `position`, `z-index`, `url()`);
+- `src` is an absolute http(s) address;
+- no event handler such as `onload`, no `srcdoc`, no attribute given twice.
+
+Markup with a script of its own (X, TikTok, Reddit) is left out, and so is anything that does not pass. A photo or link embed has no html, so write its `OEmbed.Url` and `OEmbed.Title` and the URL the editor entered yourself. The site decides what to show instead, for example a link; the test site's `Views/Partials/oembed.cshtml` shows this.
+
+To write any html as it is, scripts included, on a site that trusts its editors, and everything that can change a saved value, with that:
+
+```cshtml
+@Html.OEmbed(Model.Video, new OEmbedRenderOptions { Scripts = OEmbedScripts.Raw })
+```
+
 ### Security note on providers and Autodiscover
 
 The live preview in the picker modal shows the HTML that an oEmbed provider has just returned to the server. A provider that returns a single `<iframe>` (YouTube, Vimeo, Spotify and similar) is rendered as a normal cross-origin iframe. Other markup, typically a `<blockquote>` plus the provider's script (X, TikTok, Reddit), runs in a sandboxed iframe that shares the backoffice's origin, because those scripts need it to work. The providers registered with Umbraco, plus Reddit, Spotify and TikTok added by this package, are therefore trusted.
@@ -91,7 +114,7 @@ Whatever the server requests on an editor's behalf is limited: only `http` and `
 
 Set `AllowPrivateNetworks` to `true` if you need to call a provider on `localhost`, or if the server can only reach the internet through an outbound proxy. With the setting off, the server connects directly and ignores proxy settings, because a proxy would hide the real destination from the address check. With it on, no address check is made and the normal proxy settings apply, so the proxy has to restrict what can be reached. The setting is read when the HTTP client is created, so changing it needs a restart.
 
-A saved value is different: the stored `oembed` JSON, including its `html`, is sent by the client and is not checked against the provider. The property editor therefore never runs it. Saved embeds are shown as a thumbnail or link card, and only the picker modal fetches a fresh response and runs it. The server rejects a saved value that has a URL other than http(s), and the published value converter removes any such URL from what a site receives (and leaves out an item whose own URL is not http(s)), so values written by uSync, a database change or an older version are covered too. Neither verifies the `html`. Sites that render the stored `html` on the frontend should treat it as editor-supplied content. The same goes for the fields that have no property on `OEmbedResponse` (`Extra`, read with `TryGetValue`): they are exactly what the provider sent, and unlike the known URL fields they are not checked.
+A saved value is different: the stored `oembed` JSON, including its `html`, is sent by the client and is not checked against the provider. The property editor therefore never runs it. Saved embeds are shown as a thumbnail or link card, and only the picker modal fetches a fresh response and runs it. The server rejects a saved value that has a URL other than http(s), and the published value converter removes any such URL from what a site receives (and leaves out an item whose own URL is not http(s)), so values written by uSync, a database change or an older version are covered too. Neither verifies the `html`. Write it to a page with `Html.OEmbed`, see [Rendering an embed](#rendering-an-embed), not with `Html.Raw`. The same goes for the fields that have no property on `OEmbedResponse` (`Extra`, read with `TryGetValue`): they are exactly what the provider sent, and unlike the known URL fields they are not checked.
 
 ## Delivery API
 

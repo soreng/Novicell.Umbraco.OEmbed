@@ -19,6 +19,7 @@ src/Novicell.Umbraco.OEmbed/
 ├── Migrations/            OEmbedMigrationPlan, ConvertUmbraco9DataTypes (gives data types of the Umbraco 9 version the editor UI and the allowed types they need)
 ├── Models/                OEmbedResponse (what a provider returned, and what is stored), OEmbedValue (one embed as Razor gets it), OEmbedRequest, OEmbedType, the lenient JSON converters, ...
 ├── PropertyEditors/       OEmbedPickerPropertyEditor, OEmbedPickerPropertyValueEditor (with the validators nested in it), the index value factory, value converter
+├── Rendering/             OEmbedHtmlGate (decides whether an embed's html is one safe iframe), OEmbedHtmlHelperExtensions (`Html.OEmbed`, in the Umbraco.Extensions namespace; writes the provider's html unchanged or nothing)
 ├── Services/              IOEmbedService, OEmbedService, endpoint and discovery providers, OEmbedOperationStatus
 ├── Client/                Lit/TypeScript backoffice UI (Vite), see Client/ARCHITECTURE.md
 └── wwwroot/App_Plugins/NovicellUmbracoOEmbed/   build output of Client/, git-ignored
