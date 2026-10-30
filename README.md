@@ -81,6 +81,31 @@ Configure options under the `Novicell:OEmbed` section in `appsettings.json`:
 | `Autodiscover` | `false` | When enabled, attempts to discover an oEmbed endpoint from the target page when no registered provider matches the URL. |
 | `AllowPrivateNetworks` | `false` | Allows the server to call loopback and private network addresses. Off by default, see the security note below. |
 
+### Rendering an embed
+
+The `html` of a saved embed is posted by the backoffice and is not verified, so do not write it to a page with `Html.Raw`. Use the helper, which is in Umbraco's `Umbraco.Extensions` namespace and so is available in a view without a `using`:
+
+```cshtml
+@Html.OEmbed(Model.Video)
+```
+
+It writes the html the provider returned **exactly as it is**, with nothing added or changed, when it is one ordinary iframe (YouTube, Vimeo, Spotify, SoundCloud and the like), and nothing otherwise. Ordinary means:
+
+- exactly one `<iframe>` with its closing tag, and nothing else in or around it;
+- only these attributes, each with a value of the expected shape: `src`, `width`, `height`, `title`, `allow`, `allowfullscreen`, `frameborder`, `scrolling`, `loading`, `referrerpolicy`, `sandbox`, `data-testid`, and a `style` that only sets how the frame looks and how big it is (no `position`, `z-index`, `margin`, `vertical-align` or `url()`, which could move it over the page);
+- `src` is an absolute http(s) address, and not of the site's own host (an iframe of the site is not isolated from the page, so a script in what it loads, such as an SVG uploaded to the site, could reach it);
+- no event handler such as `onload`, no `srcdoc`, no attribute given twice.
+
+The check reads the text, so it cannot see where an address redirects to. To limit where frames can load from, redirects included, set a `frame-src` [Content-Security-Policy](https://developer.mozilla.org/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/frame-src) with the embed hosts your site uses, for example `frame-src https://www.youtube.com https://player.vimeo.com https://open.spotify.com https://w.soundcloud.com`. Behind a proxy, make sure the site sees the public host name (forwarded headers), as the check compares with it.
+
+Markup with a script of its own (X, TikTok, Reddit) is left out, and so is anything that does not pass. A photo or link embed has no html, so write its `OEmbed.Url` and `OEmbed.Title` and the URL the editor entered yourself. The site decides what to show instead, for example a link; the test site's `Views/Partials/oembed.cshtml` shows this.
+
+To write any html as it is, scripts included, on a site that trusts its editors, and everything that can change a saved value, with that:
+
+```cshtml
+@Html.OEmbed(Model.Video, new OEmbedRenderOptions { Scripts = OEmbedScripts.Raw })
+```
+
 ### Security note on providers and Autodiscover
 
 The live preview in the picker modal shows the HTML that an oEmbed provider has just returned to the server. A provider that returns a single `<iframe>` (YouTube, Vimeo, Spotify and similar) is rendered as a normal cross-origin iframe. Other markup, typically a `<blockquote>` plus the provider's script (X, TikTok, Reddit), runs in a sandboxed iframe that shares the backoffice's origin, because those scripts need it to work. The providers registered with Umbraco, plus Reddit, Spotify and TikTok added by this package, are therefore trusted.
@@ -91,7 +116,7 @@ Whatever the server requests on an editor's behalf is limited: only `http` and `
 
 Set `AllowPrivateNetworks` to `true` if you need to call a provider on `localhost`, or if the server can only reach the internet through an outbound proxy. With the setting off, the server connects directly and ignores proxy settings, because a proxy would hide the real destination from the address check. With it on, no address check is made and the normal proxy settings apply, so the proxy has to restrict what can be reached. The setting is read when the HTTP client is created, so changing it needs a restart.
 
-A saved value is different: the stored `oembed` JSON, including its `html`, is sent by the client and is not checked against the provider. The property editor therefore never runs it. Saved embeds are shown as a thumbnail or link card, and only the picker modal fetches a fresh response and runs it. The server rejects a saved value that has a URL other than http(s), and the published value converter removes any such URL from what a site receives (and leaves out an item whose own URL is not http(s)), so values written by uSync, a database change or an older version are covered too. Neither verifies the `html`. Sites that render the stored `html` on the frontend should treat it as editor-supplied content. The same goes for the fields that have no property on `OEmbedResponse` (`Extra`, read with `TryGetValue`): they are exactly what the provider sent, and unlike the known URL fields they are not checked.
+A saved value is different: the stored `oembed` JSON, including its `html`, is sent by the client and is not checked against the provider. The property editor therefore never runs it. Saved embeds are shown as a thumbnail or link card, and only the picker modal fetches a fresh response and runs it. The server rejects a saved value that has a URL other than http(s), and the published value converter removes any such URL from what a site receives (and leaves out an item whose own URL is not http(s)), so values written by uSync, a database change or an older version are covered too. Neither verifies the `html`. Write it to a page with `Html.OEmbed`, see [Rendering an embed](#rendering-an-embed), not with `Html.Raw`. The same goes for the fields that have no property on `OEmbedResponse` (`Extra`, read with `TryGetValue`): they are exactly what the provider sent, and unlike the known URL fields they are not checked.
 
 ## Delivery API
 
@@ -129,6 +154,10 @@ With Umbraco's [Delivery API](https://docs.umbraco.com/umbraco-cms/reference/con
 - A URL that is not http(s) is returned as `null`.
 - `html` is what the provider returned when the editor picked the URL and is not verified, so a headless site should treat it as editor-supplied content, as with the Razor model.
 
+### Headless sample
+
+The test site has a headless version of its sample page at https://localhost:44366/headless/ (see [Running the test site](#running-the-test-site)): the same page as `Views/embedPage.cshtml`, built in the browser from the Delivery API with plain JavaScript, no build step. `wwwroot/headless/app.js` shows how to read the camelCase fields and `extra`, and `wwwroot/headless/safe-embed.js` is the rule of `Html.OEmbed` for a site that is not rendered by Umbraco: it reads the `html` with the browser's own parser (`DOMParser`, which runs nothing) and only writes it when it is exactly one ordinary iframe with allowed attributes and an http(s) `src`. Anything else, such as the X post, is left out and its caption link is what shows. Each page links to the other, and **Allow scripts** (`?raw=1`) writes the provider's html as it is on both, for a site that trusts its editors with that.
+
 ## Running the test site
 
 The backoffice client is built into `wwwroot/App_Plugins/NovicellUmbracoOEmbed` and is not committed, so build it before running the test site (and before `dotnet pack`):
@@ -152,7 +181,7 @@ On a fresh install, uSync imports a ready-made setup from `uSync/v17`:
 - **OEmbed picker - single video** and **OEmbed picker - multiple** data types, to try both shapes of the value
 - an **Embed page** with a video and four embeds (a video, a photo and two rich embeds)
 
-The Delivery API is switched on with public access, so the sample page is also at https://localhost:44366/umbraco/delivery/api/v2/content.
+The Delivery API is switched on with public access, so the sample page is also at https://localhost:44366/umbraco/delivery/api/v2/content, and https://localhost:44366/headless/ is the same page built from it, see [Headless sample](#headless-sample).
 
 uSync exports changes when you save, so remember to commit `uSync/` if you change these types.
 
