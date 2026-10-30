@@ -90,6 +90,20 @@ public class OEmbedHtmlGateTests
     [TestCase("""<iframe src="https://example.com/e?x=1&copy=2&notit"></iframe>""")]
     [TestCase("""<iframe src="https://example.com/e&sect"></iframe>""")]
     [TestCase("""<iframe width="560" height="315"></iframe>""")]
+    // A browser reads these as a path on the site itself (https:/media/x is https://site/media/x on an https page),
+    // or as another host than a parser does, so they are refused whatever the site's host is.
+    [TestCase("""<iframe src="https:/media/evil.svg"></iframe>""")]
+    [TestCase("""<iframe src="HTTPS:/media/evil.svg"></iframe>""")]
+    [TestCase("""<iframe src="https:media/evil.svg"></iframe>""")]
+    [TestCase("""<iframe src="https:///site.test/media/evil.svg"></iframe>""")]
+    [TestCase("""<iframe src="https:\\site.test\media\evil.svg"></iframe>""")]
+    [TestCase("""<iframe src="https:/\site.test/media/evil.svg"></iframe>""")]
+    [TestCase("""<iframe src="https://site.test\@evil.example/e"></iframe>""")]
+    [TestCase("""<iframe src="https://user:pass@example.com/e"></iframe>""")]
+    [TestCase("""<iframe src="https://example.com\e"></iframe>""")]
+    [TestCase("""<iframe src="https://example.com/e\x"></iframe>""")]
+    [TestCase("""<iframe src="https://"></iframe>""")]
+    [TestCase("""<iframe src="https:///"></iframe>""")]
     public void An_Address_That_Is_Not_Absolute_Http_Is_Refused(string html)
         => Assert.That(OEmbedHtmlGate.IsSafeIframe(html), Is.False);
 
@@ -165,6 +179,30 @@ public class OEmbedHtmlGateTests
         Assert.That(OEmbedHtmlGate.IsSafeIframe(html, siteHost: "site.test"), Is.False);
         Assert.That(OEmbedHtmlGate.IsSafeIframe(html, siteHost: "SITE.TEST"), Is.False);
     }
+
+    // The same host in the spellings a browser treats as one: the Unicode and the punycode form of a name, upper
+    // case, and a trailing dot.
+    [TestCase("site.test", "https://site.test./media/evil.svg")]
+    [TestCase("site.test.", "https://site.test/media/evil.svg")]
+    [TestCase("xn--bcher-kva.example", "https://bücher.example/media/evil.svg")]
+    [TestCase("xn--bcher-kva.example", "https://BÜCHER.example/media/evil.svg")]
+    [TestCase("bücher.example", "https://xn--bcher-kva.example/media/evil.svg")]
+    [TestCase("BÜCHER.example", "https://xn--bcher-kva.example/media/evil.svg")]
+    [TestCase("xn--bcher-kva.example", "https://xn--bcher-kva.example/media/evil.svg")]
+    [TestCase("127.0.0.1", "https://127.0.0.1:44366/media/evil.svg")]
+    [TestCase("127.0.0.1", "https://2130706433/media/evil.svg")]
+    [TestCase("[::1]", "https://[::1]:44366/media/evil.svg")]
+    [TestCase("::1", "https://[::1]/media/evil.svg")]
+    public void The_Same_Host_Is_Refused_In_Every_Spelling(string siteHost, string src)
+        => Assert.That(OEmbedHtmlGate.IsSafeIframe($"""<iframe src="{src}"></iframe>""", siteHost), Is.False);
+
+    [TestCase("xn--bcher-kva.example", "https://xn--bchr-kva.example/e")]
+    [TestCase("bücher.example", "https://bücher.example.evil.test/e")]
+    [TestCase("site.test", "https://sitextest/e")]
+    [TestCase("127.0.0.1", "https://127.0.0.2/e")]
+    [TestCase("not a valid host!", "https://example.com/e")]
+    public void A_Different_Host_Is_Allowed_And_A_Host_That_Cannot_Be_Read_Does_Not_Fail_The_Check(string siteHost, string src)
+        => Assert.That(OEmbedHtmlGate.IsSafeIframe($"""<iframe src="{src}"></iframe>""", siteHost), Is.True);
 
     [Test]
     public void The_Own_Host_Is_Only_Refused_When_It_Is_Known()

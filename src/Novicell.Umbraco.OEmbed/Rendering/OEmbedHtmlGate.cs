@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Novicell.Umbraco.OEmbed.PropertyEditors;
 
@@ -47,6 +48,11 @@ internal static partial class OEmbedHtmlGate
 
     [GeneratedRegex("\\A[a-z0-9.%#/\\- ]+\\z", RegexOptions.IgnoreCase)]
     private static partial Regex StyleValue();
+
+    // scheme://host, where the host starts and goes on without / \ ? # @ or white space, then an optional path,
+    // query or fragment without a backslash or white space.
+    [GeneratedRegex("\\Ahttps?://[^/\\\\?#@\\s][^/\\\\?#@\\s]*(?:[/?#][^\\\\\\s]*)?\\z", RegexOptions.IgnoreCase)]
+    private static partial Regex SourceShape();
 
     // The start of a query parameter after a bare &: a name and =.
     [GeneratedRegex("\\A[A-Za-z0-9_]+=")]
@@ -173,17 +179,43 @@ internal static partial class OEmbedHtmlGate
             }
         }
 
-        // The address must be an absolute http(s) URL, the same rule that is used for every other URL the
-        // package passes on.
         var decoded = value.Replace("&amp;", "&", StringComparison.OrdinalIgnoreCase);
 
+        // The address is written as scheme://host and nothing odd: not https:/media/x or https:media/x, which a
+        // browser reads as a path on the site itself, and not backslashes, a third slash or a user name before the
+        // host, which a browser and a parser can read as different hosts. The shape is checked on the text, so the
+        // result does not depend on how a parser reads them.
+        if (!SourceShape().IsMatch(decoded))
+        {
+            return false;
+        }
+
+        // The address must be an absolute http(s) URL, the same rule that is used for every other URL the
+        // package passes on.
         return Uri.TryCreate(decoded, UriKind.Absolute, out Uri? uri)
             && OEmbedUrlSafety.IsSafeEnteredUrl(uri)
 
             // A frame of the site's own host is not isolated from the page. Any scheme or port of it is refused,
-            // not only the exact origin. A different address that redirects here cannot be seen from the text:
-            // for that, set a frame-src Content-Security-Policy (see the README).
-            && (siteHost is null || !uri.Host.Equals(siteHost, StringComparison.OrdinalIgnoreCase));
+            // not only the exact origin, and the host is compared as the browser reads it (see Canonical). A
+            // different address that redirects here cannot be seen from the text: for that, set a frame-src
+            // Content-Security-Policy (see the README).
+            && (siteHost is null || Canonical(uri.IdnHost) != Canonical(siteHost));
+    }
+
+    // One spelling of a host: lower case, in ASCII (punycode) as the browser sends it, without a trailing dot and
+    // without the brackets of an IPv6 address. The Unicode and the punycode form of a name are the same host.
+    private static string Canonical(string host)
+    {
+        var trimmed = host.Trim().TrimStart('[').TrimEnd(']').TrimEnd('.');
+
+        try
+        {
+            return new IdnMapping().GetAscii(trimmed).ToLowerInvariant();
+        }
+        catch (ArgumentException)
+        {
+            return trimmed.ToLowerInvariant();
+        }
     }
 
     private static bool IsSafeStyle(string value)

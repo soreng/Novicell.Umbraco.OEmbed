@@ -8,11 +8,6 @@
 // The markup is read by the browser's own parser (DOMParser, which runs nothing and loads nothing), and the
 // elements and attributes it produced are checked. A check on the text could read it differently from the browser.
 
-const ALLOWED_ATTRIBUTES = new Set([
-  'src', 'width', 'height', 'title', 'allow', 'allowfullscreen', 'frameborder', 'scrolling', 'loading',
-  'referrerpolicy', 'sandbox', 'data-testid', 'style',
-]);
-
 const REFERRER_POLICIES = new Set([
   'no-referrer', 'origin', 'origin-when-cross-origin', 'same-origin', 'strict-origin',
   'strict-origin-when-cross-origin', 'unsafe-url', 'no-referrer-when-downgrade',
@@ -26,10 +21,15 @@ const STYLE_PROPERTIES = new Set([
   'max-height', 'min-width', 'min-height', 'aspect-ratio', 'display', 'overflow',
 ]);
 
+// scheme://host and nothing odd: not https:/media/x or https:media/x (a browser reads those as a path on this
+// site), and no backslash, third slash or user name before the host. Checked on the text, so it does not depend on
+// how a parser reads them.
+const ADDRESS_SHAPE = /^https?:\/\/[^/\\?#@\s][^/\\?#@\s]*(?:[/?#][^\\\s]*)?$/i;
+
 const isHttpUrl = (value) => {
-  if (value !== value.trim()) return false;
+  if (!ADDRESS_SHAPE.test(value)) return false;
   try {
-    const url = new URL(value);
+    const url = new URL(value, document.baseURI);
     return url.protocol === 'https:' || url.protocol === 'http:';
   } catch {
     return false;
@@ -39,7 +39,10 @@ const isHttpUrl = (value) => {
 // A frame of the page's own host is not isolated from the page, so a script in what it loads (an SVG uploaded to
 // the site, say) could reach it. Any scheme or port of the host is refused. This cannot see where another address
 // redirects to: for that, set a frame-src Content-Security-Policy (see the README).
-const isOtherHost = (value) => new URL(value).hostname.toLowerCase() !== location.hostname.toLowerCase();
+// The URL parser gives the host in punycode and lower case; a trailing dot or the brackets of an IPv6 address are
+// the same host.
+const hostOf = (host) => host.toLowerCase().replace(/^\[|\]$/g, '').replace(/\.$/, '');
+const isOtherHost = (value) => hostOf(new URL(value, document.baseURI).hostname) !== hostOf(location.hostname);
 
 const isSafeStyle = (value) =>
   value
@@ -78,6 +81,14 @@ const VALUE_CHECKS = {
  * @returns {HTMLIFrameElement | null}
  */
 export function safeIframe(html) {
+  try {
+    return checkedIframe(html);
+  } catch {
+    return null;
+  }
+}
+
+function checkedIframe(html) {
   if (typeof html !== 'string' || !html.trim()) return null;
 
   const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -95,8 +106,8 @@ export function safeIframe(html) {
   if (!(frame instanceof HTMLIFrameElement) || frame.childNodes.length > 0) return null;
 
   for (const { name, value } of frame.attributes) {
-    const check = VALUE_CHECKS[name];
-    if (!check || !check(value)) return null;
+    // Own properties only: constructor, __proto__ and toString are on every object.
+    if (!Object.hasOwn(VALUE_CHECKS, name) || !VALUE_CHECKS[name](value)) return null;
   }
 
   // Without a source there is nothing to show.
