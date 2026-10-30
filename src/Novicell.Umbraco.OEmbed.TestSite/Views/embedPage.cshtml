@@ -10,19 +10,39 @@
 }
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@Model.Value("title")</title>
     <style>
-        body { margin: 0 auto; padding: 1rem; max-width: 50rem; font-family: system-ui, sans-serif; line-height: 1.5; }
-        figure { margin: 2rem 0; }
-        figcaption { color: #555; font-size: .875rem; }
-        img { max-width: 100%; height: auto; }
+            body {
+                margin: 0 auto;
+                padding: 1rem;
+                max-width: 50rem;
+                font-family: system-ui, sans-serif;
+                line-height: 1.5;
+            }
+
+            figure {
+                margin: 2rem 0;
+            }
+
+            figcaption {
+                color: #555;
+                font-size: .875rem;
+            }
+
+            img {
+                max-width: 100%;
+                height: auto;
+            }
     </style>
 </head>
+
 <body>
     <h1>@Model.Value("title")</h1>
+    <p><a href="?raw=1">Allow scripts</a> | <a href="?raw=0">Only iframes</a></p>
 
     @if (video is not null)
     {
@@ -35,5 +55,7 @@
     {
         <partial name="oembed" model="embed" />
     }
+
 </body>
+
 </html>
