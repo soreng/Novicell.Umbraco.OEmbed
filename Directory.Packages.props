@@ -15,11 +15,14 @@
     <UmbracoAppLocalIcuVersion Condition="'$(UmbracoAppLocalIcuVersion)' == ''">72.1.0.3</UmbracoAppLocalIcuVersion>
   </PropertyGroup>
   <ItemGroup>
-    <!-- The package: only Umbraco, so it brings nothing else to the site that installs it -->
-    <PackageVersion Include="Umbraco.Cms.Core" Version="$(UmbracoVersion)" />
-    <PackageVersion Include="Umbraco.Cms.Web.Common" Version="$(UmbracoVersion)" />
-    <PackageVersion Include="Umbraco.Cms.Api.Common" Version="$(UmbracoVersion)" />
-    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="$(UmbracoVersion)" />
+    <!--
+      The package: only Umbraco, so it brings nothing else to the site that installs it. The range is any
+      17.x and not 18, as a new Umbraco major version gets its own v<major>/dev branch.
+    -->
+    <PackageVersion Include="Umbraco.Cms.Core" Version="[$(UmbracoVersion), 18)" />
+    <PackageVersion Include="Umbraco.Cms.Web.Common" Version="[$(UmbracoVersion), 18)" />
+    <PackageVersion Include="Umbraco.Cms.Api.Common" Version="[$(UmbracoVersion), 18)" />
+    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="[$(UmbracoVersion), 18)" />
   </ItemGroup>
 
   <ItemGroup>
