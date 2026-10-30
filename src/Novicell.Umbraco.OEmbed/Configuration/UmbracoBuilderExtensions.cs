@@ -26,7 +26,6 @@ public static class UmbracoBuilderExtensions
 
         services.AddOEmbedHttpClient();
         services.AddTransient<IOEmbedApiEndpointProvider, OEmbedApiEndpointProvider>();
-        services.AddTransient<IOEmbedApiEndpointDiscoveryProvider, OEmbedApiEndpointDiscoveryProvider>();
         services.AddTransient<IOEmbedService, OEmbedService>();
         services.AddOptions<OEmbedOptions>()
             .Bind(builder.Config.GetSection(OEmbedOptions.SectionKey));

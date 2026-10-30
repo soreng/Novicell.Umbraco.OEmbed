@@ -2,8 +2,6 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
-using Novicell.Umbraco.OEmbed.Configuration;
 using Novicell.Umbraco.OEmbed.Models;
 using Novicell.Umbraco.OEmbed.Services;
 using Novicell.Umbraco.OEmbed.Tests.TestSupport;
@@ -53,9 +51,7 @@ public class OEmbedHttpDeadlineTests
 
         return new OEmbedService(
             endpointProvider,
-            Substitute.For<IOEmbedApiEndpointDiscoveryProvider>(),
             new StubHttpClientFactory(handler),
-            Options.Create(new OEmbedOptions()),
             NullLogger<OEmbedService>.Instance);
     }
 
@@ -92,19 +88,6 @@ public class OEmbedHttpDeadlineTests
 
         Assert.That(result.Success, Is.False);
         Assert.That(result.Status, Is.EqualTo(OEmbedOperationStatus.InvalidResponse));
-    }
-
-    [Test, Timeout(5000)]
-    public async Task A_Page_That_Stalls_After_The_Headers_Gives_No_Endpoint()
-    {
-        var handler = new StubHttpMessageHandler(_ => Stalling("text/html", "<html><head>"));
-        var discovery = new OEmbedApiEndpointDiscoveryProvider(
-            new StubHttpClientFactory(handler),
-            NullLogger<OEmbedApiEndpointDiscoveryProvider>.Instance);
-
-        OEmbedApiEndpoint? endpoint = await discovery.DiscoverApiEndpointAsync(new Uri("https://site.example/post"));
-
-        Assert.That(endpoint, Is.Null);
     }
 
     [Test, Timeout(5000)]

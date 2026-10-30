@@ -9,9 +9,8 @@ This project resolves oEmbed URLs by matching them against Umbraco CMS's own
 `EmbedProvidersCollection` (see `OEmbedApiEndpointProvider.cs`). If a platform
 isn't in that collection, pasting its URL fails with `ProviderNotSupported`
 — even though the platform may have a perfectly good public oEmbed endpoint.
-Adding a provider class fixes this without relying on the `Autodiscover`
-fallback (which is slower, network-dependent, and only works when the target
-page actually advertises an oEmbed discovery link).
+Adding a provider class is the only way to support another platform: the
+package does not fetch the page an editor pasted to look for an endpoint.
 
 ## 1. Confirm the platform actually has a public oEmbed endpoint
 
@@ -149,9 +148,7 @@ its own `AddNovicellOEmbed` builder extension as the composition root.
 
 ## 6. If it doesn't work
 
-Don't reach for `Autodiscover: true` as a workaround — that was tried for
-TikTok and reverted once a proper provider was added, per explicit direction
-to not rely on autodiscovery. If a platform's endpoint fails from the server
+If a platform's endpoint fails from the server
 but works in-browser, it's very likely bot protection (see step 2) rather
 than a bug in the provider class — confirm with a fresh live URL and a direct
 fetch before concluding the class itself is wrong.

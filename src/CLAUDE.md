@@ -27,10 +27,9 @@ src/Novicell.Umbraco.OEmbed/
 
 **Key types**:
 
-- `IOEmbedService` / `OEmbedService` – Resolves URLs to oEmbed metadata (JSON handling, auto-discovery)
+- `IOEmbedService` / `OEmbedService` – Resolves URLs to oEmbed metadata (JSON handling)
 - `OEmbedApiEndpointProvider` – matches a URL against Umbraco's registered `EmbedProvidersCollection`
-- `OEmbedApiEndpointDiscoveryProvider` – auto-discovery via HTTP `Link` header or `<link rel="alternate"|"alternative" type="application/json+oembed">` in the page HTML
-- `OEmbedOptions` (`Configuration/`) – configuration (`Autodiscover`, `AllowPrivateNetworks`)
+- `OEmbedOptions` (`Configuration/`) – configuration (`AllowPrivateNetworks`)
 - `OEmbedPickerPropertyEditor` / `OEmbedPickerPropertyValueEditor` (with its nested `MinMaxValidator`, `AllowedTypeValidator` and `UrlValidator`) – property editor definition and validation (the last one rejects non-http(s) URLs in a saved value)
 - `OEmbedPickerPropertyValueConverter` – converts the stored property JSON into a strongly-typed `OEmbedValue` for Razor views
 - `OEmbedApiController` – `GET {ApiName}/api/v{version}/oembed?url=&maxwidth=&maxheight=`; `OEmbedApiControllerBase` maps `OEmbedOperationStatus` to problem-details responses
@@ -66,7 +65,7 @@ public interface IOEmbedService
 
 - Fetches oEmbed metadata from external providers
 - Reads JSON only: the request is sent with `format=json` (some providers, such as Flickr, answer with XML otherwise), and a response that is not `application/json` is `InvalidResponse`. The response is deserialized straight into `OEmbedResponse`, whose properties carry the provider's names and lenient converters (`OEmbedResponseConverters.cs`): a field of an unexpected kind is read as null, a width sent as text and a version sent as a number are read, and every field that has no property is kept in `OEmbedResponse.Extra` with the provider's name. Only a response without a valid `type` is `InvalidResponse`.
-- Auto-discovers providers via `OEmbedApiEndpointDiscoveryProvider` when no static provider matches and `Autodiscover` is enabled
+- A URL that no registered provider matches is `ProviderNotSupported`: the page an editor pasted is never fetched
 - Returns `Attempt<OEmbedResponse?, OEmbedOperationStatus>` – never throws, always returns a typed status
 
 **Operation Status** (`OEmbedOperationStatus`):
@@ -85,10 +84,7 @@ public enum OEmbedOperationStatus
 
 ### Endpoint Provider Pattern
 
-Two complementary providers:
-
-1. **`IOEmbedApiEndpointProvider`** – matches the URL against Umbraco's own `EmbedProvidersCollection` (YouTube, Vimeo, etc., as registered by Umbraco core) via each provider's `UrlSchemeRegex`. Fast, no network calls.
-2. **`IOEmbedApiEndpointDiscoveryProvider`** – dynamic discovery. Checks the target URL's HTTP `Link` header first, then falls back to parsing `<link rel="alternate"|"alternative">` in the page HTML. Slower but supports any provider advertising oEmbed. Controlled by `OEmbedOptions.Autodiscover`.
+**`IOEmbedApiEndpointProvider`** – matches the URL against Umbraco's own `EmbedProvidersCollection` (YouTube, Vimeo, etc., as registered by Umbraco core, plus Reddit, Spotify and TikTok from this package) via each provider's `UrlSchemeRegex`. No network calls. A site that is not in the collection is supported by adding a provider class.
 
 ### Property Value Converter
 
@@ -114,7 +110,7 @@ One method does all of it: `AddNovicellOEmbed()` registers the outbound HTTP cli
 {
     "Novicell": {
         "OEmbed": {
-            "Autodiscover": false
+            "AllowPrivateNetworks": false
         }
     }
 }
@@ -125,7 +121,7 @@ One method does all of it: `AddNovicellOEmbed()` registers the outbound HTTP cli
 ```csharp
 public class OEmbedOptions
 {
-    public bool Autodiscover { get; set; } = false;
+    public bool AllowPrivateNetworks { get; set; } = false;
 }
 ```
 
