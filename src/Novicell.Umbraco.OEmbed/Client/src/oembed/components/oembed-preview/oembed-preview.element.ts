@@ -2,9 +2,9 @@ import {
   css,
   html,
   customElement,
-  keyed,
   nothing,
   property,
+  repeat,
 } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement } from "@umbraco-cms/backoffice/lit-element";
 import { UmbPropertyEditorUiElement } from "@umbraco-cms/backoffice/property-editor";
@@ -151,14 +151,16 @@ export class OEmbedPreviewElement
   }
 
   #renderProviderFrame(value: OEmbedResponse, frame: ProviderFrame) {
-    // A sandbox only applies when a document is loaded. keyed() makes Lit replace the iframe
+    // A sandbox only applies when a document is loaded. Keying the iframe makes Lit replace it
     // instead of reusing it when the sandbox or src changes, so a stricter sandbox takes
-    // effect rather than being set on an already loaded document.
+    // effect rather than being set on an already loaded document. repeat() over one key does
+    // what keyed() does; keyed is not exported by the backoffice's lit in Umbraco 17.0.
     const sandbox = effectiveSandbox(frame.sandbox, PROVIDER_FRAME_SANDBOX);
     const iframe = (className: string, style?: string) =>
-      keyed(
-        `${sandbox}|${frame.src}`,
-        html`<iframe
+      repeat(
+        [`${sandbox}|${frame.src}`],
+        (key) => key,
+        () => html`<iframe
           class=${className}
           src=${frame.src}
           sandbox=${sandbox}
