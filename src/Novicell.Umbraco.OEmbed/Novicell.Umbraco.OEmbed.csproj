@@ -35,7 +35,6 @@
 
     <!-- Central package management - no versions -->
     <ItemGroup>
-        <PackageReference Include="Microsoft.Extensions.Http" />
         <PackageReference Include="Umbraco.Cms.Api.Common" />
         <PackageReference Include="Umbraco.Cms.Api.Management" />
         <PackageReference Include="Umbraco.Cms.Core" />

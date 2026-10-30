@@ -2,7 +2,6 @@
 <Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
     <!--
       The lowest Umbraco version the package supports (its major version is the package's major version),
       so a site on any 17.x can install it. The test site runs a newer Umbraco, see the test site block below.
@@ -15,14 +14,8 @@
     -->
     <UmbracoAppLocalIcuVersion Condition="'$(UmbracoAppLocalIcuVersion)' == ''">72.1.0.3</UmbracoAppLocalIcuVersion>
   </PropertyGroup>
-  <!-- Global packages (private, build-time packages for all projects) -->
   <ItemGroup>
-    <!-- Transitive dependencies pinned to patched versions (NU1902/NU1903 audit warnings) -->
-    <PackageVersion Include="MessagePack" Version="3.1.12" />
-    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
-    <PackageVersion Include="Microsoft.OpenApi" Version="2.7.5" />
-    <PackageVersion Include="System.Security.Cryptography.Xml" Version="10.0.13" />
-    <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.6" />
+    <!-- The package: only Umbraco, so it brings nothing else to the site that installs it -->
     <PackageVersion Include="Umbraco.Cms.Core" Version="$(UmbracoVersion)" />
     <PackageVersion Include="Umbraco.Cms.Web.Common" Version="$(UmbracoVersion)" />
     <PackageVersion Include="Umbraco.Cms.Api.Common" Version="$(UmbracoVersion)" />
