@@ -17,6 +17,9 @@ internal class OEmbedPickerPropertyEditor : DataEditor
         _ioHelper = ioHelper;
     }
 
+    /// <summary>The index gets what an embed is about, not the stored JSON, see <see cref="OEmbedPickerPropertyIndexValueFactory"/>.</summary>
+    public override IPropertyIndexValueFactory PropertyIndexValueFactory { get; } = new OEmbedPickerPropertyIndexValueFactory();
+
     /// <inheritdoc />
     protected override IConfigurationEditor CreateConfigurationEditor()
         => new OEmbedPickerConfigurationEditor(_ioHelper);
