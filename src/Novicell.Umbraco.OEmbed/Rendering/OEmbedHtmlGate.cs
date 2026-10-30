@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using System.Text.RegularExpressions;
 using Novicell.Umbraco.OEmbed.PropertyEditors;
 
@@ -207,6 +208,12 @@ internal static partial class OEmbedHtmlGate
     private static string Canonical(string host)
     {
         var trimmed = host.Trim().TrimStart('[').TrimEnd(']').TrimEnd('.');
+
+        // An IP address has one spelling too: [::1] and [0:0:0:0:0:0:0:1] are the same host.
+        if (IPAddress.TryParse(trimmed, out IPAddress? address))
+        {
+            return address.ToString();
+        }
 
         try
         {

@@ -193,6 +193,13 @@ public class OEmbedHtmlGateTests
     [TestCase("127.0.0.1", "https://2130706433/media/evil.svg")]
     [TestCase("[::1]", "https://[::1]:44366/media/evil.svg")]
     [TestCase("::1", "https://[::1]/media/evil.svg")]
+    [TestCase("[::1]", "https://[0:0:0:0:0:0:0:1]/media/evil.svg")]
+    [TestCase("[0:0:0:0:0:0:0:1]", "https://[::1]/media/evil.svg")]
+    [TestCase("[0000:0000:0000:0000:0000:0000:0000:0001]", "https://[::1]/media/evil.svg")]
+    [TestCase("[2001:db8::1]", "https://[2001:0DB8:0:0:0:0:0:1]/media/evil.svg")]
+    [TestCase("[2001:DB8::1]", "https://[2001:db8:0:0:0:0:0:1]/media/evil.svg")]
+    [TestCase("[::ffff:127.0.0.1]", "https://[::ffff:7f00:1]/media/evil.svg")]
+    [TestCase("127.0.0.1", "https://0x7f.1/media/evil.svg")]
     public void The_Same_Host_Is_Refused_In_Every_Spelling(string siteHost, string src)
         => Assert.That(OEmbedHtmlGate.IsSafeIframe($"""<iframe src="{src}"></iframe>""", siteHost), Is.False);
 
