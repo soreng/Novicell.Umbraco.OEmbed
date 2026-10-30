@@ -29,7 +29,7 @@ Earlier versions of the package target Umbraco 9.
 - **OEmbed property editor** (`Novicell.OEmbed`) for storing embeds on documents, media and blocks.
 - **Search:** the title, author, provider and description of each embed, and the URL the editor entered, are indexed by Examine, in the field named after the property. The provider's html and the technical fields are not, so a search for "iframe" or "video" does not match every embed. Rebuild the indexes after updating from a version that indexed the stored JSON. The Delivery API index is built from the property value and is not affected.
 - **OEmbed resolution service** (`IOEmbedService`) that turns a URL into a strongly-typed oEmbed response.
-- **Provider matching** via Umbraco's `EmbedProvidersCollection`, with optional **auto-discovery** for providers that advertise an oEmbed endpoint via `<link>` tags.
+- **Provider matching** via Umbraco's `EmbedProvidersCollection`, extended with Reddit, Spotify and TikTok.
 - **Management API endpoint** for the backoffice to request embeds.
 - **Backoffice UI** delivered as static assets (Lit + Vite + TypeScript).
 - Reads **JSON** oEmbed responses: the request asks the provider for JSON (`format=json`), and keeps everything the provider returned.
@@ -38,7 +38,7 @@ Earlier versions of the package target Umbraco 9.
 
 | Path                                      | Description                                                                                                                           |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/Novicell.Umbraco.OEmbed`             | The NuGet package: oEmbed service, endpoint/discovery providers, property editor, Management API, composer and the `Client/` backoffice UI (TypeScript/Lit, built with Vite). |
+| `src/Novicell.Umbraco.OEmbed`             | The NuGet package: oEmbed service, endpoint provider, property editor, Management API, composer and the `Client/` backoffice UI (TypeScript/Lit, built with Vite). |
 | `tests/Novicell.Umbraco.OEmbed.Tests`     | NUnit tests for the service, validators and value converter.                                                                          |
 | `src/Novicell.Umbraco.OEmbed.TestSite`    | A runnable Umbraco site (SQLite) for development and testing, with a ready-made setup imported by uSync.                              |
 
@@ -47,10 +47,9 @@ Inside the package, namespaces mirror folders: `Api`, `Composers`, `Configuratio
 ## How it works
 
 1. A URL is submitted (from the backoffice or via `IOEmbedService.GetOEmbedAsync`).
-2. `OEmbedApiEndpointProvider` matches the URL against the registered `EmbedProvidersCollection` to find a provider's oEmbed API endpoint.
-3. If no provider matches and auto-discovery is enabled, `OEmbedApiEndpointDiscoveryProvider` inspects the target page for an advertised oEmbed endpoint.
-4. The endpoint is called with `format=json` and the JSON response is read into an `OEmbedResponse`. A provider that can only answer with XML is not supported.
-5. The result is returned as an `Attempt<OEmbedResponse?, OEmbedOperationStatus>`, surfacing clear status outcomes (e.g. `ProviderNotSupported`, `EmbedNotFound`, `InvalidResponse`).
+2. `OEmbedApiEndpointProvider` matches the URL against the registered `EmbedProvidersCollection` to find a provider's oEmbed API endpoint. A URL that no provider matches is `ProviderNotSupported`: the server never fetches the page an editor pasted.
+3. The endpoint is called with `format=json` and the JSON response is read into an `OEmbedResponse`. A provider that can only answer with XML is not supported.
+4. The result is returned as an `Attempt<OEmbedResponse?, OEmbedOperationStatus>`, surfacing clear status outcomes (e.g. `ProviderNotSupported`, `EmbedNotFound`, `InvalidResponse`).
 
 ## Getting started
 
@@ -70,16 +69,17 @@ Configure options under the `Novicell:OEmbed` section in `appsettings.json`:
 {
     "Novicell": {
         "OEmbed": {
-            "Autodiscover": true
+            "AllowPrivateNetworks": false
         }
     }
 }
 ```
 
-| Setting        | Default | Description                                                                                                             |
-| -------------- | ------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `Autodiscover` | `false` | When enabled, attempts to discover an oEmbed endpoint from the target page when no registered provider matches the URL. |
+| Setting                | Default | Description                                                                                                   |
+| ---------------------- | ------- | ------------------------------------------------------------------------------------------------------------- |
 | `AllowPrivateNetworks` | `false` | Allows the server to call loopback and private network addresses. Off by default, see the security note below. |
+
+A site that is not in Umbraco's list of embed providers is supported by adding a provider class; the package adds Reddit, Spotify and TikTok that way.
 
 ### Rendering an embed
 
@@ -106,11 +106,9 @@ To write any html as it is, scripts included, on a site that trusts its editors,
 @Html.OEmbed(Model.Video, new OEmbedRenderOptions { Scripts = OEmbedScripts.Raw })
 ```
 
-### Security note on providers and Autodiscover
+### Security note on providers
 
 The live preview in the picker modal shows the HTML that an oEmbed provider has just returned to the server. A provider that returns a single `<iframe>` (YouTube, Vimeo, Spotify and similar) is rendered as a normal cross-origin iframe. Other markup, typically a `<blockquote>` plus the provider's script (X, TikTok, Reddit), runs in a sandboxed iframe that shares the backoffice's origin, because those scripts need it to work. The providers registered with Umbraco, plus Reddit, Spotify and TikTok added by this package, are therefore trusted.
-
-Enabling `Autodiscover` extends that trust to any site an editor pastes, and makes the server request the URLs it finds. Leave it off unless you trust the editors with that.
 
 Whatever the server requests on an editor's behalf is limited: only `http` and `https`, a 10 second limit for the whole request including reading the body, at most 3 redirects and a 1 MiB response. The server also only connects to publicly routable addresses. Loopback, private (RFC 1918), link-local (including cloud metadata at `169.254.169.254`), carrier-grade NAT, multicast and reserved ranges are refused, and the check is made on the address actually connected to, so redirects and DNS rebinding cannot get around it.
 
@@ -229,7 +227,7 @@ The Umbraco 17 package is a rewrite. The property editor alias is unchanged, so 
 - A property stores an array of `{ url, oembed }` items (it was one object), and the Razor model is `OEmbedValue?` when the data type does not allow multiple embeds and `IEnumerable<OEmbedValue>` when it does, like Umbraco's media picker (the Delivery API is always an array). Each item has `.Url` and `.OEmbed`, which is the `OEmbedResponse` (type, html, title, thumbnail and so on, as typed properties). The `oembed` object in the database is the response as the provider returned it, with the provider's names (`author_name`, `thumbnail_url` and so on) and every other field it sent, which is also what the old version stored, so the only difference in the database is the array around the items. Fields without a property are kept and read with `OEmbedResponse.TryGetValue<T>("name", out value)`. The property value converter reads the stored object leniently (a width sent as text is still a number, a URL that cannot be read is null), so one odd value never makes the whole property empty. Content saved by the old version is read as it is, the single-object shape included, and shows in the backoffice, in Razor and in the Delivery API without being converted.
 - The data type has `Allowed types`, `Multiple` and `Min`/`Max` settings instead of one type setting.
 - `IOEmbedService.GetOEmbedAsync` now takes an `OEmbedRequest` and returns an `Attempt` with an `OEmbedOperationStatus`; it does not throw.
-- The `Novicell:OEmbed:Autodiscover` setting is unchanged.
+- The `Novicell:OEmbed:Autodiscover` setting is gone and is ignored if it is still in `appsettings.json`: the server no longer fetches a page an editor pasted to look for an oEmbed endpoint. A site that is not in Umbraco's list of embed providers is supported by adding a provider class (Reddit, Spotify and TikTok are added by the package that way).
 
 ## License
 

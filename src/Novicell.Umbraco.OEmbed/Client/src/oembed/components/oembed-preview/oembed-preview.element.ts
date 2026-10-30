@@ -223,7 +223,7 @@ export class OEmbedPreviewElement
     // The sandboxes below keep allow-same-origin on purpose. These providers' scripts (X, TikTok,
     // Reddit) open nested frames that inherit the sandbox and fail without storage access, and
     // the preview measures the frame's height from the parent. The registered embed providers
-    // are therefore the trust boundary; Autodiscover widens it (see the README).
+    // are therefore the trust boundary (see the README).
     const srcdoc = `<html><head></head><body>${style}<div${wrapperStyle}>${markup}</div></body></html>`;
 
     if (hasFixedSize) {

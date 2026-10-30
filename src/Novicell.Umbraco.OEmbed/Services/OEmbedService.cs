@@ -3,8 +3,6 @@ using System.Net;
 using System.Text.Json;
 using System.Web;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Novicell.Umbraco.OEmbed.Configuration;
 using Novicell.Umbraco.OEmbed.Models;
 using Umbraco.Cms.Core;
 
@@ -12,14 +10,10 @@ namespace Novicell.Umbraco.OEmbed.Services;
 
 internal class OEmbedService(
     IOEmbedApiEndpointProvider endpointProvider,
-    IOEmbedApiEndpointDiscoveryProvider endpointDiscoveryProvider,
     IHttpClientFactory httpClientFactory,
-    IOptions<OEmbedOptions> oembedOptions,
     ILogger<OEmbedService> logger)
     : IOEmbedService
 {
-    private readonly OEmbedOptions _options = oembedOptions.Value;
-
     public async Task<Attempt<OEmbedResponse?, OEmbedOperationStatus>> GetOEmbedAsync(
         OEmbedRequest request,
         CancellationToken cancellationToken)
@@ -30,7 +24,7 @@ internal class OEmbedService(
             return Attempt<OEmbedResponse?, OEmbedOperationStatus>.Fail(OEmbedOperationStatus.ProviderNotSupported);
         }
 
-        OEmbedApiEndpoint? apiEndpoint = await FindApiEndpoint(request);
+        OEmbedApiEndpoint? apiEndpoint = await endpointProvider.GetApiEndpointAsync(request.Url);
 
         if (apiEndpoint == null || !OEmbedHttp.IsHttpUrl(apiEndpoint.Endpoint))
         {
@@ -52,18 +46,6 @@ internal class OEmbedService(
             logger.LogError(e, "OEmbed request failed");
             return Attempt<OEmbedResponse?, OEmbedOperationStatus>.Fail(OEmbedOperationStatus.InvalidResponse);
         }
-    }
-
-    private async Task<OEmbedApiEndpoint?> FindApiEndpoint(OEmbedRequest request)
-    {
-        OEmbedApiEndpoint? endpoint = await endpointProvider.GetApiEndpointAsync(request.Url);
-
-        if (endpoint is null && _options.Autodiscover)
-        {
-            endpoint = await endpointDiscoveryProvider.DiscoverApiEndpointAsync(request.Url);
-        }
-
-        return endpoint;
     }
 
     private static Uri BuildEndpointUrl(Uri apiEndpoint, OEmbedRequest request)

@@ -1,7 +1,5 @@
 using System.Net;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
-using Novicell.Umbraco.OEmbed.Configuration;
 using Novicell.Umbraco.OEmbed.Models;
 using Novicell.Umbraco.OEmbed.Services;
 using Novicell.Umbraco.OEmbed.Tests.TestSupport;
@@ -18,21 +16,17 @@ public class OEmbedServiceTests
     private static readonly OEmbedApiEndpoint ApiEndpoint = new("TestProvider", ProviderEndpoint);
 
     private IOEmbedApiEndpointProvider _endpointProvider = null!;
-    private IOEmbedApiEndpointDiscoveryProvider _discoveryProvider = null!;
 
     [SetUp]
     public void SetUp()
     {
         _endpointProvider = Substitute.For<IOEmbedApiEndpointProvider>();
-        _discoveryProvider = Substitute.For<IOEmbedApiEndpointDiscoveryProvider>();
     }
 
-    private OEmbedService CreateService(HttpMessageHandler handler, bool autodiscover = false)
+    private OEmbedService CreateService(HttpMessageHandler handler)
         => new(
             _endpointProvider,
-            _discoveryProvider,
             new StubHttpClientFactory(handler),
-            Options.Create(new OEmbedOptions { Autodiscover = autodiscover }),
             NullLogger<OEmbedService>.Instance);
 
     private static OEmbedRequest Request(string url = "https://youtube.com/watch?v=123")
@@ -41,57 +35,24 @@ public class OEmbedServiceTests
     // --- Provider matching / fallthrough ---
 
     [Test]
-    public async Task Uses_Static_Provider_When_Found_And_Never_Invokes_Discovery()
+    public async Task Uses_The_Endpoint_Of_The_Provider_That_Matches()
     {
         _endpointProvider.GetApiEndpointAsync(Arg.Any<Uri>()).Returns(ApiEndpoint);
         var handler = new StubHttpMessageHandler(_ =>
             StubHttpMessageHandler.JsonResponse(HttpStatusCode.OK, ValidJsonResponse()));
-        OEmbedService service = CreateService(handler, autodiscover: true);
+        OEmbedService service = CreateService(handler);
 
         Attempt<OEmbedResponse?, OEmbedOperationStatus> result = await service.GetOEmbedAsync(Request(), CancellationToken.None);
 
         Assert.That(result.Success, Is.True);
-        await _discoveryProvider.DidNotReceive().DiscoverApiEndpointAsync(Arg.Any<Uri>());
     }
 
     [Test]
-    public async Task Falls_Through_To_Discovery_When_No_Static_Provider_And_Autodiscover_Enabled()
+    public async Task Reports_ProviderNotSupported_And_Requests_Nothing_When_No_Provider_Matches()
     {
         _endpointProvider.GetApiEndpointAsync(Arg.Any<Uri>()).Returns((OEmbedApiEndpoint?)null);
-        _discoveryProvider.DiscoverApiEndpointAsync(Arg.Any<Uri>()).Returns(ApiEndpoint);
-        var handler = new StubHttpMessageHandler(_ =>
-            StubHttpMessageHandler.JsonResponse(HttpStatusCode.OK, ValidJsonResponse()));
-        OEmbedService service = CreateService(handler, autodiscover: true);
-
-        Attempt<OEmbedResponse?, OEmbedOperationStatus> result = await service.GetOEmbedAsync(Request(), CancellationToken.None);
-
-        Assert.That(result.Success, Is.True);
-        await _discoveryProvider.Received(1).DiscoverApiEndpointAsync(Arg.Any<Uri>());
-    }
-
-    [Test]
-    public async Task Does_Not_Use_Discovery_When_Autodiscover_Disabled()
-    {
-        _endpointProvider.GetApiEndpointAsync(Arg.Any<Uri>()).Returns((OEmbedApiEndpoint?)null);
-        var handler = new StubHttpMessageHandler(_ =>
-            StubHttpMessageHandler.JsonResponse(HttpStatusCode.OK, ValidJsonResponse()));
-        OEmbedService service = CreateService(handler, autodiscover: false);
-
-        Attempt<OEmbedResponse?, OEmbedOperationStatus> result = await service.GetOEmbedAsync(Request(), CancellationToken.None);
-
-        Assert.That(result.Success, Is.False);
-        Assert.That(result.Status, Is.EqualTo(OEmbedOperationStatus.ProviderNotSupported));
-        await _discoveryProvider.DidNotReceive().DiscoverApiEndpointAsync(Arg.Any<Uri>());
-    }
-
-    [Test]
-    public async Task Reports_ProviderNotSupported_When_Neither_Provider_Nor_Discovery_Find_An_Endpoint()
-    {
-        _endpointProvider.GetApiEndpointAsync(Arg.Any<Uri>()).Returns((OEmbedApiEndpoint?)null);
-        _discoveryProvider.DiscoverApiEndpointAsync(Arg.Any<Uri>()).Returns((OEmbedApiEndpoint?)null);
-        var handler = new StubHttpMessageHandler(_ =>
-            StubHttpMessageHandler.JsonResponse(HttpStatusCode.OK, ValidJsonResponse()));
-        OEmbedService service = CreateService(handler, autodiscover: true);
+        var handler = new StubHttpMessageHandler(_ => throw new InvalidOperationException("No request expected."));
+        OEmbedService service = CreateService(handler);
 
         Attempt<OEmbedResponse?, OEmbedOperationStatus> result = await service.GetOEmbedAsync(Request(), CancellationToken.None);
 
@@ -382,7 +343,7 @@ public class OEmbedServiceTests
     public async Task Rejects_A_Request_Url_That_Is_Not_Http_Or_Https_Without_Looking_For_A_Provider(string url)
     {
         var handler = new StubHttpMessageHandler(_ => throw new InvalidOperationException("No request expected."));
-        OEmbedService service = CreateService(handler, autodiscover: true);
+        OEmbedService service = CreateService(handler);
 
         Attempt<OEmbedResponse?, OEmbedOperationStatus> result =
             await service.GetOEmbedAsync(Request(url), CancellationToken.None);
@@ -390,7 +351,6 @@ public class OEmbedServiceTests
         Assert.That(result.Success, Is.False);
         Assert.That(result.Status, Is.EqualTo(OEmbedOperationStatus.ProviderNotSupported));
         await _endpointProvider.DidNotReceive().GetApiEndpointAsync(Arg.Any<Uri>());
-        await _discoveryProvider.DidNotReceive().DiscoverApiEndpointAsync(Arg.Any<Uri>());
     }
 
     [Test]

@@ -3,9 +3,8 @@ using System.Text;
 namespace Novicell.Umbraco.OEmbed.Services;
 
 /// <summary>
-/// The limits for HTTP calls made on behalf of an editor: to an oEmbed endpoint, and (with
-/// Autodiscover) to the page an editor pasted. Both can be an arbitrary host, so every call gets
-/// the same bounds on time, redirects and response size.
+/// The limits for HTTP calls made on behalf of an editor, to an oEmbed endpoint. A provider can
+/// redirect or answer with anything, so every call gets bounds on time, redirects and response size.
 /// </summary>
 internal static class OEmbedHttp
 {
