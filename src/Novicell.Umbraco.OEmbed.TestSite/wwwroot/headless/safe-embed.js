@@ -18,10 +18,12 @@ const REFERRER_POLICIES = new Set([
   'strict-origin-when-cross-origin', 'unsafe-url', 'no-referrer-when-downgrade',
 ]);
 
-// Layout only: nothing that puts the frame over the page (position, top, inset, z-index, ...).
+// Look and size only: nothing that can move the frame over the rest of the page. That leaves out position, top,
+// inset, z-index and transform, and also margin and vertical-align, where a negative length shifts the frame
+// (margin:-100vh 0 0 puts a full-page frame over the controls above it).
 const STYLE_PROPERTIES = new Set([
   'border', 'border-radius', 'border-width', 'border-style', 'border-color', 'width', 'height', 'max-width',
-  'max-height', 'min-width', 'min-height', 'aspect-ratio', 'display', 'margin', 'vertical-align', 'overflow',
+  'max-height', 'min-width', 'min-height', 'aspect-ratio', 'display', 'overflow',
 ]);
 
 const isHttpUrl = (value) => {
@@ -33,6 +35,11 @@ const isHttpUrl = (value) => {
     return false;
   }
 };
+
+// A frame of the page's own host is not isolated from the page, so a script in what it loads (an SVG uploaded to
+// the site, say) could reach it. Any scheme or port of the host is refused. This cannot see where another address
+// redirects to: for that, set a frame-src Content-Security-Policy (see the README).
+const isOtherHost = (value) => new URL(value).hostname.toLowerCase() !== location.hostname.toLowerCase();
 
 const isSafeStyle = (value) =>
   value
@@ -50,7 +57,7 @@ const isSafeStyle = (value) =>
 
 // Each check gets the value the browser read, so entities are already decoded.
 const VALUE_CHECKS = {
-  src: isHttpUrl,
+  src: (v) => isHttpUrl(v) && isOtherHost(v),
   width: (v) => /^\d{1,4}%?$/.test(v),
   height: (v) => /^\d{1,4}%?$/.test(v),
   frameborder: (v) => /^(0|1|no|yes)$/i.test(v),
