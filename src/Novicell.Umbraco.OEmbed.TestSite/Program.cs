@@ -13,6 +13,8 @@ WebApplication app = builder.Build();
 
 await app.BootUmbracoAsync();
 
+// So that /headless/ is the page in wwwroot/headless/index.html
+app.UseDefaultFiles();
 
 app.UseUmbraco()
     .WithMiddleware(u =>

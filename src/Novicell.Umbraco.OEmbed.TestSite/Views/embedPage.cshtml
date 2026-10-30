@@ -42,7 +42,10 @@
 
 <body>
     <h1>@Model.Value("title")</h1>
-    <p><a href="?raw=1">Allow scripts</a> | <a href="?raw=0">Only iframes</a></p>
+    <p>
+        <a href="?raw=1">Allow scripts</a> | <a href="?raw=0">Only iframes</a>
+        | <a href="/headless/@(Context.Request.Query["raw"] == "1" ? "?raw=1" : "")">Headless version</a>
+    </p>
 
     @if (video is not null)
     {

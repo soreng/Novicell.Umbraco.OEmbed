@@ -154,6 +154,10 @@ With Umbraco's [Delivery API](https://docs.umbraco.com/umbraco-cms/reference/con
 - A URL that is not http(s) is returned as `null`.
 - `html` is what the provider returned when the editor picked the URL and is not verified, so a headless site should treat it as editor-supplied content, as with the Razor model.
 
+### Headless sample
+
+The test site has a headless version of its sample page at https://localhost:44366/headless/ (see [Running the test site](#running-the-test-site)): the same page as `Views/embedPage.cshtml`, built in the browser from the Delivery API with plain JavaScript, no build step. `wwwroot/headless/app.js` shows how to read the camelCase fields and `extra`, and `wwwroot/headless/safe-embed.js` is the rule of `Html.OEmbed` for a site that is not rendered by Umbraco: it reads the `html` with the browser's own parser (`DOMParser`, which runs nothing) and only writes it when it is exactly one ordinary iframe with allowed attributes and an http(s) `src`. Anything else, such as the X post, is left out and its caption link is what shows. Each page links to the other, and **Allow scripts** (`?raw=1`) writes the provider's html as it is on both, for a site that trusts its editors with that.
+
 ## Running the test site
 
 The backoffice client is built into `wwwroot/App_Plugins/NovicellUmbracoOEmbed` and is not committed, so build it before running the test site (and before `dotnet pack`):
@@ -177,7 +181,7 @@ On a fresh install, uSync imports a ready-made setup from `uSync/v17`:
 - **OEmbed picker - single video** and **OEmbed picker - multiple** data types, to try both shapes of the value
 - an **Embed page** with a video and four embeds (a video, a photo and two rich embeds)
 
-The Delivery API is switched on with public access, so the sample page is also at https://localhost:44366/umbraco/delivery/api/v2/content.
+The Delivery API is switched on with public access, so the sample page is also at https://localhost:44366/umbraco/delivery/api/v2/content, and https://localhost:44366/headless/ is the same page built from it, see [Headless sample](#headless-sample).
 
 uSync exports changes when you save, so remember to commit `uSync/` if you change these types.
 
