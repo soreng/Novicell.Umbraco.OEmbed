@@ -16,7 +16,8 @@ public static class UmbracoBuilderExtensions
     /// <summary>
     /// Adds the OEmbed services, the value converter, the extra embed providers and the Management API
     /// the backoffice uses to the Umbraco builder. <see cref="Composers.OEmbedComposer"/> calls this, so it
-    /// is only needed when the package is registered by hand.
+    /// is only needed when the package is registered by hand. Calling it more than once is safe: the
+    /// package is registered the first time and later calls do nothing.
     /// </summary>
     /// <param name="builder">The Umbraco builder.</param>
     /// <returns>The same builder.</returns>
@@ -24,6 +25,13 @@ public static class UmbracoBuilderExtensions
     {
         IServiceCollection services = builder.Services;
 
+        // The composer registers the package, so a site that also calls this by hand would register it twice.
+        if (services.Any(descriptor => descriptor.ServiceType == typeof(RegistrationMarker)))
+        {
+            return builder;
+        }
+
+        services.AddSingleton<RegistrationMarker>();
         services.AddOEmbedHttpClient();
         services.AddTransient<IOEmbedApiEndpointProvider, OEmbedApiEndpointProvider>();
         services.AddTransient<IOEmbedService, OEmbedService>();
@@ -40,12 +48,6 @@ public static class UmbracoBuilderExtensions
         // The Management API: its swagger document, which the generated backoffice client is built from.
         services.Configure<SwaggerGenOptions>(options =>
         {
-            // Registering the package twice must not add the document and the filter twice.
-            if (options.SwaggerGeneratorOptions.SwaggerDocs.ContainsKey(Constants.ApiName))
-            {
-                return;
-            }
-
             options.SwaggerDoc(Constants.ApiName, new OpenApiInfo { Title = "Novicell OEmbed API", Version = "1.0" });
             options.OperationFilter<OEmbedApiOperationSecurityFilter>();
         });
@@ -53,4 +55,7 @@ public static class UmbracoBuilderExtensions
 
         return builder;
     }
+
+    /// <summary>Tells later calls that the package is already registered.</summary>
+    internal sealed class RegistrationMarker;
 }
