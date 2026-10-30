@@ -27,6 +27,7 @@ Earlier versions of the package target Umbraco 9.
 ## Features
 
 - **OEmbed property editor** (`Novicell.OEmbed`) for storing embeds on documents, media and blocks.
+- **Search:** the title, author, provider and description of each embed, and the URL the editor entered, are indexed by Examine, in the field named after the property. The provider's html and the technical fields are not, so a search for "iframe" or "video" does not match every embed. Rebuild the indexes after updating from a version that indexed the stored JSON. The Delivery API index is built from the property value and is not affected.
 - **OEmbed resolution service** (`IOEmbedService`) that turns a URL into a strongly-typed oEmbed response.
 - **Provider matching** via Umbraco's `EmbedProvidersCollection`, with optional **auto-discovery** for providers that advertise an oEmbed endpoint via `<link>` tags.
 - **Management API endpoint** for the backoffice to request embeds.
