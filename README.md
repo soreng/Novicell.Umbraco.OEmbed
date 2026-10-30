@@ -92,9 +92,11 @@ The `html` of a saved embed is posted by the backoffice and is not verified, so 
 It writes the html the provider returned **exactly as it is**, with nothing added or changed, when it is one ordinary iframe (YouTube, Vimeo, Spotify, SoundCloud and the like), and nothing otherwise. Ordinary means:
 
 - exactly one `<iframe>` with its closing tag, and nothing else in or around it;
-- only these attributes, each with a value of the expected shape: `src`, `width`, `height`, `title`, `allow`, `allowfullscreen`, `frameborder`, `scrolling`, `loading`, `referrerpolicy`, `sandbox`, `data-testid`, and a `style` that only lays the frame out (no `position`, `z-index`, `url()`);
-- `src` is an absolute http(s) address;
+- only these attributes, each with a value of the expected shape: `src`, `width`, `height`, `title`, `allow`, `allowfullscreen`, `frameborder`, `scrolling`, `loading`, `referrerpolicy`, `sandbox`, `data-testid`, and a `style` that only sets how the frame looks and how big it is (no `position`, `z-index`, `margin`, `vertical-align` or `url()`, which could move it over the page);
+- `src` is an absolute http(s) address, and not of the site's own host (an iframe of the site is not isolated from the page, so a script in what it loads, such as an SVG uploaded to the site, could reach it);
 - no event handler such as `onload`, no `srcdoc`, no attribute given twice.
+
+The check reads the text, so it cannot see where an address redirects to. To limit where frames can load from, redirects included, set a `frame-src` [Content-Security-Policy](https://developer.mozilla.org/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/frame-src) with the embed hosts your site uses, for example `frame-src https://www.youtube.com https://player.vimeo.com https://open.spotify.com https://w.soundcloud.com`. Behind a proxy, make sure the site sees the public host name (forwarded headers), as the check compares with it.
 
 Markup with a script of its own (X, TikTok, Reddit) is left out, and so is anything that does not pass. A photo or link embed has no html, so write its `OEmbed.Url` and `OEmbed.Title` and the URL the editor entered yourself. The site decides what to show instead, for example a link; the test site's `Views/Partials/oembed.cshtml` shows this.
 

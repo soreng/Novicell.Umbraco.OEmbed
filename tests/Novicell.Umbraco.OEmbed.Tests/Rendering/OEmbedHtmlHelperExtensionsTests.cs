@@ -1,5 +1,6 @@
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Html;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Novicell.Umbraco.OEmbed.Models;
 using NSubstitute;
@@ -63,6 +64,34 @@ public class OEmbedHtmlHelperExtensionsTests
 
         Assert.That(Render(_html.OEmbed(Embed(Tweet, OEmbedType.Rich), options)), Is.EqualTo(Tweet));
         Assert.That(Render(_html.OEmbed(Embed(Iframe), options)), Is.EqualTo(Iframe));
+    }
+
+    private void RequestTo(string host)
+    {
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.Host = new HostString(host);
+        _html.ViewContext.Returns(new ViewContext { HttpContext = httpContext });
+    }
+
+    [Test]
+    public void An_Iframe_Of_The_Sites_Own_Host_Is_Left_Out_By_Default()
+    {
+        RequestTo("site.test");
+        var own = """<iframe src="https://site.test/media/evil.svg" width="200" height="100"></iframe>""";
+
+        Assert.That(Render(_html.OEmbed(Embed(own))), Is.Empty);
+
+        // Another host is written, and Raw writes anything.
+        Assert.That(Render(_html.OEmbed(Embed(Iframe))), Is.EqualTo(Iframe));
+        Assert.That(Render(_html.OEmbed(Embed(own), new OEmbedRenderOptions { Scripts = OEmbedScripts.Raw })), Is.EqualTo(own));
+    }
+
+    [Test]
+    public void The_Host_Of_The_Request_Is_Used_Whatever_Its_Case_Or_Port()
+    {
+        RequestTo("Site.Test:8443");
+
+        Assert.That(Render(_html.OEmbed(Embed("""<iframe src="https://site.test/e"></iframe>"""))), Is.Empty);
     }
 
     [TestCase(null)]

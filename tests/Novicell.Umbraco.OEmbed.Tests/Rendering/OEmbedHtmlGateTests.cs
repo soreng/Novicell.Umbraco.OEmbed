@@ -138,6 +138,12 @@ public class OEmbedHtmlGateTests
     [TestCase("""<iframe src="https://example.com/e" style="width:100% !important"></iframe>""")]
     [TestCase("""<iframe src="https://example.com/e" style="border-radius"></iframe>""")]
     [TestCase("""<iframe src="https://example.com/e" style="pointer-events:none"></iframe>""")]
+    // A negative margin or vertical-align moves the frame: a full-page frame is put over the controls above it.
+    [TestCase("""<iframe src="https://example.com/e" style="display:block;width:100vw;height:100vh;margin:-100vh 0 0"></iframe>""")]
+    [TestCase("""<iframe src="https://example.com/e" style="margin: -100vh 0 0"></iframe>""")]
+    [TestCase("""<iframe src="https://example.com/e" style="margin:0"></iframe>""")]
+    [TestCase("""<iframe src="https://example.com/e" style="vertical-align: -9999px"></iframe>""")]
+    [TestCase("""<iframe src="https://example.com/e" style="vertical-align: middle"></iframe>""")]
     public void A_Style_That_Is_Not_Only_Layout_Is_Refused(string html)
         => Assert.That(OEmbedHtmlGate.IsSafeIframe(html), Is.False);
 
@@ -146,6 +152,36 @@ public class OEmbedHtmlGateTests
     [TestCase("""<iframe src="https://example.com/e" style=""></iframe>""")]
     public void A_Layout_Style_Is_Allowed(string html)
         => Assert.That(OEmbedHtmlGate.IsSafeIframe(html), Is.True);
+
+    // A frame of the site's own host is not isolated from the page: a script in what it loads, an SVG uploaded to
+    // the site for example, could reach the page.
+    [TestCase("""<iframe src="https://site.test/media/evil.svg"></iframe>""")]
+    [TestCase("""<iframe src="https://SITE.test/media/evil.svg"></iframe>""")]
+    [TestCase("""<iframe src="http://site.test/media/evil.svg"></iframe>""")]
+    [TestCase("""<iframe src="https://site.test:8443/media/evil.svg"></iframe>""")]
+    [TestCase("""<iframe src="https://user@site.test/media/evil.svg"></iframe>""")]
+    public void An_Iframe_Of_The_Sites_Own_Host_Is_Refused(string html)
+    {
+        Assert.That(OEmbedHtmlGate.IsSafeIframe(html, siteHost: "site.test"), Is.False);
+        Assert.That(OEmbedHtmlGate.IsSafeIframe(html, siteHost: "SITE.TEST"), Is.False);
+    }
+
+    [Test]
+    public void The_Own_Host_Is_Only_Refused_When_It_Is_Known()
+        => Assert.That(OEmbedHtmlGate.IsSafeIframe("""<iframe src="https://site.test/media/evil.svg"></iframe>"""), Is.True);
+
+    // Other hosts are not the site's, a subdomain is a different origin and a name that only ends the same is another host.
+    [TestCase("""<iframe src="https://example.com/e"></iframe>""")]
+    [TestCase("""<iframe src="https://player.vimeo.com/video/1"></iframe>""")]
+    [TestCase("""<iframe src="https://www.site.test/e"></iframe>""")]
+    [TestCase("""<iframe src="https://othersite.test/e"></iframe>""")]
+    [TestCase("""<iframe src="https://site.test.evil.example/e"></iframe>""")]
+    public void An_Iframe_Of_Another_Host_Is_Allowed_Whatever_The_Sites_Host_Is(string html)
+        => Assert.That(OEmbedHtmlGate.IsSafeIframe(html, siteHost: "site.test"), Is.True);
+
+    [TestCaseSource(nameof(Providers))]
+    public void The_Providers_Are_Allowed_On_A_Site_With_Any_Host_Of_Its_Own(string html)
+        => Assert.That(OEmbedHtmlGate.IsSafeIframe(html, siteHost: "site.test"), Is.True);
 
     [TestCase(null)]
     [TestCase("")]

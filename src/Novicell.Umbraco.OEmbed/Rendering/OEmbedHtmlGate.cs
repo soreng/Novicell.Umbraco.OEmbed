@@ -62,16 +62,23 @@ internal static partial class OEmbedHtmlGate
         "strict-origin-when-cross-origin", "unsafe-url", "no-referrer-when-downgrade",
     };
 
-    // Layout only: nothing that positions the frame over the page (position, top, inset, z-index, ...).
+    // Look and size only: nothing that can move the frame over the rest of the page. That leaves out position,
+    // top, inset, z-index and transform, and also margin and vertical-align, where a negative length shifts the
+    // frame (margin:-100vh 0 0 puts a full-page frame over the controls above it).
     private static readonly HashSet<string> StyleProperties = new(StringComparer.OrdinalIgnoreCase)
     {
         "border", "border-radius", "border-width", "border-style", "border-color", "width", "height",
-        "max-width", "max-height", "min-width", "min-height", "aspect-ratio", "display", "margin",
-        "vertical-align", "overflow",
+        "max-width", "max-height", "min-width", "min-height", "aspect-ratio", "display", "overflow",
     };
 
     /// <summary>True when the html is exactly one safe iframe.</summary>
-    public static bool IsSafeIframe(string? html)
+    /// <param name="html">The html of the embed.</param>
+    /// <param name="siteHost">
+    /// The host name of the site the html is written to. An iframe of that host is refused: it is not isolated from
+    /// the page, so a script in what it loads (an SVG uploaded to the site, say) could reach the page. Null when it
+    /// is not known, and nothing is then refused for its host.
+    /// </param>
+    public static bool IsSafeIframe(string? html, string? siteHost = null)
     {
         if (string.IsNullOrWhiteSpace(html))
         {
@@ -102,7 +109,7 @@ internal static partial class OEmbedHtmlGate
                 : attribute.Groups["uq"].Success ? attribute.Groups["uq"].Value
                 : null;
 
-            if (!IsAllowed(name.ToLowerInvariant(), value))
+            if (!IsAllowed(name.ToLowerInvariant(), value, siteHost))
             {
                 return false;
             }
@@ -112,7 +119,7 @@ internal static partial class OEmbedHtmlGate
         return seen.Contains("src");
     }
 
-    private static bool IsAllowed(string name, string? value)
+    private static bool IsAllowed(string name, string? value, string? siteHost)
     {
         // The address has its own rule for &, below: providers write a bare & in a query (SoundCloud does).
         if (value is not null && (OEmbedUrlSafety.HasControlCharacters(value) || (name != "src" && Entity().Replace(value, string.Empty).Contains('&'))))
@@ -122,7 +129,7 @@ internal static partial class OEmbedHtmlGate
 
         return name switch
         {
-            "src" => value is not null && IsSafeSource(value),
+            "src" => value is not null && IsSafeSource(value, siteHost),
             "width" or "height" => value is not null && Size().IsMatch(value),
             "frameborder" => IsOneOf(value, "0", "1", "no", "yes"),
             "scrolling" => IsOneOf(value, "yes", "no", "auto"),
@@ -141,7 +148,7 @@ internal static partial class OEmbedHtmlGate
     private static bool IsOneOf(string? value, params string[] allowed)
         => value is not null && allowed.Any(option => option.Equals(value, StringComparison.OrdinalIgnoreCase));
 
-    private static bool IsSafeSource(string value)
+    private static bool IsSafeSource(string value, string? siteHost)
     {
         if (value != value.Trim())
         {
@@ -170,7 +177,13 @@ internal static partial class OEmbedHtmlGate
         // package passes on.
         var decoded = value.Replace("&amp;", "&", StringComparison.OrdinalIgnoreCase);
 
-        return Uri.TryCreate(decoded, UriKind.Absolute, out Uri? uri) && OEmbedUrlSafety.IsSafeEnteredUrl(uri);
+        return Uri.TryCreate(decoded, UriKind.Absolute, out Uri? uri)
+            && OEmbedUrlSafety.IsSafeEnteredUrl(uri)
+
+            // A frame of the site's own host is not isolated from the page. Any scheme or port of it is refused,
+            // not only the exact origin. A different address that redirects here cannot be seen from the text:
+            // for that, set a frame-src Content-Security-Policy (see the README).
+            && (siteHost is null || !uri.Host.Equals(siteHost, StringComparison.OrdinalIgnoreCase));
     }
 
     private static bool IsSafeStyle(string value)
