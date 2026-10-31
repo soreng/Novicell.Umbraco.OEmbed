@@ -62,8 +62,8 @@
         <ClientSource Include="Client\src\**\*;Client\public\**\*;Client\package.json;Client\package-lock.json;Client\vite.config.ts;Client\tsconfig.json" />
     </ItemGroup>
 
-    <!-- npm ci rewrites node_modules/.package-lock.json, so this runs when the lock file has changed since -->
-    <Target Name="InstallClientForPack" Inputs="$(ClientDir)\package-lock.json" Outputs="$(ClientDir)\node_modules\.package-lock.json">
+    <!-- npm ci rewrites node_modules/.package-lock.json, so this runs when a package file has changed since -->
+    <Target Name="InstallClientForPack" Inputs="$(ClientDir)\package.json;$(ClientDir)\package-lock.json"Outputs="$(ClientDir)\node_modules\.package-lock.json">
         <Exec Command="npm ci" WorkingDirectory="$(ClientDir)" />
     </Target>
 
