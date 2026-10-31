@@ -194,7 +194,7 @@ uSync exports changes when you save, so remember to commit `uSync/` if you chang
 ./scripts/Test-UmbracoVersions.ps1 -Versions "17.0.0=17.0.0", "17.6.2" # Umbraco version=uSync version
 ```
 
-The test site's own versions are `TestSiteUmbracoVersion` and `TestSiteUSyncVersion` in `Directory.Packages.props`. The checks call the real providers, so a provider that is down fails its own line.
+The test site's own versions are `TestSiteUmbracoVersion` and `TestSiteUSyncVersion` in `Directory.Packages.props`. The checks call the real providers, so a provider that is down fails its own line. See [scripts/README.md](scripts/README.md) for reading the results and changing the checks.
 
 ## Branches and releases
 

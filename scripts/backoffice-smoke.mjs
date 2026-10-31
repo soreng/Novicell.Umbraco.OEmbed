@@ -1,14 +1,7 @@
-// Smoke test of the package in a running test site. Saves nothing.
-//  - Front end: the sample page renders its embeds (only iframes by default, scripts with ?raw=1),
-//    the Delivery API returns them, and the headless page renders them in a browser.
-//  - Backoffice: logs in, opens the first document and retrieves one URL per kind of embed in the
-//    picker (iframe video and audio, a photo, script-based embeds), plus an unsupported URL.
-// Provider answers come from the internet, so a provider that is down fails its own line only.
-// Run from src/Novicell.Umbraco.OEmbed/Client (it uses that folder's Playwright):
-//   node ../../../scripts/backoffice-smoke.mjs https://localhost:44366 [screenshot folder] [Umbraco version]
-// Exits with 1 if a check fails.
+// See scripts/README.md.
 import { createRequire } from 'node:module';
 
+// Playwright comes from the client's npm packages, so run this from src/Novicell.Umbraco.OEmbed/Client.
 const require = createRequire(process.cwd() + '/package.json');
 const { chromium } = require('playwright');
 
@@ -21,15 +14,13 @@ const check = (ok, message) => {
   if (!ok) failures.push(message);
 };
 
-// One URL per kind of embed. "preview" is what the picker should show for it. "since" is the first
-// Umbraco version whose own provider for it works; on older versions the check is skipped.
 const EMBEDS = [
   { name: 'YouTube video', url: 'https://www.youtube.com/watch?v=jNQXAC9IVRw', type: 'video', preview: 'iframe' },
   { name: 'Vimeo video', url: 'https://vimeo.com/371827688', type: 'video', preview: 'iframe' },
   { name: 'Spotify track', url: 'https://open.spotify.com/track/7ouMYWpwJ422jRcDASZB7P', type: 'rich', preview: 'iframe' },
   { name: 'SoundCloud track', url: 'https://soundcloud.com/forss/flickermood', type: 'rich', preview: 'iframe' },
   { name: 'Flickr photo', url: 'https://www.flickr.com/photos/pgregorynz/3692645578/', type: 'photo', preview: 'img' },
-  // Umbraco 17.0.0 and 17.0.1 call http://publish.twitter.com/oembed, which no longer answers.
+  // Umbraco's own X provider before 17.0.2 calls http://publish.twitter.com/oembed, which no longer answers.
   { name: 'X post', url: 'https://x.com/Interior/status/463440424141459456', type: 'rich', preview: 'srcdoc', since: '17.0.2' },
   { name: 'TikTok video', url: 'https://www.tiktok.com/@scout2015/video/6718335390845095173', type: 'video', preview: 'srcdoc' },
 ];
@@ -41,8 +32,7 @@ const page = await context.newPage();
 const pageErrors = [];
 let auth = null;
 page.on('pageerror', (e) => pageErrors.push({ message: e.message, stack: e.stack ?? '' }));
-// Errors raised by the site's own code: the package, the backoffice and the sample pages. Anything else
-// comes from a provider's script running in a preview, and is reported but does not fail the test.
+// Errors from anywhere else come from a provider's script in a preview: reported, but not a failure.
 const ownCode = /\/App_Plugins\/|\/umbraco\/backoffice\/|\/headless\//;
 page.on('request', (r) => {
   const h = r.headers()['authorization'];
@@ -52,7 +42,6 @@ page.on('request', (r) => {
 const count = (text, pattern) => (text.match(pattern) ?? []).length;
 
 try {
-  // --- Front end
   const safe = await (await page.request.get(`${base}/?raw=0`)).text();
   const raw = await (await page.request.get(`${base}/?raw=1`)).text();
   check(count(safe, /<iframe\b/g) >= 3, `the page renders provider iframes (${count(safe, /<iframe\b/g)})`);
@@ -71,7 +60,6 @@ try {
   const headlessFrames = await page.locator('iframe').count();
   check(headlessFrames >= 3, `the headless page renders the embeds (${headlessFrames} iframes)`);
 
-  // --- Backoffice
   await page.goto(`${base}/umbraco`, { waitUntil: 'domcontentloaded' });
   await page.locator('input[name=username]').first().waitFor({ timeout: 60000 });
   await page.locator('input[name=username]').first().fill('admin@example.com');
@@ -95,7 +83,6 @@ try {
   await choose.waitFor({ timeout: 60000 });
   check(true, 'the embed property editor is shown');
 
-  // The saved embeds are shown as cards, never as live provider markup.
   const savedLive = await page.locator('oembed-preview:not([live]) iframe').count();
   check(savedLive === 0, `saved embeds are shown without running provider markup (${savedLive} iframes)`);
 
@@ -118,7 +105,7 @@ try {
     await page.waitForTimeout(1500);
   }
 
-  // getByText and CSS locators look inside shadow roots, where the modal renders.
+  // The modal renders in shadow roots; Playwright's CSS and text locators look inside them.
   const preview = 'uui-modal-sidebar oembed-preview, umb-backoffice-modal-container oembed-preview';
   const older = (a, b) => {
     const [x, y] = [a, b].map((v) => v.split(/[.-]/).map((p) => parseInt(p, 10) || 0));

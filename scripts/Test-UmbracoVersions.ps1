@@ -1,28 +1,4 @@
-<#
-.SYNOPSIS
-    Runs the test site on several Umbraco 17 versions and smoke-tests the package on each.
-
-.DESCRIPTION
-    For each version the test site is built with that Umbraco version (and a uSync that works with
-    it), started on a fresh SQLite database of its own, and checked: the site starts, the front-end
-    and headless pages and the package's swagger document answer, and the backoffice smoke test
-    (scripts/backoffice-smoke.mjs) retrieves embeds through the picker. The log of each run and
-    the screenshots end up in artifacts/umbraco-versions/<version>/.
-
-    The package itself is not rebuilt per version: it is compiled against its floor (17.0.0) and
-    runs on whatever Umbraco the site has, like an installed package does.
-
-    Needs the client's npm packages (npm ci in src/Novicell.Umbraco.OEmbed/Client) and Chrome.
-    Stops a running test site first. Afterwards the test site is built again with its own versions.
-
-.PARAMETER Versions
-    Umbraco versions to test, each optionally with the uSync version to use: "17.0.0=17.0.0".
-    Without a uSync version, the test site's own uSync version is used.
-
-.EXAMPLE
-    ./scripts/Test-UmbracoVersions.ps1
-    ./scripts/Test-UmbracoVersions.ps1 -Versions "17.0.0=17.0.0", "17.4.2"
-#>
+# See scripts/README.md.
 [CmdletBinding()]
 param(
     [string[]] $Versions = @("17.0.0=17.0.0", "17.4.2=17.3.2", "17.8.0=17.3.2"),
@@ -79,7 +55,7 @@ foreach ($entry in $Versions) {
     }
     $result.Build = "ok"
 
-    # A database of its own: a database from a newer Umbraco cannot be opened by an older one.
+    # A database per version: an older Umbraco cannot open a newer one's.
     $env:ASPNETCORE_ENVIRONMENT = "Development"
     $env:ConnectionStrings__umbracoDbDSN = "Data Source=|DataDirectory|/Umbraco.v$umbraco.sqlite.db;Cache=Shared;Foreign Keys=True;Pooling=True"
     $process = Start-Process dotnet -ArgumentList "run", "--project", $site, "-c", "Release", "--no-build", "--no-launch-profile", "--urls", $Url `
