@@ -20,6 +20,8 @@ From the repository root:
 
 Give a uSync version for an Umbraco below 17.3 (uSync 17.0.x); otherwise the test site's own uSync is used. Each version takes about 1.5 minutes.
 
+On GitHub, `.github/workflows/smoke.yml` runs it before every release, and can be started by hand from the Actions tab with a list of versions. The logs and screenshots are attached to the run.
+
 ## Read the result
 
 The table at the end has a column per stage: Build, Start, Pages and Backoffice. The exit code is 1 if anything failed. Each version has a folder in `artifacts/umbraco-versions/<version>/`:

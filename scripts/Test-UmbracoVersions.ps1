@@ -15,7 +15,13 @@ $smoke = Join-Path $PSScriptRoot "backoffice-smoke.mjs"
 $out = Join-Path $root "artifacts/umbraco-versions"
 $siteProcessName = "Novicell.Umbraco.OEmbed.TestSite"
 
-function Stop-TestSite {
+function Stop-TestSite([System.Diagnostics.Process] $process) {
+    # The tree: dotnet run starts the site as a child. The name is for a site started before this script;
+    # Linux shortens process names to 15 characters, so it is not found there.
+    if ($process -and -not $process.HasExited) {
+        $process.Kill($true)
+        $process.WaitForExit(15000) | Out-Null
+    }
     Get-Process $siteProcessName -ErrorAction SilentlyContinue | Stop-Process -Force
     Start-Sleep -Seconds 2
 }
@@ -55,7 +61,10 @@ foreach ($entry in $Versions) {
     }
     $result.Build = "ok"
 
-    # A database per version: an older Umbraco cannot open a newer one's.
+    # A fresh install each time: a new database (an older Umbraco cannot open a newer one's), and no
+    # indexes or caches in TEMP, which are shared between databases.
+    $data = Join-Path $site "umbraco/Data"
+    Remove-Item (Join-Path $data "Umbraco.v$umbraco.sqlite.db*"), (Join-Path $data "TEMP") -Recurse -Force -ErrorAction SilentlyContinue
     $env:ASPNETCORE_ENVIRONMENT = "Development"
     $env:ConnectionStrings__umbracoDbDSN = "Data Source=|DataDirectory|/Umbraco.v$umbraco.sqlite.db;Cache=Shared;Foreign Keys=True;Pooling=True"
     # Start-Process joins the arguments into one string, so a path with spaces needs its own quotes.
@@ -70,7 +79,7 @@ foreach ($entry in $Versions) {
 
     if ((Get-Status "/") -ne 200) {
         $result.Start = "failed (see site.log)"
-        Stop-TestSite
+        Stop-TestSite $process
         $results += [pscustomobject]$result
         continue
     }
@@ -88,7 +97,7 @@ foreach ($entry in $Versions) {
     $errors = @(Select-String -Path $log -Pattern "\[\d\d:\d\d:\d\d (ERR|FTL)\]").Count
     if ($errors -gt 0) { $result.Pages += " ($errors errors logged)" }
 
-    Stop-TestSite
+    Stop-TestSite $process
     $results += [pscustomobject]$result
 }
 

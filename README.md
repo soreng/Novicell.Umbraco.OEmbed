@@ -160,7 +160,7 @@ The test site has a headless version of its sample page at https://localhost:443
 
 ## Running the test site
 
-The backoffice client is built into `wwwroot/App_Plugins/NovicellUmbracoOEmbed` and is not committed, so build it before running the test site (and before `dotnet pack`):
+The backoffice client is built into `wwwroot/App_Plugins/NovicellUmbracoOEmbed` and is not committed, so build it before running the test site:
 
 ```bash
 npm --prefix src/Novicell.Umbraco.OEmbed/Client ci
@@ -205,7 +205,7 @@ The test site's own versions are `TestSiteUmbracoVersion` and `TestSiteUSyncVers
 
 The next Umbraco LTS gets its own pair, for example `v21/dev` and `v21/main`.
 
-**CI** (`.github/workflows/ci.yml`) runs on every pull request and on pushes to `v*/dev` and `v*/main`. It builds and tests the client (in a real browser) and the .NET solution, and uploads the NuGet package as an artifact, so it can be downloaded and tried before a release. The client has to be built before `dotnet build` or `dotnet pack`, because its output is not committed: run `npm ci && npm run build` in `src/Novicell.Umbraco.OEmbed/Client` first.
+**CI** (`.github/workflows/ci.yml`) runs on every pull request and on pushes to `v*/dev` and `v*/main`. It builds and tests the client (in a real browser) and the .NET solution, and uploads the NuGet package as an artifact, so it can be downloaded and tried before a release. The client's output is not committed, so build it before `dotnet build`: run `npm ci && npm run build` in `src/Novicell.Umbraco.OEmbed/Client` first. `dotnet pack` builds the client itself. `dotnet pack --no-build` refuses to pack when the client is missing, older than its sources, or built after the last `dotnet build`.
 
 **Releasing** (`.github/workflows/release.yml`):
 
@@ -213,7 +213,7 @@ The next Umbraco LTS gets its own pair, for example `v21/dev` and `v21/main`.
 2. On GitHub, create a release from `v17/main` with a tag like `v17.0.0` or `v17.0.0-beta.1`. Tick **Set as a pre-release** for versions with `-beta` and the like.
 3. Approve the deployment to the `nuget` environment when GitHub asks.
 
-The workflow then builds with the version from the tag, publishes to NuGet.org and attaches the package to the release. The versions in the repository's files (the csproj, `package.json` and the backoffice manifest) don't need updating by hand; the tag is written into them, and into the manifest's cache-busting `?v=` parameters. It refuses to publish if:
+The workflow first runs the smoke test (`.github/workflows/smoke.yml`, see [scripts/README.md](scripts/README.md)) on Umbraco 17.0.0, 17.4.2 and 17.8.0, and publishes nothing if it fails. The smoke test can also be started by hand from the Actions tab. The checks call the real providers, so if a provider is down, re-run the failed job once it is back. The workflow then builds with the version from the tag, publishes to NuGet.org and attaches the package to the release. The versions in the repository's files (the csproj, `package.json` and the backoffice manifest) don't need updating by hand; the tag is written into them, and into the manifest's cache-busting `?v=` parameters. It refuses to publish if:
 
 - the tag's major version doesn't match the Umbraco version in `Directory.Packages.props`
 - the tag isn't on `v<major>/main`

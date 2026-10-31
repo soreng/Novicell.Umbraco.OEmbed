@@ -14,8 +14,12 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
+  smoke:
+    uses: ./.github/workflows/smoke.yml
+
   publish:
     name: Publish to NuGet.org
+    needs: smoke
     runs-on: ubuntu-latest
     # Approval, and the environment NuGet.org's Trusted Publishing policy is tied to
     environment: nuget
