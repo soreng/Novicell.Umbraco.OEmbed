@@ -63,7 +63,7 @@
     </ItemGroup>
 
     <!-- npm ci rewrites node_modules/.package-lock.json, so this runs when a package file has changed since -->
-    <Target Name="InstallClientForPack" Inputs="$(ClientDir)\package.json;$(ClientDir)\package-lock.json"Outputs="$(ClientDir)\node_modules\.package-lock.json">
+    <Target Name="InstallClientForPack" Inputs="$(ClientDir)\package.json;$(ClientDir)\package-lock.json" Outputs="$(ClientDir)\node_modules\.package-lock.json">
         <Exec Command="npm ci" WorkingDirectory="$(ClientDir)" />
     </Target>
 
