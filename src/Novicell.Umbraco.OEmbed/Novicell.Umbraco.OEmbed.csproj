@@ -62,9 +62,13 @@
         <ClientSource Include="Client\src\**\*;Client\public\**\*;Client\package.json;Client\package-lock.json;Client\vite.config.ts;Client\tsconfig.json" />
     </ItemGroup>
 
+    <!-- npm ci rewrites node_modules/.package-lock.json, so this runs when the lock file has changed since -->
+    <Target Name="InstallClientForPack" Inputs="$(ClientDir)\package-lock.json" Outputs="$(ClientDir)\node_modules\.package-lock.json">
+        <Exec Command="npm ci" WorkingDirectory="$(ClientDir)" />
+    </Target>
+
     <!-- _IsPacking is set by dotnet pack -->
-    <Target Name="BuildClientForPack" BeforeTargets="BeforeBuild" Condition="'$(_IsPacking)' == 'true'">
-        <Exec Command="npm ci" WorkingDirectory="$(ClientDir)" Condition="!Exists('$(ClientDir)\node_modules')" />
+    <Target Name="BuildClientForPack" BeforeTargets="BeforeBuild" DependsOnTargets="InstallClientForPack" Condition="'$(_IsPacking)' == 'true'">
         <Exec Command="npm run build" WorkingDirectory="$(ClientDir)" />
 
         <!-- Vite names its files by content hash, and wwwroot was read before this target ran. A glob in
@@ -81,8 +85,13 @@
         <Error Text="The client in $(ClientOutputDir) is missing or older than its sources. Run 'npm ci' and 'npm run build' in Client, or pack without --no-build." />
     </Target>
 
+    <!-- staticwebassets.build.json is only rewritten when its content changes, so every build leaves its own stamp -->
+    <Target Name="StampBuildForPack" AfterTargets="Build">
+        <Touch Files="$(IntermediateOutputPath)client.build.stamp" AlwaysCreate="true" />
+    </Target>
+
     <!-- A pack without a build takes the client's file list from the last build -->
-    <Target Name="CheckBuildAfterClient" BeforeTargets="GenerateNuspec" Condition="'$(NoBuild)' == 'true'" Inputs="$(ClientOutputDir)\novicell-umbraco-oembed-manifests.js" Outputs="$(IntermediateOutputPath)staticwebassets.build.json">
+    <Target Name="CheckBuildAfterClient" BeforeTargets="GenerateNuspec" Condition="'$(NoBuild)' == 'true'" Inputs="$(ClientOutputDir)\novicell-umbraco-oembed-manifests.js" Outputs="$(IntermediateOutputPath)client.build.stamp">
         <Error Text="The client was built after the last 'dotnet build'. Run 'dotnet build' again, or pack without --no-build." />
     </Target>
 
