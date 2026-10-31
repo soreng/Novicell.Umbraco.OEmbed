@@ -58,7 +58,8 @@ foreach ($entry in $Versions) {
     # A database per version: an older Umbraco cannot open a newer one's.
     $env:ASPNETCORE_ENVIRONMENT = "Development"
     $env:ConnectionStrings__umbracoDbDSN = "Data Source=|DataDirectory|/Umbraco.v$umbraco.sqlite.db;Cache=Shared;Foreign Keys=True;Pooling=True"
-    $process = Start-Process dotnet -ArgumentList "run", "--project", $site, "-c", "Release", "--no-build", "--no-launch-profile", "--urls", $Url `
+    # Start-Process joins the arguments into one string, so a path with spaces needs its own quotes.
+    $process = Start-Process dotnet -ArgumentList "run", "--project", "`"$site`"", "-c", "Release", "--no-build", "--no-launch-profile", "--urls", $Url `
         -RedirectStandardOutput $log -RedirectStandardError (Join-Path $runOut "site.err.log") -PassThru -NoNewWindow
     Remove-Item Env:ConnectionStrings__umbracoDbDSN, Env:ASPNETCORE_ENVIRONMENT
 
@@ -92,7 +93,13 @@ foreach ($entry in $Versions) {
 }
 
 Write-Host "`nBuilding the test site with its own versions again" -ForegroundColor Cyan
-dotnet build $site -c Release -v q *> $null
+$rebuildLog = Join-Path $out "rebuild.log"
+dotnet build $site -c Release -v q *> $rebuildLog
+$rebuilt = $LASTEXITCODE -eq 0
 
 $results | Format-Table -AutoSize
+if (-not $rebuilt) {
+    Write-Host "Building the test site with its own versions failed, see $rebuildLog" -ForegroundColor Red
+    exit 1
+}
 if ($results | Where-Object { $_.Build, $_.Start, $_.Pages, $_.Backoffice -ne "ok" }) { exit 1 }
