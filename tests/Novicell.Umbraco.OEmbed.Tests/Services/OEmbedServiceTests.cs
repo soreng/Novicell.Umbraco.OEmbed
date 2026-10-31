@@ -354,6 +354,21 @@ public class OEmbedServiceTests
     }
 
     [Test]
+    public async Task A_Provider_Lookup_That_Throws_Is_ProviderNotSupported_And_Requests_Nothing()
+    {
+        _endpointProvider.GetApiEndpointAsync(Arg.Any<Uri>())
+            .Returns<Task<OEmbedApiEndpoint?>>(_ => throw new UriFormatException("Bad ApiEndpoint."));
+        var handler = new StubHttpMessageHandler(_ => throw new InvalidOperationException("No request expected."));
+        OEmbedService service = CreateService(handler);
+
+        Attempt<OEmbedResponse?, OEmbedOperationStatus> result =
+            await service.GetOEmbedAsync(Request(), CancellationToken.None);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Status, Is.EqualTo(OEmbedOperationStatus.ProviderNotSupported));
+    }
+
+    [Test]
     public async Task Json_Response_Larger_Than_The_Limit_Maps_To_InvalidResponse()
     {
         _endpointProvider.GetApiEndpointAsync(Arg.Any<Uri>()).Returns(ApiEndpoint);

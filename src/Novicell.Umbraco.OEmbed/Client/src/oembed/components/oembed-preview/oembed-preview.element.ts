@@ -2,9 +2,9 @@ import {
   css,
   html,
   customElement,
-  keyed,
   nothing,
   property,
+  repeat,
 } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement } from "@umbraco-cms/backoffice/lit-element";
 import { UmbPropertyEditorUiElement } from "@umbraco-cms/backoffice/property-editor";
@@ -65,25 +65,35 @@ export class OEmbedPreviewElement
   @property({ type: Boolean, reflect: true })
   contain = false;
 
-  #frameObservers: ResizeObserver[] = [];
+  #onProviderHeightMessage = (event: MessageEvent) => {
+    const iframe = this.shadowRoot?.querySelector<HTMLIFrameElement>(
+      "iframe.oembed-media--auto",
+    );
+    if (
+      !iframe ||
+      event.source !== iframe.contentWindow ||
+      event.data?.type !== "novicell-oembed-height" ||
+      typeof event.data.height !== "number" ||
+      !Number.isFinite(event.data.height) ||
+      event.data.height <= 0
+    ) {
+      return;
+    }
+
+    iframe.style.height = `${Math.min(
+      Math.ceil(event.data.height),
+      OEmbedPreviewElement.maxDynamicHeight,
+    )}px`;
+  };
+
+  override connectedCallback() {
+    super.connectedCallback();
+    window.addEventListener("message", this.#onProviderHeightMessage);
+  }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
-    this.#disconnectFrameObservers();
-  }
-
-  #disconnectFrameObservers() {
-    this.#frameObservers.forEach((observer) => observer.disconnect());
-    this.#frameObservers = [];
-  }
-
-  override willUpdate(
-    changedProperties: Map<string | number | symbol, unknown>,
-  ) {
-    super.willUpdate(changedProperties);
-    if (changedProperties.has("value")) {
-      this.#disconnectFrameObservers();
-    }
+    window.removeEventListener("message", this.#onProviderHeightMessage);
   }
 
   #normalizedType(type: OEmbedType): string {
@@ -149,14 +159,16 @@ export class OEmbedPreviewElement
   }
 
   #renderProviderFrame(value: OEmbedResponse, frame: ProviderFrame) {
-    // A sandbox only applies when a document is loaded. keyed() makes Lit replace the iframe
+    // A sandbox only applies when a document is loaded. Keying the iframe makes Lit replace it
     // instead of reusing it when the sandbox or src changes, so a stricter sandbox takes
-    // effect rather than being set on an already loaded document.
+    // effect rather than being set on an already loaded document. repeat() over one key does
+    // what keyed() does; keyed is not exported by the backoffice's lit in Umbraco 17.0.
     const sandbox = effectiveSandbox(frame.sandbox, PROVIDER_FRAME_SANDBOX);
     const iframe = (className: string, style?: string) =>
-      keyed(
-        `${sandbox}|${frame.src}`,
-        html`<iframe
+      repeat(
+        [`${sandbox}|${frame.src}`],
+        (key) => key,
+        () => html`<iframe
           class=${className}
           src=${frame.src}
           sandbox=${sandbox}
@@ -253,47 +265,19 @@ export class OEmbedPreviewElement
 
     // Dynamic-height embeds (e.g. tweets) report no usable height, so size the
     // iframe to its rendered content instead of forcing an aspect ratio.
+    const heightReporter =
+      '<script>(() => { const report = () => parent.postMessage({ type: "novicell-oembed-height", height: document.documentElement.scrollHeight }, "*"); const observer = new ResizeObserver(report); observer.observe(document.documentElement); if (document.body) observer.observe(document.body); report(); })();</script>';
+    const autoSrcdoc = srcdoc.replace(
+      /<\/body><\/html>$/,
+      `${heightReporter}</body></html>`,
+    );
     return html`<div class="oembed-frame oembed-frame--auto">
       <iframe
-        srcdoc=${srcdoc}
+        srcdoc=${autoSrcdoc}
         class="oembed-media oembed-media--auto"
         sandbox="allow-scripts allow-presentation"
-        @load=${this.#onAutoFrameLoad}
       ></iframe>
     </div>`;
-  }
-
-  #onAutoFrameLoad(event: Event) {
-    const iframe = event.target as HTMLIFrameElement;
-
-    let doc: Document | null = null;
-    try {
-      doc = iframe.contentDocument;
-    } catch {
-      // Cross-origin documents cannot be measured; leave the default height.
-      return;
-    }
-
-    const body = doc?.body;
-    if (!body) return;
-
-    const resize = () => {
-      const height = body.scrollHeight;
-      if (height > 0) {
-        iframe.style.height = `${Math.min(
-          height,
-          OEmbedPreviewElement.maxDynamicHeight,
-        )}px`;
-      }
-    };
-
-    resize();
-
-    // Provider scripts (e.g. Twitter's widgets.js) render asynchronously and
-    // change the document height after load, so keep the iframe in sync.
-    const observer = new ResizeObserver(() => resize());
-    observer.observe(body);
-    this.#frameObservers.push(observer);
   }
 
   #renderVisual(value: OEmbedResponse) {

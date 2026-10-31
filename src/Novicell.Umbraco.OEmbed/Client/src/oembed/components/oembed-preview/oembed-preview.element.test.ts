@@ -211,6 +211,50 @@ describe("OEmbedPreviewElement", () => {
     expect(result.canReadParent).to.be.false;
   });
 
+  it("sizes an opaque-origin provider preview from its height message", async () => {
+    let iframe: HTMLIFrameElement | undefined;
+    const heightMessage = new Promise<boolean>((resolve, reject) => {
+      const onMessage = (event: MessageEvent) => {
+        if (
+          event.data?.type !== "novicell-oembed-height" ||
+          event.data.height !== 800
+        ) {
+          return;
+        }
+        window.removeEventListener("message", onMessage);
+        resolve(event.source === iframe?.contentWindow);
+      };
+      window.addEventListener("message", onMessage);
+      window.setTimeout(() => {
+        window.removeEventListener("message", onMessage);
+        reject(new Error("Provider height message was not received"));
+      }, 2000);
+    });
+    element.value = {
+      type: "rich" as any,
+      html: '<script>parent.postMessage({ type: "novicell-oembed-height", height: 800 }, "*");</script>',
+    };
+    await element.updateComplete;
+
+    iframe = element.shadowRoot!.querySelector(
+      "iframe.oembed-media--auto",
+    ) as HTMLIFrameElement;
+    expect(await heightMessage).to.be.true;
+    await new Promise<void>((resolve, reject) => {
+      const deadline = Date.now() + 2000;
+      const checkHeight = () => {
+        if (iframe.style.height === "600px") return resolve();
+        if (Date.now() >= deadline) {
+          return reject(new Error("Provider height message was not applied"));
+        }
+        window.setTimeout(checkHeight, 10);
+      };
+      checkHeight();
+    });
+    expect(iframe.getAttribute("sandbox")).to.not.contain("allow-same-origin");
+    expect(iframe.style.height).to.equal("600px");
+  });
+
   it("does not render an iframe that points back at the backoffice directly", async () => {
     element.value = {
       type: "video" as any,

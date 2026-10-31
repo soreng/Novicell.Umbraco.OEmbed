@@ -1,4 +1,4 @@
-import { NovicellOEmbedService } from "../../../api";
+import { getOEmbed } from "../../../api";
 import type { UmbControllerHost } from "@umbraco-cms/backoffice/controller-api";
 import { tryExecute } from "@umbraco-cms/backoffice/resources";
 
@@ -38,7 +38,7 @@ export class OEmbedServerDataSource {
   }) {
     return tryExecute(
       this.#host,
-      NovicellOEmbedService.getOEmbed({
+      getOEmbed({
         query: { url, maxwidth: maxWidth, maxheight: maxHeight },
       }),
       // The picker modal renders its own localized error message from the response's

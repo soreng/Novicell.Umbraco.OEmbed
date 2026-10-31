@@ -20,7 +20,7 @@ src/Novicell.Umbraco.OEmbed/
 ├── Models/                OEmbedResponse (what a provider returned, and what is stored), OEmbedValue (one embed as Razor gets it), OEmbedRequest, OEmbedType, the lenient JSON converters, ...
 ├── PropertyEditors/       OEmbedPickerPropertyEditor, OEmbedPickerPropertyValueEditor (with the validators nested in it), the index value factory, value converter
 ├── Rendering/             OEmbedHtmlGate (decides whether an embed's html is one safe iframe), OEmbedHtmlHelperExtensions (`Html.OEmbed`, in the Umbraco.Extensions namespace; writes the provider's html unchanged or nothing)
-├── Services/              IOEmbedService, OEmbedService, endpoint and discovery providers, OEmbedOperationStatus
+├── Services/              IOEmbedService, OEmbedService, OEmbedApiEndpointProvider, OEmbedHttp, PublicNetworkConnector, OEmbedOperationStatus
 ├── Client/                Lit/TypeScript backoffice UI (Vite), see Client/ARCHITECTURE.md
 └── wwwroot/App_Plugins/NovicellUmbracoOEmbed/   build output of Client/, git-ignored
 ```
@@ -98,7 +98,7 @@ public enum OEmbedOperationStatus
 
 **Entry point**: `Configuration/UmbracoBuilderExtensions.cs`
 
-One method does all of it: `AddNovicellOEmbed()` registers the outbound HTTP client, the endpoint provider, the discovery provider and the service as `Transient`, binds `OEmbedOptions` to `Novicell:OEmbed`, adds the property value converter and the Reddit, Spotify and TikTok embed providers, and registers the Management API (its swagger document, the operation-id handler and the security filter). Calling it more than once is safe: a marker service makes every call after the first do nothing. There is no notification handler in this project.
+One method does all of it: `AddNovicellOEmbed()` registers the outbound HTTP client, the endpoint provider and the service as `Transient`, binds `OEmbedOptions` to `Novicell:OEmbed`, adds the property value converter and the Reddit, Spotify and TikTok embed providers, and registers the Management API (its swagger document, the operation-id handler and the security filter). Calling it more than once is safe: a marker service makes every call after the first do nothing. There is no notification handler in this project.
 
 ---
 

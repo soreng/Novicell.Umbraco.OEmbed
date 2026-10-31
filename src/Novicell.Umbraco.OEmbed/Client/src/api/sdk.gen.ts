@@ -18,17 +18,15 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
     meta?: Record<string, unknown>;
 };
 
-export class NovicellOEmbedService {
-    public static getOEmbed<ThrowOnError extends boolean = false>(options?: Options<GetOEmbedData, ThrowOnError>) {
-        return (options?.client ?? client).get<GetOEmbedResponses, GetOEmbedErrors, ThrowOnError>({
-            security: [
-                {
-                    scheme: 'bearer',
-                    type: 'http'
-                }
-            ],
-            url: '/umbraco/novicell-oembed/api/v1/oembed',
-            ...options
-        });
-    }
-}
+export const getOEmbed = <ThrowOnError extends boolean = true>(options?: Options<GetOEmbedData, ThrowOnError>) => {
+    return (options?.client ?? client).get<GetOEmbedResponses, GetOEmbedErrors, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
+        url: '/umbraco/novicell-oembed/api/v1/oembed',
+        ...options
+    });
+};

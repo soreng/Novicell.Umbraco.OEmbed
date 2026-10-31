@@ -21,7 +21,7 @@ internal class OEmbedApiEndpointProvider(EmbedProvidersCollection providers) : I
 
         Uri endpoint = ToJsonEndpoint(BuildApiEndpointUrl(provider.Result));
 
-        return new OEmbedApiEndpoint(provider.GetType().Name, endpoint);
+        return new OEmbedApiEndpoint(provider.Result.GetType().Name, endpoint);
     }
 
     /// <summary>
@@ -62,7 +62,8 @@ internal class OEmbedApiEndpointProvider(EmbedProvidersCollection providers) : I
 
         foreach ((string? key, string? value) in parameters)
         {
-            queryString[key] = HttpUtility.UrlEncode(value);
+            // Not encoded here: ToString() below encodes every value.
+            queryString[key] = value;
         }
 
         builder.Query = queryString.ToString() ?? string.Empty;

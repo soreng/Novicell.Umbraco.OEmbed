@@ -24,6 +24,8 @@ The major version of the package is the Umbraco major version it supports. It is
 
 Earlier versions of the package target Umbraco 9.
 
+Embeds from X do not work on Umbraco 17.0.0 and 17.0.1: Umbraco's own X provider in those versions calls `http://publish.twitter.com/oembed`, which no longer answers. Umbraco 17.0.2 and later call `https://publish.x.com/oembed`.
+
 ## Features
 
 - **OEmbed property editor** (`Novicell.OEmbed`) for storing embeds on documents, media and blocks.
@@ -182,6 +184,17 @@ On a fresh install, uSync imports a ready-made setup from `uSync/v17`:
 The Delivery API is switched on with public access, so the sample page is also at https://localhost:44366/umbraco/delivery/api/v2/content, and https://localhost:44366/headless/ is the same page built from it, see [Headless sample](#headless-sample).
 
 uSync exports changes when you save, so remember to commit `uSync/` if you change these types.
+
+### Testing on other Umbraco versions
+
+`scripts/Test-UmbracoVersions.ps1` (PowerShell 7) runs the test site on several Umbraco 17 versions, each on a fresh database of its own, and runs `scripts/backoffice-smoke.mjs` against it: the sample page, the Delivery API and the headless page render the embeds, and in the backoffice the picker retrieves a video, audio, a photo and script-based embeds and refuses an unsupported URL. It needs the client's npm packages and Chrome, and stops a running test site first. The logs and screenshots end up in `artifacts/umbraco-versions/<version>/`.
+
+```powershell
+./scripts/Test-UmbracoVersions.ps1                                  # 17.0.0, 17.4.2 and 17.8.0
+./scripts/Test-UmbracoVersions.ps1 -Versions "17.0.0=17.0.0", "17.6.2" # Umbraco version=uSync version
+```
+
+The test site's own versions are `TestSiteUmbracoVersion` and `TestSiteUSyncVersion` in `Directory.Packages.props`. The checks call the real providers, so a provider that is down fails its own line. See [scripts/README.md](scripts/README.md) for reading the results and changing the checks.
 
 ## Branches and releases
 
