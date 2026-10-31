@@ -22,7 +22,7 @@ const EMBEDS = [
   { name: 'Flickr photo', url: 'https://www.flickr.com/photos/pgregorynz/3692645578/', type: 'photo', preview: 'img' },
   // Umbraco's own X provider before 17.0.2 calls http://publish.twitter.com/oembed, which no longer answers.
   { name: 'X post', url: 'https://x.com/Interior/status/463440424141459456', type: 'rich', preview: 'srcdoc', since: '17.0.2' },
-  { name: 'TikTok video', url: 'https://www.tiktok.com/@scout2015/video/6718335390845095173', type: 'video', preview: 'srcdoc' },
+  { name: 'TikTok video', url: 'https://www.tiktok.com/@scout2015/video/6718335390845095173', type: 'video', preview: 'iframe' },
 ];
 
 const browser = await chromium.launch({ channel: 'chrome' });
@@ -106,7 +106,7 @@ try {
   }
 
   // The modal renders in shadow roots; Playwright's CSS and text locators look inside them.
-  const preview = 'uui-modal-sidebar oembed-preview, umb-backoffice-modal-container oembed-preview';
+  const preview = ':is(uui-modal-sidebar, umb-backoffice-modal-container) oembed-preview';
   const older = (a, b) => {
     const [x, y] = [a, b].map((v) => v.split(/[.-]/).map((p) => parseInt(p, 10) || 0));
     for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] < y[i];
@@ -124,10 +124,14 @@ try {
       if (embed.preview === 'img') shown = (await page.locator(`${preview} img`).count()) > 0;
       if (embed.preview === 'iframe') shown = (await page.locator(`${preview} iframe[src]:not([srcdoc])`).count()) > 0;
       if (embed.preview === 'srcdoc') shown = (await page.locator(`${preview} iframe[srcdoc]`).count()) > 0;
+      const found = shown
+        ? ''
+        : ` (found: ${await page.locator(`${preview} :is(iframe, img)`).evaluateAll((els) =>
+            els.map((el) => `${el.tagName.toLowerCase()}${el.hasAttribute('srcdoc') ? '[srcdoc]' : ''}${el.getAttribute('src') ? '[src]' : ''}`).join(', ') || 'nothing')})`;
       const titled = body.title ? (await page.getByText(body.title, { exact: false }).count()) > 0 : true;
       check(
         status === 200 && type === embed.type && shown && titled,
-        `${embed.name}: ${status}, type ${type || '-'}, ${embed.preview} preview ${shown ? 'shown' : 'missing'}${titled ? '' : ', title missing'}`,
+        `${embed.name}: ${status}, type ${type || '-'}, ${embed.preview} preview ${shown ? 'shown' : 'missing' + found}${titled ? '' : ', title missing'}`,
       );
     } catch (e) {
       check(false, `${embed.name}: ${e.message.split('\n')[0]}`);

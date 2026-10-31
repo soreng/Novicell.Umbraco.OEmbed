@@ -95,4 +95,4 @@ Write-Host "`nBuilding the test site with its own versions again" -ForegroundCol
 dotnet build $site -c Release -v q *> $null
 
 $results | Format-Table -AutoSize
-if ($results | Where-Object { ($_.PSObject.Properties.Value | Select-Object -Skip 2) -match "failed|errors" }) { exit 1 }
+if ($results | Where-Object { $_.Build, $_.Start, $_.Pages, $_.Backoffice -ne "ok" }) { exit 1 }
