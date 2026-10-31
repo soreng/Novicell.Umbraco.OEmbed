@@ -100,7 +100,7 @@ It writes the html the provider returned **exactly as it is**, with nothing adde
 
 The check reads the text, so it cannot see where an address redirects to. To limit where frames can load from, redirects included, set a `frame-src` [Content-Security-Policy](https://developer.mozilla.org/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/frame-src) with the embed hosts your site uses, for example `frame-src https://www.youtube.com https://player.vimeo.com https://open.spotify.com https://w.soundcloud.com`. Behind a proxy, make sure the site sees the public host name (forwarded headers), as the check compares with it.
 
-Markup with a script of its own (X, TikTok, Reddit) is left out, and so is anything that does not pass. A photo or link embed has no html, so write its `OEmbed.Url` and `OEmbed.Title` and the URL the editor entered yourself. The site decides what to show instead, for example a link; the test site's `Views/Partials/oembed.cshtml` shows this.
+Markup with a script of its own (X and Reddit) is left out, and so is anything that does not pass. A photo or link embed has no html, so write its `OEmbed.Url` and `OEmbed.Title` and the URL the editor entered yourself. The site decides what to show instead, for example a link; the test site's `Views/Partials/oembed.cshtml` shows this.
 
 To write any html as it is, scripts included, on a site that trusts its editors, and everything that can change a saved value, with that:
 
@@ -110,7 +110,7 @@ To write any html as it is, scripts included, on a site that trusts its editors,
 
 ### Security note on providers
 
-The live preview in the picker modal shows the HTML that an oEmbed provider has just returned to the server. A provider that returns a single `<iframe>` (YouTube, Vimeo, Spotify and similar) is rendered as a sandboxed cross-origin iframe. Other markup, typically a `<blockquote>` plus the provider's script (X, TikTok, Reddit), runs in a sandboxed iframe with an opaque origin. Its scripts cannot access the backoffice, even if a provider response is compromised. Because the isolated frame has no same-origin access or storage, some script-based providers may not render or behave fully in the preview.
+The live preview in the picker modal shows the HTML that an oEmbed provider has just returned to the server. A provider that returns a single `<iframe>` (YouTube, Vimeo, Spotify, TikTok and similar) is rendered as a sandboxed cross-origin iframe. Other markup, typically a `<blockquote>` plus the provider's script (X and Reddit), runs in a sandboxed iframe with an opaque origin. Its scripts cannot access the backoffice, even if a provider response is compromised. Because the isolated frame has no same-origin access or storage, some script-based providers may not render or behave fully in the preview.
 
 Whatever the server requests on an editor's behalf is limited: only `http` and `https`, a 10 second limit for the whole request including reading the body, at most 3 redirects and a 1 MiB response. The server also only connects to publicly routable addresses. Loopback, private (RFC 1918), link-local (including cloud metadata at `169.254.169.254`), carrier-grade NAT, multicast and reserved ranges are refused, and the check is made on the address actually connected to, so redirects and DNS rebinding cannot get around it.
 

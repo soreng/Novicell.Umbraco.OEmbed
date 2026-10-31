@@ -233,7 +233,7 @@ export class OEmbedPreviewElement
     }
 
     // Keep this srcdoc sandbox on an opaque origin: provider HTML and scripts are untrusted and must
-    // not be able to access the backoffice, even when a provider's script-based embed needs storage.
+    // not be able to access the backoffice, even when an X or Reddit embed needs storage.
     const srcdoc = `<html><head></head><body>${style}<div${wrapperStyle}>${markup}</div></body></html>`;
 
     if (hasFixedSize) {
