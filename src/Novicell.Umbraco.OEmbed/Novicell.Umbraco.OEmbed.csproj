@@ -63,6 +63,7 @@
         <!-- A deleted file is no longer in the list above, but deleting, adding or renaming a file updates its folder's time -->
         <ClientSourceFolder Include="$(ClientDir)\src;$(ClientDir)\public" />
         <ClientSourceFolder Include="$([System.IO.Directory]::GetDirectories('$(ClientDir)\src', '*', System.IO.SearchOption.AllDirectories))" Condition="Exists('$(ClientDir)\src')" />
+        <ClientSourceFolder Include="$([System.IO.Directory]::GetDirectories('$(ClientDir)\public', '*', System.IO.SearchOption.AllDirectories))" Condition="Exists('$(ClientDir)\public')" />
     </ItemGroup>
 
     <!-- npm ci rewrites node_modules/.package-lock.json, so this runs when a package file has changed since -->
@@ -88,15 +89,16 @@
         <Error Text="The client in $(ClientOutputDir) is missing or older than its sources. Run 'npm ci' and 'npm run build' in Client, or pack without --no-build." />
     </Target>
 
-    <!-- Inputs and Outputs only compare files, so the folders are compared here -->
+    <!-- Inputs and Outputs only compare files, so the folders are compared here. A deleted folder only changes its
+         parent's time, and Client is not watched as npm changes it, so a missing folder counts as changed too. -->
     <Target Name="CheckClientFoldersForPack" BeforeTargets="GenerateNuspec" DependsOnTargets="CheckClientForPack">
         <PropertyGroup>
             <_ClientOutputTime>$([System.IO.File]::GetLastWriteTime('$(MSBuildProjectDirectory)\$(ClientOutputDir)\novicell-umbraco-oembed-manifests.js').ToFileTimeUtc())</_ClientOutputTime>
         </PropertyGroup>
         <ItemGroup>
-            <_ChangedClientFolder Include="@(ClientSourceFolder)" Condition="$([System.IO.Directory]::GetLastWriteTime('%(FullPath)').ToFileTimeUtc()) &gt; $(_ClientOutputTime)" />
+            <_ChangedClientFolder Include="@(ClientSourceFolder)" Condition="!Exists('%(FullPath)') or $([System.IO.Directory]::GetLastWriteTime('%(FullPath)').ToFileTimeUtc()) &gt; $(_ClientOutputTime)" />
         </ItemGroup>
-        <Error Condition="'@(_ChangedClientFolder)' != ''" Text="A client source was added, removed or renamed in @(_ChangedClientFolder) after the client was built. Run 'npm run build' in Client, or pack without --no-build." />
+        <Error Condition="'@(_ChangedClientFolder)' != ''" Text="A file or folder in @(_ChangedClientFolder) was added, removed or renamed after the client was built. Run 'npm run build' in Client, or pack without --no-build." />
     </Target>
 
     <!-- staticwebassets.build.json is only rewritten when its content changes, so every build leaves its own stamp -->
