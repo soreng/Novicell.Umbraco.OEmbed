@@ -52,6 +52,40 @@
         <None Include="..\..\assets\icon.png" Pack="true" PackagePath="\" Link="icon.png" />
     </ItemGroup>
 
+    <!-- The package always gets a fresh client: dotnet pack builds it, and a pack without a build checks it. -->
+    <PropertyGroup>
+        <ClientDir>$(MSBuildProjectDirectory)\Client</ClientDir>
+        <ClientOutputDir>wwwroot\App_Plugins\NovicellUmbracoOEmbed</ClientOutputDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ClientSource Include="Client\src\**\*;Client\public\**\*;Client\package.json;Client\package-lock.json;Client\vite.config.ts;Client\tsconfig.json" />
+    </ItemGroup>
+
+    <!-- _IsPacking is set by dotnet pack -->
+    <Target Name="BuildClientForPack" BeforeTargets="BeforeBuild" Condition="'$(_IsPacking)' == 'true'">
+        <Exec Command="npm ci" WorkingDirectory="$(ClientDir)" Condition="!Exists('$(ClientDir)\node_modules')" />
+        <Exec Command="npm run build" WorkingDirectory="$(ClientDir)" />
+
+        <!-- Vite names its files by content hash, and wwwroot was read before this target ran. A glob in
+             Remove only matches files that still exist, so the old items are removed by their path. -->
+        <ItemGroup>
+            <_OldClientContent Include="@(Content)" Condition="$([System.String]::Copy('%(Content.Identity)').Replace('/', '\').StartsWith('$(ClientOutputDir)\'))" />
+            <Content Remove="@(_OldClientContent)" />
+            <Content Include="$(ClientOutputDir)\**" ExcludeFromSingleFile="true" CopyToPublishDirectory="PreserveNewest" />
+        </ItemGroup>
+    </Target>
+
+    <!-- Runs only when the output is missing or older than a source, and then refuses to pack -->
+    <Target Name="CheckClientForPack" BeforeTargets="GenerateNuspec" Inputs="@(ClientSource)" Outputs="$(ClientOutputDir)\novicell-umbraco-oembed-manifests.js">
+        <Error Text="The client in $(ClientOutputDir) is missing or older than its sources. Run 'npm ci' and 'npm run build' in Client, or pack without --no-build." />
+    </Target>
+
+    <!-- A pack without a build takes the client's file list from the last build -->
+    <Target Name="CheckBuildAfterClient" BeforeTargets="GenerateNuspec" Condition="'$(NoBuild)' == 'true'" Inputs="$(ClientOutputDir)\novicell-umbraco-oembed-manifests.js" Outputs="$(IntermediateOutputPath)staticwebassets.build.json">
+        <Error Text="The client was built after the last 'dotnet build'. Run 'dotnet build' again, or pack without --no-build." />
+    </Target>
+
     <ItemGroup>
         <InternalsVisibleTo Include="Novicell.Umbraco.OEmbed.Tests" />
         <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
