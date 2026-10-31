@@ -60,6 +60,9 @@
 
     <ItemGroup>
         <ClientSource Include="Client\src\**\*;Client\public\**\*;Client\package.json;Client\package-lock.json;Client\vite.config.ts;Client\tsconfig.json" />
+        <!-- A deleted file is no longer in the list above, but deleting, adding or renaming a file updates its folder's time -->
+        <ClientSourceFolder Include="$(ClientDir)\src;$(ClientDir)\public" />
+        <ClientSourceFolder Include="$([System.IO.Directory]::GetDirectories('$(ClientDir)\src', '*', System.IO.SearchOption.AllDirectories))" Condition="Exists('$(ClientDir)\src')" />
     </ItemGroup>
 
     <!-- npm ci rewrites node_modules/.package-lock.json, so this runs when a package file has changed since -->
@@ -83,6 +86,17 @@
     <!-- Runs only when the output is missing or older than a source, and then refuses to pack -->
     <Target Name="CheckClientForPack" BeforeTargets="GenerateNuspec" Inputs="@(ClientSource)" Outputs="$(ClientOutputDir)\novicell-umbraco-oembed-manifests.js">
         <Error Text="The client in $(ClientOutputDir) is missing or older than its sources. Run 'npm ci' and 'npm run build' in Client, or pack without --no-build." />
+    </Target>
+
+    <!-- Inputs and Outputs only compare files, so the folders are compared here -->
+    <Target Name="CheckClientFoldersForPack" BeforeTargets="GenerateNuspec" DependsOnTargets="CheckClientForPack">
+        <PropertyGroup>
+            <_ClientOutputTime>$([System.IO.File]::GetLastWriteTime('$(MSBuildProjectDirectory)\$(ClientOutputDir)\novicell-umbraco-oembed-manifests.js').ToFileTimeUtc())</_ClientOutputTime>
+        </PropertyGroup>
+        <ItemGroup>
+            <_ChangedClientFolder Include="@(ClientSourceFolder)" Condition="$([System.IO.Directory]::GetLastWriteTime('%(FullPath)').ToFileTimeUtc()) &gt; $(_ClientOutputTime)" />
+        </ItemGroup>
+        <Error Condition="'@(_ChangedClientFolder)' != ''" Text="A client source was added, removed or renamed in @(_ChangedClientFolder) after the client was built. Run 'npm run build' in Client, or pack without --no-build." />
     </Target>
 
     <!-- staticwebassets.build.json is only rewritten when its content changes, so every build leaves its own stamp -->
