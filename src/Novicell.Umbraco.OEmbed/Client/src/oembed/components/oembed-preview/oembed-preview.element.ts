@@ -2,9 +2,9 @@ import {
   css,
   html,
   customElement,
-  keyed,
   nothing,
   property,
+  repeat,
 } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement } from "@umbraco-cms/backoffice/lit-element";
 import { UmbPropertyEditorUiElement } from "@umbraco-cms/backoffice/property-editor";
@@ -65,7 +65,9 @@ export class OEmbedPreviewElement
   @property({ type: Boolean, reflect: true })
   contain = false;
 
-  #frameObservers: ResizeObserver[] = [];
+  // One observer per iframe: a frame fires load again when it is reloaded, and the observer of the
+  // document it had before must not be left behind.
+  #frameObservers = new Map<HTMLIFrameElement, ResizeObserver>();
 
   override disconnectedCallback() {
     super.disconnectedCallback();
@@ -74,7 +76,7 @@ export class OEmbedPreviewElement
 
   #disconnectFrameObservers() {
     this.#frameObservers.forEach((observer) => observer.disconnect());
-    this.#frameObservers = [];
+    this.#frameObservers.clear();
   }
 
   override willUpdate(
@@ -149,14 +151,16 @@ export class OEmbedPreviewElement
   }
 
   #renderProviderFrame(value: OEmbedResponse, frame: ProviderFrame) {
-    // A sandbox only applies when a document is loaded. keyed() makes Lit replace the iframe
+    // A sandbox only applies when a document is loaded. Keying the iframe makes Lit replace it
     // instead of reusing it when the sandbox or src changes, so a stricter sandbox takes
-    // effect rather than being set on an already loaded document.
+    // effect rather than being set on an already loaded document. repeat() over one key does
+    // what keyed() does; keyed is not exported by the backoffice's lit in Umbraco 17.0.
     const sandbox = effectiveSandbox(frame.sandbox, PROVIDER_FRAME_SANDBOX);
     const iframe = (className: string, style?: string) =>
-      keyed(
-        `${sandbox}|${frame.src}`,
-        html`<iframe
+      repeat(
+        [`${sandbox}|${frame.src}`],
+        (key) => key,
+        () => html`<iframe
           class=${className}
           src=${frame.src}
           sandbox=${sandbox}
@@ -293,9 +297,10 @@ export class OEmbedPreviewElement
 
     // Provider scripts (e.g. Twitter's widgets.js) render asynchronously and
     // change the document height after load, so keep the iframe in sync.
+    this.#frameObservers.get(iframe)?.disconnect();
     const observer = new ResizeObserver(() => resize());
     observer.observe(body);
-    this.#frameObservers.push(observer);
+    this.#frameObservers.set(iframe, observer);
   }
 
   #renderVisual(value: OEmbedResponse) {

@@ -24,7 +24,18 @@ internal class OEmbedService(
             return Attempt<OEmbedResponse?, OEmbedOperationStatus>.Fail(OEmbedOperationStatus.ProviderNotSupported);
         }
 
-        OEmbedApiEndpoint? apiEndpoint = await endpointProvider.GetApiEndpointAsync(request.Url);
+        OEmbedApiEndpoint? apiEndpoint;
+        try
+        {
+            apiEndpoint = await endpointProvider.GetApiEndpointAsync(request.Url);
+        }
+        catch (Exception e)
+        {
+            // A provider with a bad ApiEndpoint, or a UrlSchemeRegex that times out. That is the site's
+            // configuration, so it is logged, and the editor is told the URL is not supported.
+            logger.LogError(e, "Finding the oEmbed endpoint for {Url} failed", request.Url);
+            return Attempt<OEmbedResponse?, OEmbedOperationStatus>.Fail(OEmbedOperationStatus.ProviderNotSupported);
+        }
 
         if (apiEndpoint == null || !OEmbedHttp.IsHttpUrl(apiEndpoint.Endpoint))
         {
@@ -43,7 +54,7 @@ internal class OEmbedService(
         }
         catch (Exception e)
         {
-            logger.LogError(e, "OEmbed request failed");
+            logger.LogError(e, "OEmbed request to {Provider} failed", apiEndpoint.Name);
             return Attempt<OEmbedResponse?, OEmbedOperationStatus>.Fail(OEmbedOperationStatus.InvalidResponse);
         }
     }

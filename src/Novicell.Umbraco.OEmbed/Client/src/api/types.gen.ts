@@ -7,18 +7,18 @@ export type ClientOptions = {
 export type OEmbedResponse = {
     type: OEmbedType;
     version?: string | null;
-    width?: number | null;
-    height?: number | null;
-    url?: string | null;
-    html?: string | null;
     title?: string | null;
-    author_url?: string | null;
     author_name?: string | null;
-    provider_url?: string | null;
+    author_url?: string | null;
     provider_name?: string | null;
+    provider_url?: string | null;
     thumbnail_url?: string | null;
-    thumbnail_width?: number | null;
     thumbnail_height?: number | null;
+    thumbnail_width?: number | null;
+    html?: string | null;
+    url?: string | null;
+    height?: number | null;
+    width?: number | null;
     cache_age?: number | null;
 };
 

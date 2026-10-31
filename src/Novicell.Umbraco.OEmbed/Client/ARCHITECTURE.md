@@ -48,8 +48,7 @@ Client/
 │   │   ├── components/index.ts
 │   │   └── manifests.ts
 │   ├── app.ts                         # OAuth/API token configuration
-│   ├── manifests.ts                   # Extension manifest aggregator
-│   └── index.ts                       # Public exports
+│   └── manifests.ts                   # Extension manifest aggregator
 ├── mocks/                             # Test data (data.ts) and MSW handlers
 ├── public/
 │   └── umbraco-package.json           # Extension manifest
