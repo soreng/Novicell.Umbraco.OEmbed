@@ -79,7 +79,7 @@ Configure options under the `Novicell:OEmbed` section in `appsettings.json`:
 | ---------------------- | ------- | ------------------------------------------------------------------------------------------------------------- |
 | `AllowPrivateNetworks` | `false` | Allows the server to call loopback and private network addresses. Off by default, see the security note below. |
 
-A site that is not in Umbraco's list of embed providers is supported by adding a provider class; the package adds Reddit, Spotify and TikTok that way.
+A site that is not in Umbraco's list of embed providers is supported by adding a provider class; the package adds Reddit, Spotify and TikTok that way. Those classes are public (namespace `Novicell.Umbraco.OEmbed.EmbedProviders`), so a site that registers its embed providers itself can add them too, for example `builder.EmbedProviders().Append<TikTok>();`.
 
 ### Rendering an embed
 

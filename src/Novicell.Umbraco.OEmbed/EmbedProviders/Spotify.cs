@@ -6,8 +6,12 @@ namespace Novicell.Umbraco.OEmbed.EmbedProviders;
 /// <summary>
 ///     Embed Provider for Spotify, the audio streaming and media services platform.
 /// </summary>
-internal class Spotify : OEmbedProviderBase
+public class Spotify : OEmbedProviderBase
 {
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="Spotify"/> class.
+    /// </summary>
+    /// <param name="jsonSerializer">The serializer used to read the provider's response.</param>
     public Spotify(IJsonSerializer jsonSerializer)
         : base(jsonSerializer)
     {
