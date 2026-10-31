@@ -177,54 +177,82 @@ describe("OEmbedPreviewElement", () => {
       "iframe.oembed-media",
     ) as HTMLIFrameElement;
     expect(iframe.getAttribute("sandbox")).to.equal(
-      "allow-scripts allow-same-origin allow-presentation",
+      "allow-scripts allow-presentation",
     );
+    expect(iframe.getAttribute("sandbox")).to.not.contain("allow-same-origin");
     expect(iframe.getAttribute("srcdoc")).to.contain("widgets.js");
     expect(iframe.hasAttribute("src")).to.be.false;
   });
 
-  it("keeps one height observer per frame when the frame loads again", async () => {
-    // Count the observers that are still connected.
-    const Original = window.ResizeObserver;
-    let connected = 0;
-    window.ResizeObserver = class extends Original {
-      #observing = false;
-      override observe(target: Element, options?: ResizeObserverOptions) {
-        if (!this.#observing) connected++;
-        this.#observing = true;
-        super.observe(target, options);
-      }
-      override disconnect() {
-        if (this.#observing) connected--;
-        this.#observing = false;
-        super.disconnect();
-      }
+  it("runs provider scripts without granting access to the backoffice", async () => {
+    const token = "oembed-preview-isolated-script";
+    const message = new Promise<{ token: string; canReadParent: boolean }>(
+      (resolve, reject) => {
+        const onMessage = (event: MessageEvent) => {
+          if (event.data?.token !== token) return;
+          window.removeEventListener("message", onMessage);
+          resolve(event.data);
+        };
+        window.addEventListener("message", onMessage);
+        window.setTimeout(() => {
+          window.removeEventListener("message", onMessage);
+          reject(new Error("Provider script did not run"));
+        }, 2000);
+      },
+    );
+
+    element.value = {
+      type: "rich" as any,
+      html: `<script>let canReadParent = false; try { parent.document.body; canReadParent = true; } catch {} parent.postMessage({ token: "${token}", canReadParent }, "*");</script>`,
     };
+    await element.updateComplete;
 
-    try {
-      element.value = {
-        type: "rich" as any,
-        html: '<blockquote class="embed">x</blockquote>',
+    const result = await message;
+    expect(result.canReadParent).to.be.false;
+  });
+
+  it("sizes an opaque-origin provider preview from its height message", async () => {
+    let iframe: HTMLIFrameElement | undefined;
+    const heightMessage = new Promise<boolean>((resolve, reject) => {
+      const onMessage = (event: MessageEvent) => {
+        if (
+          event.data?.type !== "novicell-oembed-height" ||
+          event.data.height !== 800
+        ) {
+          return;
+        }
+        window.removeEventListener("message", onMessage);
+        resolve(event.source === iframe?.contentWindow);
       };
-      await element.updateComplete;
+      window.addEventListener("message", onMessage);
+      window.setTimeout(() => {
+        window.removeEventListener("message", onMessage);
+        reject(new Error("Provider height message was not received"));
+      }, 2000);
+    });
+    element.value = {
+      type: "rich" as any,
+      html: '<script>parent.postMessage({ type: "novicell-oembed-height", height: 800 }, "*");</script>',
+    };
+    await element.updateComplete;
 
-      const iframe = element.shadowRoot!.querySelector("iframe") as HTMLIFrameElement;
-      await new Promise<void>((resolve) => {
-        if (connected > 0) return resolve();
-        iframe.addEventListener("load", () => resolve(), { once: true });
-      });
-      expect(connected).to.equal(1);
-
-      // A provider script that reloads its frame fires load again.
-      iframe.dispatchEvent(new Event("load"));
-      iframe.dispatchEvent(new Event("load"));
-      expect(connected).to.equal(1);
-
-      element.remove();
-      expect(connected).to.equal(0);
-    } finally {
-      window.ResizeObserver = Original;
-    }
+    iframe = element.shadowRoot!.querySelector(
+      "iframe.oembed-media--auto",
+    ) as HTMLIFrameElement;
+    expect(await heightMessage).to.be.true;
+    await new Promise<void>((resolve, reject) => {
+      const deadline = Date.now() + 2000;
+      const checkHeight = () => {
+        if (iframe.style.height === "600px") return resolve();
+        if (Date.now() >= deadline) {
+          return reject(new Error("Provider height message was not applied"));
+        }
+        window.setTimeout(checkHeight, 10);
+      };
+      checkHeight();
+    });
+    expect(iframe.getAttribute("sandbox")).to.not.contain("allow-same-origin");
+    expect(iframe.style.height).to.equal("600px");
   });
 
   it("does not render an iframe that points back at the backoffice directly", async () => {

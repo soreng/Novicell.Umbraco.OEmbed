@@ -65,27 +65,35 @@ export class OEmbedPreviewElement
   @property({ type: Boolean, reflect: true })
   contain = false;
 
-  // One observer per iframe: a frame fires load again when it is reloaded, and the observer of the
-  // document it had before must not be left behind.
-  #frameObservers = new Map<HTMLIFrameElement, ResizeObserver>();
+  #onProviderHeightMessage = (event: MessageEvent) => {
+    const iframe = this.shadowRoot?.querySelector<HTMLIFrameElement>(
+      "iframe.oembed-media--auto",
+    );
+    if (
+      !iframe ||
+      event.source !== iframe.contentWindow ||
+      event.data?.type !== "novicell-oembed-height" ||
+      typeof event.data.height !== "number" ||
+      !Number.isFinite(event.data.height) ||
+      event.data.height <= 0
+    ) {
+      return;
+    }
+
+    iframe.style.height = `${Math.min(
+      Math.ceil(event.data.height),
+      OEmbedPreviewElement.maxDynamicHeight,
+    )}px`;
+  };
+
+  override connectedCallback() {
+    super.connectedCallback();
+    window.addEventListener("message", this.#onProviderHeightMessage);
+  }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
-    this.#disconnectFrameObservers();
-  }
-
-  #disconnectFrameObservers() {
-    this.#frameObservers.forEach((observer) => observer.disconnect());
-    this.#frameObservers.clear();
-  }
-
-  override willUpdate(
-    changedProperties: Map<string | number | symbol, unknown>,
-  ) {
-    super.willUpdate(changedProperties);
-    if (changedProperties.has("value")) {
-      this.#disconnectFrameObservers();
-    }
+    window.removeEventListener("message", this.#onProviderHeightMessage);
   }
 
   #normalizedType(type: OEmbedType): string {
@@ -224,10 +232,8 @@ export class OEmbedPreviewElement
         "<style>html,body,iframe{width:100%;height:100%;margin:0;padding:0;overflow:hidden}</style>";
     }
 
-    // The sandboxes below keep allow-same-origin on purpose. These providers' scripts (X, TikTok,
-    // Reddit) open nested frames that inherit the sandbox and fail without storage access, and
-    // the preview measures the frame's height from the parent. The registered embed providers
-    // are therefore the trust boundary (see the README).
+    // Keep this srcdoc sandbox on an opaque origin: provider HTML and scripts are untrusted and must
+    // not be able to access the backoffice, even when an X or Reddit embed needs storage.
     const srcdoc = `<html><head></head><body>${style}<div${wrapperStyle}>${markup}</div></body></html>`;
 
     if (hasFixedSize) {
@@ -238,7 +244,7 @@ export class OEmbedPreviewElement
         <iframe
           srcdoc=${srcdoc}
           class="oembed-media"
-          sandbox="allow-scripts allow-same-origin allow-presentation"
+          sandbox="allow-scripts allow-presentation"
         ></iframe>
       </div>`;
     }
@@ -252,55 +258,26 @@ export class OEmbedPreviewElement
           srcdoc=${srcdoc}
           class="oembed-media"
           scrolling="no"
-          sandbox="allow-scripts allow-same-origin allow-presentation"
+          sandbox="allow-scripts allow-presentation"
         ></iframe>
       </div>`;
     }
 
     // Dynamic-height embeds (e.g. tweets) report no usable height, so size the
     // iframe to its rendered content instead of forcing an aspect ratio.
+    const heightReporter =
+      '<script>(() => { const report = () => parent.postMessage({ type: "novicell-oembed-height", height: document.documentElement.scrollHeight }, "*"); const observer = new ResizeObserver(report); observer.observe(document.documentElement); if (document.body) observer.observe(document.body); report(); })();</script>';
+    const autoSrcdoc = srcdoc.replace(
+      /<\/body><\/html>$/,
+      `${heightReporter}</body></html>`,
+    );
     return html`<div class="oembed-frame oembed-frame--auto">
       <iframe
-        srcdoc=${srcdoc}
+        srcdoc=${autoSrcdoc}
         class="oembed-media oembed-media--auto"
-        sandbox="allow-scripts allow-same-origin allow-presentation"
-        @load=${this.#onAutoFrameLoad}
+        sandbox="allow-scripts allow-presentation"
       ></iframe>
     </div>`;
-  }
-
-  #onAutoFrameLoad(event: Event) {
-    const iframe = event.target as HTMLIFrameElement;
-
-    let doc: Document | null = null;
-    try {
-      doc = iframe.contentDocument;
-    } catch {
-      // Cross-origin documents cannot be measured; leave the default height.
-      return;
-    }
-
-    const body = doc?.body;
-    if (!body) return;
-
-    const resize = () => {
-      const height = body.scrollHeight;
-      if (height > 0) {
-        iframe.style.height = `${Math.min(
-          height,
-          OEmbedPreviewElement.maxDynamicHeight,
-        )}px`;
-      }
-    };
-
-    resize();
-
-    // Provider scripts (e.g. Twitter's widgets.js) render asynchronously and
-    // change the document height after load, so keep the iframe in sync.
-    this.#frameObservers.get(iframe)?.disconnect();
-    const observer = new ResizeObserver(() => resize());
-    observer.observe(body);
-    this.#frameObservers.set(iframe, observer);
   }
 
   #renderVisual(value: OEmbedResponse) {
