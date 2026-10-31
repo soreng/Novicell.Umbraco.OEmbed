@@ -220,10 +220,8 @@ export class OEmbedPreviewElement
         "<style>html,body,iframe{width:100%;height:100%;margin:0;padding:0;overflow:hidden}</style>";
     }
 
-    // The sandboxes below keep allow-same-origin on purpose. These providers' scripts (X, TikTok,
-    // Reddit) open nested frames that inherit the sandbox and fail without storage access, and
-    // the preview measures the frame's height from the parent. The registered embed providers
-    // are therefore the trust boundary (see the README).
+    // Keep this srcdoc sandbox on an opaque origin: provider HTML and scripts are untrusted and must
+    // not be able to access the backoffice, even when a provider's script-based embed needs storage.
     const srcdoc = `<html><head></head><body>${style}<div${wrapperStyle}>${markup}</div></body></html>`;
 
     if (hasFixedSize) {
@@ -234,7 +232,7 @@ export class OEmbedPreviewElement
         <iframe
           srcdoc=${srcdoc}
           class="oembed-media"
-          sandbox="allow-scripts allow-same-origin allow-presentation"
+          sandbox="allow-scripts allow-presentation"
         ></iframe>
       </div>`;
     }
@@ -248,7 +246,7 @@ export class OEmbedPreviewElement
           srcdoc=${srcdoc}
           class="oembed-media"
           scrolling="no"
-          sandbox="allow-scripts allow-same-origin allow-presentation"
+          sandbox="allow-scripts allow-presentation"
         ></iframe>
       </div>`;
     }
@@ -259,7 +257,7 @@ export class OEmbedPreviewElement
       <iframe
         srcdoc=${srcdoc}
         class="oembed-media oembed-media--auto"
-        sandbox="allow-scripts allow-same-origin allow-presentation"
+        sandbox="allow-scripts allow-presentation"
         @load=${this.#onAutoFrameLoad}
       ></iframe>
     </div>`;

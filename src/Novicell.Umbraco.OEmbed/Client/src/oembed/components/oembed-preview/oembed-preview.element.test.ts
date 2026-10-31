@@ -177,10 +177,38 @@ describe("OEmbedPreviewElement", () => {
       "iframe.oembed-media",
     ) as HTMLIFrameElement;
     expect(iframe.getAttribute("sandbox")).to.equal(
-      "allow-scripts allow-same-origin allow-presentation",
+      "allow-scripts allow-presentation",
     );
+    expect(iframe.getAttribute("sandbox")).to.not.contain("allow-same-origin");
     expect(iframe.getAttribute("srcdoc")).to.contain("widgets.js");
     expect(iframe.hasAttribute("src")).to.be.false;
+  });
+
+  it("runs provider scripts without granting access to the backoffice", async () => {
+    const token = "oembed-preview-isolated-script";
+    const message = new Promise<{ token: string; canReadParent: boolean }>(
+      (resolve, reject) => {
+        const onMessage = (event: MessageEvent) => {
+          if (event.data?.token !== token) return;
+          window.removeEventListener("message", onMessage);
+          resolve(event.data);
+        };
+        window.addEventListener("message", onMessage);
+        window.setTimeout(() => {
+          window.removeEventListener("message", onMessage);
+          reject(new Error("Provider script did not run"));
+        }, 2000);
+      },
+    );
+
+    element.value = {
+      type: "rich" as any,
+      html: `<script>let canReadParent = false; try { parent.document.body; canReadParent = true; } catch {} parent.postMessage({ token: "${token}", canReadParent }, "*");</script>`,
+    };
+    await element.updateComplete;
+
+    const result = await message;
+    expect(result.canReadParent).to.be.false;
   });
 
   it("does not render an iframe that points back at the backoffice directly", async () => {
