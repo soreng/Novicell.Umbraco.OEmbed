@@ -17,6 +17,8 @@ $smoke = Join-Path $PSScriptRoot "backoffice-smoke.mjs"
 
 if ($PackageVersion) {
     $site = Join-Path $root "artifacts/nuget-site"
+    # An empty package folder of its own, so a package with the same version from a local pack isn't used instead
+    $sitePackages = Join-Path $root "artifacts/nuget-site-packages"
     $out = Join-Path $root "artifacts/nuget-package/$PackageVersion"
     $siteProcessName = "NugetSite"
     # Nothing from the repository is built, so the client isn't either
@@ -59,7 +61,7 @@ if (-not $SkipClientBuild) {
 
 # The test site without its project file, and one that installs the package from nuget.org instead of building it
 function New-NugetSite {
-    Remove-Item $site -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item $site, $sitePackages -Recurse -Force -ErrorAction SilentlyContinue
     New-Item -ItemType Directory -Force $site | Out-Null
     Get-ChildItem $testSite -Exclude "bin", "obj", "umbraco", "*.csproj" | Copy-Item -Destination $site -Recurse
 
@@ -73,6 +75,7 @@ function New-NugetSite {
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Novicell.Umbraco.OEmbed.TestSite</RootNamespace>
+    <RestorePackagesPath>$sitePackages</RestorePackagesPath>
     <CompressionEnabled>false</CompressionEnabled>
     <CopyRazorGenerateFilesToPublishDirectory>true</CopyRazorGenerateFilesToPublishDirectory>
     <RazorCompileOnBuild>false</RazorCompileOnBuild>
