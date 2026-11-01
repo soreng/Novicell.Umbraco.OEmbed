@@ -26,6 +26,8 @@ jobs:
     permissions:
       contents: write # attach the package to the release
       id-token: write # Trusted Publishing
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -106,6 +108,14 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: dotnet pack src/Novicell.Umbraco.OEmbed --configuration Release --no-build -p:Version="$VERSION" --output artifacts
 
+      # Kept with the run, also when publishing fails, so the package can be looked at
+      - name: Upload package
+        uses: actions/upload-artifact@v7
+        with:
+          name: nuget-package
+          path: artifacts/*.*nupkg
+          if-no-files-found: error
+
       - name: Log in to NuGet.org
         id: nuget
         uses: NuGet/login@v1
@@ -120,3 +130,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.event.release.tag_name }}
         run: gh release upload "$TAG" artifacts/*.nupkg --clobber
+
+  # The published package, installed from nuget.org, on the same Umbraco versions as the smoke test
+  test-published:
+    needs: publish
+    uses: ./.github/workflows/nuget-test.yml
+    with:
+      version: ${{ needs.publish.outputs.version }}

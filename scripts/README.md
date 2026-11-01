@@ -36,6 +36,18 @@ The table at the end has a column per stage: Build, Start, Pages and Backoffice.
 - `info` lines are errors from a provider's own script (TikTok's player, for example). They do not fail the test.
 - The checks call the real providers, so a provider that is down fails its own line. Run that version again before you look for a bug.
 
+## Test a published package
+
+`-PackageVersion` runs the same stages on a copy of the test site that installs that version from nuget.org instead of building the package from the repository, as a site would get it:
+
+```powershell
+./scripts/Test-UmbracoVersions.ps1 -PackageVersion 17.0.0-beta.1
+```
+
+The copy is made in `artifacts/nuget-site`, with its own `Directory.Build.props` and `Directory.Packages.props` so the repository's don't apply. The Pages stage also checks that the site serves the package's manifest with that version and its `?v=`. The results end up in `artifacts/nuget-package/<package version>/<Umbraco version>/`.
+
+On GitHub, `.github/workflows/nuget-test.yml` runs it after every release, once the new version is on nuget.org (that takes a few minutes), and can be started by hand from the Actions tab with any published version.
+
 ## Run only the browser test
 
 Against a test site that is already running:
