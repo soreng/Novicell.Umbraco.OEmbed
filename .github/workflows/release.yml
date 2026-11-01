@@ -28,6 +28,7 @@ jobs:
       id-token: write # Trusted Publishing
     outputs:
       version: ${{ steps.version.outputs.version }}
+      pushed: ${{ steps.push.outputs.pushed }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -123,7 +124,10 @@ jobs:
           user: ${{ vars.NUGET_USER }}
 
       - name: Push to NuGet.org
-        run: dotnet nuget push artifacts/*.nupkg --api-key "${{ steps.nuget.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+        id: push
+        run: |
+          dotnet nuget push artifacts/*.nupkg --api-key "${{ steps.nuget.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
 
       - name: Attach the package to the release
         env:
@@ -131,9 +135,11 @@ jobs:
           TAG: ${{ github.event.release.tag_name }}
         run: gh release upload "$TAG" artifacts/*.nupkg --clobber
 
-  # The published package, installed from nuget.org, on the same Umbraco versions as the smoke test
+  # The published package, installed from nuget.org, on the same Umbraco versions as the smoke test. It runs once the
+  # push succeeded, also when attaching the package to the release failed afterwards.
   test-published:
     needs: publish
+    if: ${{ !cancelled() && needs.publish.outputs.pushed == 'true' }}
     uses: ./.github/workflows/nuget-test.yml
     with:
       version: ${{ needs.publish.outputs.version }}

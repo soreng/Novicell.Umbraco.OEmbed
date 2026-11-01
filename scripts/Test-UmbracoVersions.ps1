@@ -160,9 +160,15 @@ foreach ($entry in $Versions) {
 
     # The backoffice files come from the package, with the version its release stamped into them
     if ($PackageVersion -and $result.Pages -eq "ok") {
-        $manifest = Invoke-RestMethod "$Url/App_Plugins/NovicellUmbracoOEmbed/umbraco-package.json" -SkipCertificateCheck
-        if ($manifest.version -ne $PackageVersion -or -not $manifest.extensions[0].js.EndsWith("?v=$PackageVersion", [System.StringComparison]::OrdinalIgnoreCase)) {
-            $result.Pages = "the manifest is $($manifest.version), $($manifest.extensions[0].js)"
+        try {
+            $manifest = Invoke-RestMethod "$Url/App_Plugins/NovicellUmbracoOEmbed/umbraco-package.json" -SkipCertificateCheck
+            $scripts = @($manifest.extensions | Where-Object js | ForEach-Object js)
+            $stale = @($scripts | Where-Object { -not $_.EndsWith("?v=$PackageVersion", [System.StringComparison]::OrdinalIgnoreCase) })
+            if ($manifest.version -ne $PackageVersion -or $scripts.Count -eq 0 -or $stale.Count -gt 0) {
+                $result.Pages = "the manifest is $($manifest.version), scripts $($scripts -join ', ')"
+            }
+        } catch {
+            $result.Pages = "the manifest could not be read: $($_.Exception.Message)"
         }
     }
 
