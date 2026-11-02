@@ -3,152 +3,39 @@ name: add-embed-provider
 description: Add a new oEmbed provider (e.g. TikTok, Spotify, Reddit) to Novicell.Umbraco.OEmbed. Use when a paste-a-URL provider is reported as "not supported" and the platform has a public oEmbed endpoint.
 ---
 
-# Adding an embed provider to Novicell.Umbraco.OEmbed
+# Adding an embed provider
 
-This project resolves oEmbed URLs by matching them against Umbraco CMS's own
-`EmbedProvidersCollection` (see `OEmbedApiEndpointProvider.cs`). If a platform
-isn't in that collection, pasting its URL fails with `ProviderNotSupported`
-— even though the platform may have a perfectly good public oEmbed endpoint.
-Adding a provider class is the only way to support another platform: the
-package does not fetch the page an editor pasted to look for an endpoint.
+A pasted URL is matched against Umbraco's `EmbedProvidersCollection` (`Services/OEmbedApiEndpointProvider.cs`); a URL no provider matches is `ProviderNotSupported`. The package never fetches the pasted page to look for an endpoint, so a provider class is the only way to support another platform.
 
-## 1. Confirm the platform actually has a public oEmbed endpoint
+## 1. Check the platform has a public oEmbed endpoint
 
-Don't guess. Check both:
+- **Umbraco already ships** YouTube, X, Vimeo, Dailymotion, Flickr, SlideShare, Kickstarter, Getty Images, Ted, SoundCloud, Issuu, Hulu, Giphy, LottieFiles and others: [the list](https://docs.umbraco.com/umbraco-cms/extend-your-project/server-side-extensions/embedded-media-providers). Don't add those again.
+- **Find the platform in [oembed.com/providers.json](https://oembed.com/providers.json).** Download it and search it; a summarised fetch truncates it. Note `endpoints[].url` and `endpoints[].schemes`. No entry usually means no public oEmbed API (Twitch and Imgur have none): say so instead of inventing one.
 
-- **oEmbed provider directory**: https://oembed.com/providers.json — the
-  canonical list of registered providers. Download it and grep rather than
-  relying on a summarized fetch (it's large and gets truncated/truncated
-  results are unreliable):
+## 2. Call the endpoint yourself
 
-  ```bash
-  curl -s https://oembed.com/providers.json -o /tmp/providers.json
-  grep -n '"provider_name": "TargetPlatform"' /tmp/providers.json
-  sed -n '<line-1>,<line+20>p' /tmp/providers.json
-  ```
+With a real public URL of the platform (curl or WebFetch), check that it returns JSON with a valid `type`. The package always sends `format=json` and reads JSON only, so a provider that can only answer with XML can't be supported.
 
-  Note the entry's `endpoints[].url` (the oEmbed API endpoint) and
-  `endpoints[].schemes` (the URL patterns it handles).
+A request that fails from every non-browser tool with 401 or 403, but works in a browser, is bot protection (CodePen is like that). A server-side provider can't fix that: report it as a limitation.
 
-- **Umbraco's own docs**: https://docs.umbraco.com/umbraco-cms/extend-your-project/server-side-extensions/embedded-media-providers
-  — lists what Umbraco core already ships (YouTube, YouTube Shorts, X/Twitter,
-  Vimeo, Dailymotion, Flickr, SlideShare, Kickstarter, Getty Images, Ted,
-  SoundCloud, Issuu, Hulu, Giphy, LottieFiles as of writing). No need to
-  re-implement any of these — check this list before adding a new class.
+## 3. Write the provider
 
-If the platform has **no entry** in `providers.json`, it likely has no public
-oEmbed API at all (e.g. Twitch, Imgur — confirmed absent, not just
-undocumented). In that case, adding a provider class is not the right fix;
-say so rather than inventing a scheme.
+Copy `src/Novicell.Umbraco.OEmbed/EmbedProviders/Spotify.cs` to `<Platform>.cs`, a public class on `OEmbedProviderBase`:
 
-## 2. Verify the endpoint actually behaves as documented
+- `ApiEndpoint`: the endpoint URL from step 1.
+- `UrlSchemeRegex`: one anchored regex per scheme (`https://open.spotify.com/*` becomes `@"^https?:\/\/open\.spotify\.com\/"`).
+- `RequestParams`: empty, unless step 2 showed a parameter is required.
+- `GetMarkupAsync`: `GetJsonBasedMarkupAsync`. The package's own service doesn't call it, but the class joins Umbraco's shared collection, and other Umbraco features may.
 
-`providers.json` describes the spec, not always the current reality. Before
-writing code, hit the endpoint directly (WebFetch or `curl`) with a real
-public URL for that platform and check:
+## 4. Register, test and document it
 
-- Does it return JSON by default, or does it require an explicit
-  `format=json` query param? (Most default to JSON. CodePen was found to need
-  `format=json` explicitly — but even that couldn't be fully confirmed by
-  server-side/non-browser requests, see the bot-protection note below.)
-- Does it 404/401/403 for reasons unrelated to the provider itself? Some
-  platforms (CodePen confirmed) sit behind bot protection (e.g. Cloudflare)
-  that rejects non-browser `User-Agent`/header profiles with 401 or 403 even
-  though the endpoint works fine from an actual browser. If a request that
-  works in-browser fails identically from every non-browser tool you try
-  (WebFetch, curl), that's a signal the platform is not fixable via a normal
-  server-side provider — flag it as a known limitation instead of chasing it
-  further (this is why CodePen was removed after being added).
-
-## 3. Implement the provider
-
-This project's `OEmbedService` (`Services/OEmbedService.cs`)
-does its own JSON fetching and parsing (it always sends `format=json`) — it does **not** call
-`IEmbedProvider.GetMarkupAsync`. Only three members actually matter for URL
-matching and endpoint construction: `ApiEndpoint`, `UrlSchemeRegex`,
-`RequestParams` (see `OEmbedApiEndpointProvider.cs`). Still implement
-`GetMarkupAsync` properly — the class is registered into Umbraco's shared
-`EmbedProvidersCollection`, which other Umbraco features (e.g. the Rich Text
-Editor's embed insert) may call directly.
-
-Create the class under
-`src/Novicell.Umbraco.OEmbed/EmbedProviders/<ProviderName>.cs`, following
-the same shape as Umbraco core's own providers
-(`Umbraco.Cms.Core.Media.EmbedProviders.OEmbedProviderBase` — see e.g.
-`Kickstarter.cs`, `SoundCloud.cs`, `Flickr.cs` in the Umbraco-CMS repo for
-reference patterns):
-
-```csharp
-using Umbraco.Cms.Core.Media.EmbedProviders;
-using Umbraco.Cms.Core.Serialization;
-
-namespace Novicell.Umbraco.OEmbed.EmbedProviders;
-
-public class Spotify : OEmbedProviderBase
-{
-    public Spotify(IJsonSerializer jsonSerializer)
-        : base(jsonSerializer)
-    {
-    }
-
-    /// <inheritdoc/>
-    public override string ApiEndpoint => "https://open.spotify.com/oembed";
-
-    /// <inheritdoc/>
-    public override string[] UrlSchemeRegex =>
-    [
-        @"^https?:\/\/open\.spotify\.com\/",
-        @"^https?:\/\/spotify\.link\/",
-    ];
-
-    /// <inheritdoc/>
-    public override Dictionary<string, string> RequestParams => [];
-
-    /// <inheritdoc/>
-    public override async Task<string?> GetMarkupAsync(string url, int? maxWidth, int? maxHeight, CancellationToken cancellationToken)
-        => await GetJsonBasedMarkupAsync(url, maxWidth, maxHeight, cancellationToken);
-}
-```
-
-Notes:
-- Translate each `providers.json` scheme glob (e.g. `https://open.spotify.com/*`)
-  into an anchored regex for `UrlSchemeRegex` — one array entry per scheme.
-- Use `GetJsonBasedMarkupAsync` for JSON providers, `GetXmlBasedMarkupAsync`
-  for XML ones (check the `formats` field in the `providers.json` entry; if
-  absent, JSON is the spec default).
-- Only add to `RequestParams` if you've confirmed via step 2 that the param
-  is actually required. `format=json` is added to every request by
-  `OEmbedService`, so a provider that can only answer with XML is not supported.
-
-## 4. Register the provider
-
-In `src/Novicell.Umbraco.OEmbed/Configuration/UmbracoBuilderExtensions.cs`,
-append it to the `EmbedProviders()` collection builder inside
-`AddNovicellOEmbed`:
-
-```csharp
-builder.EmbedProviders()
-    .Append<Reddit>()
-    .Append<Spotify>()
-    .Append<TikTok>();
-```
-
-This is the standard Umbraco composition pattern
-(`builder.EmbedProviders().Append<T>()`), documented at
-https://docs.umbraco.com/umbraco-cms/extend-your-project/server-side-extensions/embedded-media-providers.
-No separate `IComposer` class is needed here since this project already has
-its own `AddNovicellOEmbed` builder extension as the composition root.
+- Append it in `AddNovicellOEmbed` (`Configuration/UmbracoBuilderExtensions.cs`): `builder.EmbedProviders()...Append<Platform>()`.
+- Add a `TestCaseData` with a real URL to `Providers()` in `tests/Novicell.Umbraco.OEmbed.Tests/EmbedProviders/EmbedProviderTests.cs`.
+- Add it to the `EMBEDS` list in `scripts/backoffice-smoke.mjs`, with its type and preview (`iframe`, `img` or `srcdoc`).
+- Add it to the README, which names the added providers under Features and in the provider section.
 
 ## 5. Verify
 
-- `dotnet build src/Novicell.Umbraco.OEmbed/Novicell.Umbraco.OEmbed.csproj`
-- Test a real, live URL for the platform end-to-end in the demo site
-  (`src/Novicell.Umbraco.OEmbed.TestSite`) — paste it into the oEmbed picker and confirm it
-  resolves with the expected `type` (photo/video/link/rich).
-
-## 6. If it doesn't work
-
-If a platform's endpoint fails from the server
-but works in-browser, it's very likely bot protection (see step 2) rather
-than a bug in the provider class — confirm with a fresh live URL and a direct
-fetch before concluding the class itself is wrong.
+- `dotnet build -c Release` and `dotnet test`.
+- In the test site, paste a live URL into the picker and check the preview and the `type`.
+- If the html runs a script of its own (not a single iframe), `Html.OEmbed` leaves it out unless the site uses `OEmbedScripts.Raw`, and the backoffice preview runs it in a sandbox. Say so when you add such a provider.
