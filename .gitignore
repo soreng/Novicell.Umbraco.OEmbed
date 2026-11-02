@@ -10,6 +10,7 @@ artifacts/
 # IDE and user-specific files
 .vs/
 .idea/
+.vscode/
 *.suo
 *.user
 *.userosscache
