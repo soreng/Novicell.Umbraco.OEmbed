@@ -75,7 +75,7 @@ function New-NugetSite {
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Novicell.Umbraco.OEmbed.TestSite</RootNamespace>
-    <RestorePackagesPath>$sitePackages</RestorePackagesPath>
+    <RestorePackagesPath>$([System.Security.SecurityElement]::Escape($sitePackages))</RestorePackagesPath>
     <CompressionEnabled>false</CompressionEnabled>
     <CopyRazorGenerateFilesToPublishDirectory>true</CopyRazorGenerateFilesToPublishDirectory>
     <RazorCompileOnBuild>false</RazorCompileOnBuild>
